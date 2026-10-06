@@ -18,14 +18,14 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 | | |
 |---|---|
-| Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
-| Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. von FUERAN, ca. 6 €. |
+| Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
+| Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. [von FUERAN](https://www.amazon.de/dp/B0FMG2CPL6/?th=1), ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
-| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung). Sonst geht es auch über das gemeinsame WLAN. |
+| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [ein Cat6](https://www.amazon.de/dp/B00N2VIALK/?th=1), ca. 4 €. Sonst geht es auch über das gemeinsame WLAN. |
 
 ## Einrichtung auf dem Mac (einmalig)
 
-1. **Dieses Projekt herunterladen:** auf [github.com/mb73/imac-display](https://github.com/mb73/imac-display) „Code“ → „Download ZIP“. Safari entpackt es meist von selbst in den Ordner „Downloads“.
+1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip. Safari entpackt es meist von selbst in den Ordner „Downloads“.
 2. **Einrichtung starten:** im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken.
 3. **Beim ersten Mal blockiert macOS das,** weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat: „Fertig“ klicken, dann Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal und zeigt den Fortschritt.
 4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
@@ -37,9 +37,9 @@ Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Doc
 
 ## Einrichtung auf dem Laptop (einmalig)
 
-1. **Projekt als Zip herunterladen** (GitHub: „Code“ → „Download ZIP“).
+1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip.
 2. **Vor dem Entpacken freigeben:** Rechtsklick auf die Zip-Datei → Eigenschaften → unten „Zulassen“ anhaken → OK. Sonst behandelt Windows die enthaltenen Programme als „aus dem Internet“ und blockiert sie.
-3. **Entpacken,** z. B. nach `C:\Users\<dein Name>\imac-display`. Das Programm nicht direkt aus der Zip-Datei heraus starten.
+3. **Entpacken,** z. B. nach `C:\Users\<dein Name>\imac-display`. Das Programm nicht direkt aus der Zip-Datei heraus starten.
 4. **Den Dummy-Stecker** in den HDMI-Anschluss des Laptops stecken.
 5. **`imac-display.exe` doppelklicken.** Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
 
@@ -64,7 +64,7 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 | Cmd+← / → | Zeilenanfang / Zeilenende |
 | Cmd+↑ / ↓ | Dokumentanfang / Dokumentende |
 | Option+Backspace | Wort löschen |
-| Ctrl+Taste | Windows-Taste+Taste, z. B. Ctrl+E für den Explorer |
+| Ctrl+Taste | Windows-Taste+Taste, z. B. Ctrl+E für den Explorer |
 | Ctrl+Klick | Rechtsklick |
 | Cmd+Scrollen | Zoomen (Strg+Mausrad) |
 | Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie der Mac sie tippt |
