@@ -54,10 +54,12 @@ namespace ImacDisplay
        Mac   -> "LAPTOPSCREEN 1 <nonceMac>"
        Agent -> "HELLO <nonceAgent> <hmac(code, "agent|<nonceMac>|<nonceAgent>")>"
        Mac   -> "WELCOME <hmac(code, "mac|<nonceAgent>|<nonceMac>")> <videoPort>"   or "DENIED"
+                or "SLEEP" (LaptopScreen 1.7.0 and newer while the Mac's display sleeps: come back later)
      */
     internal sealed class ControlClient : IDisposable
     {
         public const string Denied = "denied";
+        public const string Asleep = "asleep";
 
         readonly Socket socket;
         readonly string code;
@@ -113,6 +115,12 @@ namespace ImacDisplay
                 if (reply == "DENIED")
                 {
                     error = Denied;
+                    client.Dispose();
+                    return null;
+                }
+                if (reply == "SLEEP")
+                {
+                    error = Asleep;
                     client.Dispose();
                     return null;
                 }

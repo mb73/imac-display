@@ -51,6 +51,12 @@ namespace ImacDisplay
             areaHeight = Math.Max(1, display.Height);
         }
 
+        /* No key or button held: a good moment to switch connections */
+        public bool Idle
+        {
+            get { return held == 0 && pressedKeys.Count == 0 && pressedButtons.Count == 0; }
+        }
+
         /* Carries out one line from the Mac; returns a line for the Mac, or null */
         public string Handle(string line)
         {

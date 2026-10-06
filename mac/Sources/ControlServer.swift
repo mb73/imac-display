@@ -1,3 +1,4 @@
+import CoreGraphics
 import CryptoKit
 import Foundation
 import Network
@@ -83,6 +84,8 @@ final class ControlServer {
     private var incomingUpdate: IncomingUpdate?
     private var clipboardData = Data()
     private var clipboardBroken = false
+    /* signalled when the agent hangs up after "SLEEP" */
+    private var sleepWaiter: DispatchSemaphore?
 
     init(port: UInt16, videoPort: UInt16) {
         self.port = port
@@ -207,6 +210,12 @@ final class ControlServer {
         guard parts.count == 3, parts[0] == "HELLO",
               Pairing.matches(parts[2], Pairing.hmacHex("agent|\(nonce)|\(parts[1])", code: code)) else {
             connection.send(content: Data("DENIED\n".utf8), completion: .contentProcessed({ _ in connection.cancel() }))
+            return
+        }
+        /* the display sleeps, or the Mac is in a dark wake for maintenance: a session would end only when the Mac sleeps, */
+        /* and the agent's hang-up after that would wake it again */
+        if CGDisplayIsAsleep(CGMainDisplayID()) != 0 {
+            connection.send(content: Data("SLEEP\n".utf8), completion: .contentProcessed({ _ in connection.cancel() }))
             return
         }
         let proof = Pairing.hmacHex("mac|\(parts[1])|\(nonce)", code: code)
@@ -348,7 +357,31 @@ final class ControlServer {
         emit(.update(version: update.version, archive: update.data))
     }
 
+    /*
+     The Mac is about to sleep. "SLEEP" makes the agent stop its video and hang up while the Mac is still awake:
+     a hang-up after that would wake the Mac again through a Bonjour sleep proxy. Blocks the caller for at most
+     two seconds (the main queue may delay the sleep that long).
+     */
+    func goingToSleep() {
+        let done = DispatchSemaphore(value: 0)
+        queue.async { [weak self] () -> Void in
+            guard let self = self, let agent = self.agent else {
+                done.signal()
+                return
+            }
+            self.sleepWaiter = done
+            agent.send(content: Data("SLEEP\n".utf8), completion: .idempotent)
+        }
+        _ = done.wait(timeout: .now() + 2)
+        queue.sync { () -> Void in
+            self.sleepWaiter = nil
+            self.dropAgent()
+        }
+    }
+
     private func dropAgent() {
+        sleepWaiter?.signal()
+        sleepWaiter = nil
         guard let old = agent else { return }
         agent = nil
         old.cancel()

@@ -54,6 +54,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                name: NSWindow.didChangeScreenNotification, object: window)
         NotificationCenter.default.addObserver(self, selector: #selector(screenChanged),
                                                name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(willSleep),
+                                                          name: NSWorkspace.willSleepNotification, object: nil)
         screenChanged()
         refresh()
         receiver.start()
@@ -87,6 +89,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /* the user switched to the laptop: a text copied on the Mac goes along */
     @objc private func appBecameActive() {
         if agentConnected { clipboard.becameActive() }
+    }
+
+    /* the laptop hangs up while the Mac is still awake: see ControlServer.goingToSleep */
+    @objc private func willSleep() {
+        input.releaseAll()
+        control.goingToSleep()
     }
 
     @objc private func renewPairingCode() {

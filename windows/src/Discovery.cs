@@ -90,7 +90,14 @@ namespace ImacDisplay
             return result.OrderBy(e => IsLinkLocal(e.Address) ? 0 : 1).ToList();
         }
 
-        static bool IsLinkLocal(IPAddress address)
+        /* A Bonjour sleep proxy answers for a sleeping Mac from its own address, and connecting would wake the Mac: an address counts only from the host itself */
+        static bool FromItself(byte[] d, int start, IPAddress source)
+        {
+            byte[] b = source.GetAddressBytes();
+            return b.Length == 4 && b[0] == d[start] && b[1] == d[start + 1] && b[2] == d[start + 2] && b[3] == d[start + 3];
+        }
+
+        public static bool IsLinkLocal(IPAddress address)
         {
             byte[] b = address.GetAddressBytes();
             return b.Length == 4 && b[0] == 169 && b[1] == 254;
@@ -147,7 +154,7 @@ namespace ImacDisplay
                         byte[] data;
                         try { data = socket.Receive(ref from); }
                         catch (SocketException) { break; }
-                        try { Parse(data, instances, services, hosts); }
+                        try { Parse(data, from.Address, instances, services, hosts); }
                         catch (IndexOutOfRangeException) { }
                     }
                 }
@@ -155,7 +162,7 @@ namespace ImacDisplay
             }
         }
 
-        static void Parse(byte[] d, HashSet<string> instances,
+        static void Parse(byte[] d, IPAddress source, HashSet<string> instances,
             Dictionary<string, KeyValuePair<string, int>> services, Dictionary<string, List<IPAddress>> hosts)
         {
             int questions = U16(d, 4);
@@ -184,7 +191,7 @@ namespace ImacDisplay
                     services[name] = new KeyValuePair<string, int>(target, U16(d, start + 4));
                     instances.Add(name);
                 }
-                else if (type == 1 && length == 4)
+                else if (type == 1 && length == 4 && FromItself(d, start, source))
                 {
                     List<IPAddress> list;
                     if (!hosts.TryGetValue(name, out list))

@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.7.0] – 2026-10-06
+
+### Behoben
+
+- **Keine Hänger mehr, weil die Verbindung im WLAN hängen blieb.** Wacht der Mac auf, ist das Kabel zu ihm ein paar Sekunden lang mal da, mal weg. Suchte iMac-Display genau dann, verband es sich übers WLAN und blieb dort – Bild und Mauszeiger hingen dann immer wieder kurz. Jetzt sieht es während einer WLAN-Verbindung alle 10 Sekunden nach, ob der Mac übers Kabel erreichbar ist, und wechselt hinüber. Das Bild setzt dabei etwa eine Sekunde aus, nie während du eine Taste oder Maustaste gedrückt hältst.
+- **Ein schlafender Mac wird nicht mehr jede Minute geweckt.** Legst du den Mac schlafen, sagt LaptopScreen vorher Bescheid, und iMac-Display trennt sich, solange der Mac noch wach ist. Danach wartet es, bis der Mac wirklich wieder wach ist: Apple TV und HomePod antworten für einen schlafenden Mac und hätten ihn bei jedem Verbindungsversuch geweckt. Der Mac-Bildschirm bleibt in Windows so lange eingerichtet, deine Fenster bleiben also, wo sie sind. Ist nur der Bildschirm des Mac aus, wartet iMac-Display ebenfalls. Beide Seiten brauchen dafür 1.7.0; der Mac aktualisiert sich wie gewohnt selbst.
+
 ## [1.6.1] – 2026-10-06
 
 ### Hinzugefügt

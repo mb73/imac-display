@@ -324,7 +324,11 @@ namespace ImacDisplay
         public const string GuideUrl = "https://github.com/mb73/imac-display/blob/main/README.md";
 
         /* keepDisplay: an update hands the Mac display over to the new version instead of switching it off */
-        static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession;
+        static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession, macAsleep, cableChecking;
+        /* the Mac on the direct cable, found in the background while a session runs over Wi-Fi */
+        static volatile MacEndpoint cableFound;
+        /* set by a session that ended to go over to the cable */
+        static MacEndpoint switchTo;
         static Mutex instance;
         static Thread agent;
         static MainWindow window;
@@ -548,6 +552,7 @@ namespace ImacDisplay
             string code = o.Code ?? (o.Repair ? null : PairingStore.Load());
             if (o.Code != null) PairingStore.Save(o.Code);
             DateTime? keepDisplayUntil = null;
+            MacEndpoint preferred = null;
             if (displayHandedOver)
             {
                 /* the previous version left the Mac display on: keep it if the Mac comes back soon */
@@ -587,10 +592,22 @@ namespace ImacDisplay
                     if (code == null) continue;
                 }
 
-                List<MacEndpoint> endpoints = FindMac(o);
+                List<MacEndpoint> endpoints;
+                if (preferred != null)
+                {
+                    endpoints = new List<MacEndpoint> { preferred };
+                    preferred = null;
+                }
+                else endpoints = FindMac(o);
                 if (!Active) continue;
                 if (endpoints.Count == 0)
                 {
+                    if (macAsleep)
+                    {
+                        ShowAsleep();
+                        Wait(5000);
+                        continue;
+                    }
                     LogOnce("Suche den Mac … (läuft dort LaptopScreen?)");
                     window.ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …",
                         "Läuft dort LaptopScreen? Beide brauchen eine Verbindung per Kabel oder über dasselbe Netz.", ThinBar.None));
@@ -607,13 +624,23 @@ namespace ImacDisplay
                     {
                         connected = endpoint;
                         Log("Verbunden mit " + endpoint);
+                        macAsleep = false;
                         break;
                     }
-                    if (error == ControlClient.Denied) break;
+                    if (error == ControlClient.Denied || error == ControlClient.Asleep) break;
                 }
                 if (control == null)
                 {
-                    if (error == ControlClient.Denied)
+                    if (error == ControlClient.Asleep)
+                    {
+                        /* LaptopScreen answers so while the Mac's display sleeps, e.g. in a dark wake for maintenance */
+                        if (!macAsleep) Log("Der Mac schläft. Sobald er aufwacht, verbinde ich mich wieder.");
+                        macAsleep = true;
+                        keepDisplayUntil = null;
+                        ShowAsleep();
+                        Wait(5000);
+                    }
+                    else if (error == ControlClient.Denied)
                     {
                         /* the question has to appear on a visible screen */
                         keepDisplayUntil = null;
@@ -631,8 +658,23 @@ namespace ImacDisplay
                 }
                 RunSession(control, connected.Name, ffmpeg, o);
                 if (!Active) continue;
+                if (macAsleep)
+                {
+                    /* waking the Mac is up to the user; the display stays as it is meanwhile */
+                    keepDisplayUntil = null;
+                    ShowAsleep();
+                    Wait(5000);
+                    continue;
+                }
                 /* keep the Mac display for a moment: LaptopScreen may just be restarting, e.g. after an update */
                 keepDisplayUntil = DateTime.UtcNow.AddSeconds(15);
+                if (switchTo != null)
+                {
+                    /* straight over to the cable */
+                    preferred = switchTo;
+                    switchTo = null;
+                    continue;
+                }
                 window.ShowStatus(new AgentStatus(Light.Busy, "Verbindung unterbrochen",
                     "Suche den Mac wieder … Der Mac-Bildschirm bleibt noch einen Moment.", ThinBar.None));
                 Wait(2000);
@@ -667,6 +709,10 @@ namespace ImacDisplay
             var injector = new Injector();
             var clipboard = new ClipboardSync();
             var awake = new StayAwake(Log);
+            bool viaCable = Discovery.IsLinkLocal(control.Address);
+            DateTime lastCableCheck = DateTime.UtcNow;
+            cableFound = null;
+            switchTo = null;
             bool sharing = shareClipboard;
             clipboard.Enabled = sharing;
             DateTime started = DateTime.UtcNow;
@@ -732,6 +778,11 @@ namespace ImacDisplay
                     {
                         lastHeard = now;
                         string reply = (HandleControl(control, line, clipboard) || locked) ? null : injector.Handle(line);
+                        if (macAsleep)
+                        {
+                            Log("Der Mac schläft ein. Sobald er aufwacht, verbinde ich mich wieder.");
+                            break;
+                        }
                         if (reply != null) control.Send(reply);
                         if (reply == "POINTER away" && !crossed)
                         {
@@ -777,6 +828,12 @@ namespace ImacDisplay
                         awake.Hold(!locked);
                         Log(locked ? "Windows ist gesperrt, Übertragung pausiert." : "Windows entsperrt, Übertragung läuft wieder.");
                         ShowSession(mac, lidOpen, locked);
+                    }
+                    if (!viaCable && CableReady(injector, ref lastCableCheck))
+                    {
+                        switchTo = cableFound;
+                        Log("Der Mac ist jetzt auch übers Kabel erreichbar: Ich wechsle vom WLAN aufs Kabel.");
+                        break;
                     }
                     if (locked) continue;
 
@@ -847,8 +904,9 @@ namespace ImacDisplay
                 inSession = false;
                 awake.Dispose();
                 injector.ReleaseAll();
-                control.Dispose();
+                /* video first: before the Mac sleeps, LaptopScreen waits only for the control connection to close */
                 StopVideo();
+                control.Dispose();
             }
         }
 
@@ -863,9 +921,46 @@ namespace ImacDisplay
                     : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
         }
 
+        static void ShowAsleep()
+        {
+            window.ShowStatus(new AgentStatus(Light.Paused, "Der Mac schläft",
+                "Sobald er aufwacht, verbindet sich iMac-Display von selbst wieder.", ThinBar.None));
+        }
+
+        /* While a session runs over Wi-Fi, looks for the Mac on the direct cable every 10 s in the background. True once it is */
+        /* there and no key or button is held: switching interrupts the picture for about a second. */
+        static bool CableReady(Injector injector, ref DateTime lastCheck)
+        {
+            if (cableFound != null) return injector.Idle;
+            if (cableChecking || (DateTime.UtcNow - lastCheck).TotalSeconds < 10) return false;
+            lastCheck = DateTime.UtcNow;
+            cableChecking = true;
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    foreach (MacEndpoint endpoint in Discovery.Find(1500))
+                        if (Discovery.IsLinkLocal(endpoint.Address))
+                        {
+                            cableFound = endpoint;
+                            break;
+                        }
+                }
+                catch (SocketException) { }
+                finally { cableChecking = false; }
+            });
+            return false;
+        }
+
         /* Lines from the Mac that are not input events. Returns true if the line was handled here. */
         static bool HandleControl(ControlClient control, string line, ClipboardSync clipboard)
         {
+            if (line == "SLEEP")
+            {
+                /* the Mac is about to sleep: hang up while it is still awake, a hang-up after that would wake it again */
+                macAsleep = true;
+                return true;
+            }
             if (line == "P")
             {
                 control.Send("P");
@@ -969,6 +1064,7 @@ namespace ImacDisplay
                 {
                     lastHeard = now;
                     HandleControl(control, line, clipboard);
+                    if (macAsleep) return false;
                 }
                 else if ((now - lastHeard).TotalSeconds > 8)
                 {
