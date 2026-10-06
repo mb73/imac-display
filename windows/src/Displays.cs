@@ -82,7 +82,7 @@ namespace ImacDisplay
             return null;
         }
 
-        static DisplayInfo InternalDisplay()
+        public static DisplayInfo Internal()
         {
             foreach (var display in Active()) if (display.Internal) return display;
             return null;
@@ -90,7 +90,7 @@ namespace ImacDisplay
 
         public static bool InternalActive()
         {
-            return InternalDisplay() != null;
+            return Internal() != null;
         }
 
         /* True if an external display (the HDMI dummy) is plugged in, even while Windows does not use it */
@@ -123,7 +123,7 @@ namespace ImacDisplay
         {
             SetTopology(SDC_TOPOLOGY_EXTEND);
             Thread.Sleep(1500);
-            DisplayInfo internalDisplay = InternalDisplay();
+            DisplayInfo internalDisplay = Internal();
             DisplayInfo externalDisplay = External();
             if (externalDisplay == null) return null;
             if (internalDisplay != null)
@@ -145,7 +145,7 @@ namespace ImacDisplay
         public static DisplayInfo ExternalOnly(int width, int height, int refresh, int scale)
         {
             /* when the lid closes, Windows usually drops the panel by itself; only switch if it is still active */
-            if (InternalDisplay() != null)
+            if (Internal() != null)
             {
                 SetTopology(SDC_TOPOLOGY_EXTERNAL);
                 Thread.Sleep(1500);
@@ -160,7 +160,7 @@ namespace ImacDisplay
         {
             if (external.Width != width || external.Height != height)
             {
-                DisplayInfo internalDisplay = InternalDisplay();
+                DisplayInfo internalDisplay = Internal();
                 if (internalDisplay != null)
                 {
                     /* extended desktop: keep the arrangement and the primary display (the one at 0,0) */

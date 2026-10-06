@@ -1,33 +1,49 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 
 namespace ImacDisplay
 {
+    /* A newer version: as a zip on this laptop, or (Zip null) still on GitHub */
+    internal sealed class UpdateOffer
+    {
+        public readonly string Version, Zip;
+
+        public UpdateOffer(string version, string zip)
+        {
+            Version = version;
+            Zip = zip;
+        }
+    }
+
     /*
-     Updates this installation from a release zip (GitHub "Code -> Download ZIP"). The browser does
-     the download; this class finds the zip in the Downloads folder, checks its VERSION and copies the
-     files over the installation. A running exe cannot be overwritten but can be renamed, so it
-     becomes imac-display.exe.old and keeps running.
+     Updates this installation from a release zip (GitHub "Code -> Download ZIP"). The window asks
+     GitHub for the current VERSION and watches the Downloads folder for a newer zip; it fetches the
+     zip itself (or lets the browser do it when that fails) and calls Install, which copies the files
+     over the installation. A running exe cannot be overwritten but can be renamed, so it becomes
+     imac-display.exe.old and keeps running until the new version has started.
      Settings and the pairing code (%APPDATA%) and ffmpeg (tools\) stay untouched.
      */
     internal static class Updater
     {
         public const string DownloadUrl = "https://github.com/mb73/imac-display/archive/refs/heads/main.zip";
-        /* set for the process started after an update, so it does not offer the same zip again */
+        public const string VersionUrl = "https://raw.githubusercontent.com/mb73/imac-display/main/VERSION";
+        /* set for the process started after an update: "display" if it takes over the Mac display, else "1" */
         public const string RestartedVariable = "IMAC_DISPLAY_UPDATED";
 
         /* mirrored exactly: a source file dropped from the release must not linger (the Mac would compile it) */
         static readonly string[] MirroredFolders = { @"mac\Sources", @"windows\src", @"windows\dev" };
+
+        /* zips seen in the Downloads folder (length, write time, version): each is opened once, again only when it changes */
+        static readonly Dictionary<string, Tuple<long, DateTime, string>> seen = new Dictionary<string, Tuple<long, DateTime, string>>(StringComparer.OrdinalIgnoreCase);
 
         static string version;
 
@@ -96,86 +112,58 @@ namespace ImacDisplay
             finally { Marshal.FreeCoTaskMem(path); }
         }
 
-        /* At start: offers a newer zip from the Downloads folder (e.g. just fetched from GitHub) */
-        public static bool OfferDownloadedUpdate()
+        /* The version on GitHub, or null if GitHub cannot be reached; error says why */
+        public static string LatestVersion(out string error)
         {
-            if (IsGitCheckout(Program.BaseDirectory)) return false;
+            error = null;
+            try
+            {
+                string latest = Sanitize(Web.Text(VersionUrl));
+                if (latest == null) error = "unerwartete Antwort";
+                return latest;
+            }
+            catch (WebException ex) { error = ex.Message; }
+            catch (IOException ex) { error = ex.Message; }
+            return null;
+        }
+
+        /* A newer zip in the Downloads folder or, with online, a newer version on GitHub; null if there is none */
+        public static UpdateOffer FindOffer(bool online, out string error)
+        {
+            error = null;
             string newer;
             string zip = FindNewerDownload(DownloadsFolder(), out newer);
-            if (zip == null) return false;
-            Console.WriteLine("In deinen Downloads liegt iMac-Display " + newer + " (" + Path.GetFileName(zip) + "), installiert ist " + Version + ".");
-            bool installed = Program.Ask("Jetzt installieren?") && Install(zip);
-            Console.WriteLine();
-            return installed;
+            UpdateOffer offer = zip != null ? new UpdateOffer(newer, zip) : null;
+            if (!online) return offer;
+            string latest = LatestVersion(out error);
+            if (latest != null && Compare(latest, Version) > 0 && (offer == null || Compare(latest, offer.Version) > 0))
+                offer = new UpdateOffer(latest, null);
+            return offer;
         }
 
-        /* --update [zip]: installs a newer version from the given zip, the Downloads folder or the browser */
-        public static int Run(string zip)
+        /* Fetches the current release into %TEMP%; null and the reason on failure */
+        public static string DownloadRelease(Action<long, long> progress, out string error)
         {
-            int result = RunSteps(zip);
-            Program.Pause();
-            return result;
-        }
-
-        static int RunSteps(string zip)
-        {
-            if (IsGitCheckout(Program.BaseDirectory))
+            error = null;
+            string path = Path.Combine(Path.GetTempPath(), "imac-display-update.zip");
+            try
             {
-                Console.WriteLine("Dieser Ordner ist ein Git-Arbeitsverzeichnis: bitte mit git pull aktualisieren.");
-                return 1;
+                Web.File(DownloadUrl, path, progress, null);
+                if (ZipVersion(path) != null) return path;
+                error = "Die heruntergeladene Datei ist keine Zip-Datei von imac-display.";
             }
-            if (zip != null)
-            {
-                string offered = ZipVersion(zip);
-                if (offered == null)
-                {
-                    Console.WriteLine(Path.GetFileName(zip) + " ist keine Zip-Datei von imac-display.");
-                    return 1;
-                }
-                if (Compare(offered, Version) <= 0 &&
-                    !Program.Ask("Die Zip-Datei enthält Version " + offered + ", installiert ist " + Version + ". Trotzdem installieren?"))
-                    return 0;
-            }
-            else
-            {
-                string newer;
-                zip = FindNewerDownload(DownloadsFolder(), out newer) ?? DownloadInBrowser();
-                if (zip == null) return 1;
-            }
-            return Install(zip) ? 0 : 1;
-        }
-
-        /* Opens the download in the browser and waits for the zip to arrive in the Downloads folder */
-        static string DownloadInBrowser()
-        {
-            string folder = DownloadsFolder();
-            Console.WriteLine("Installiert ist Version " + Version + ". Ich öffne den Download der aktuellen Version im Browser.");
-            Console.WriteLine("Speichert der Browser die Datei woanders als in " + folder + ", zieh sie einfach auf update.cmd.");
-            Console.WriteLine();
-            DateTime started = DateTime.Now.AddSeconds(-2);
-            try { Process.Start(DownloadUrl); }
-            catch (Win32Exception) { Console.WriteLine("Bitte im Browser öffnen: " + DownloadUrl); }
-            Console.Write("Warte auf den Download …");
-            for (int second = 0; second < 600 && folder != null; second++)
-            {
-                Thread.Sleep(1000);
-                string newer;
-                string zip = FindNewerDownload(folder, out newer);
-                if (zip != null)
-                {
-                    Console.WriteLine(" da.");
-                    return zip;
-                }
-                if (DownloadedInstalledVersion(folder, started))
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Die heruntergeladene Version ist die installierte (" + Version + "): Es gibt nichts zu tun.");
-                    return null;
-                }
-            }
-            Console.WriteLine();
-            Console.WriteLine("Es ist kein Download angekommen. Bitte später noch einmal versuchen.");
+            catch (WebException ex) { error = ex.Message; }
+            catch (IOException ex) { error = ex.Message; }
+            catch (UnauthorizedAccessException ex) { error = ex.Message; }
+            DeleteQuietly(path);
             return null;
+        }
+
+        public static void DeleteQuietly(string path)
+        {
+            try { File.Delete(path); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
         }
 
         /* Newest imac-display*.zip in the folder that is newer than the installed version, or null */
@@ -185,7 +173,7 @@ namespace ImacDisplay
             string best = null;
             foreach (string zip in Zips(folder))
             {
-                string candidate = ZipVersion(zip);
+                string candidate = CachedZipVersion(zip);
                 if (candidate == null || Compare(candidate, Version) <= 0) continue;
                 if (newest != null && Compare(candidate, newest) <= 0) continue;
                 newest = candidate;
@@ -194,16 +182,25 @@ namespace ImacDisplay
             return best;
         }
 
-        /* A zip of the installed version that arrived after we opened the browser: already up to date */
-        static bool DownloadedInstalledVersion(string folder, DateTime since)
+        static string CachedZipVersion(string path)
         {
-            foreach (string zip in Zips(folder))
+            try
             {
-                if (File.GetLastWriteTime(zip) < since && File.GetCreationTime(zip) < since) continue;
-                string candidate = ZipVersion(zip);
-                if (candidate != null && Compare(candidate, Version) == 0) return true;
+                var file = new FileInfo(path);
+                long length = file.Length;
+                DateTime written = file.LastWriteTimeUtc;
+                Tuple<long, DateTime, string> known;
+                lock (seen)
+                {
+                    if (seen.TryGetValue(path, out known) && known.Item1 == length && known.Item2 == written) return known.Item3;
+                }
+                /* e.g. the empty placeholder a browser creates while the download is still running */
+                string found = ZipVersion(path);
+                lock (seen) seen[path] = Tuple.Create(length, written, found);
+                return found;
             }
-            return false;
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
         }
 
         static string[] Zips(string folder)
@@ -218,7 +215,7 @@ namespace ImacDisplay
         }
 
         /* Version inside a release zip, or null (not ours, still being written, damaged) */
-        static string ZipVersion(string path)
+        public static string ZipVersion(string path)
         {
             try
             {
@@ -255,8 +252,8 @@ namespace ImacDisplay
             return result;
         }
 
-        /* Copies the release in the zip over this installation; first unpacks everything next to it */
-        public static bool Install(string zipPath)
+        /* Copies the release in the zip over this installation (unpacked next to it first); null if that worked, else the reason */
+        public static string Install(string zipPath)
         {
             string target = Program.BaseDirectory;
             string staging = Path.Combine(target, ".update");
@@ -269,7 +266,7 @@ namespace ImacDisplay
                     string root;
                     newVersion = ZipVersion(zip, out root);
                     if (newVersion == null) throw new InvalidDataException(Path.GetFileName(zipPath) + " ist keine Zip-Datei von imac-display.");
-                    Console.WriteLine("Installiere iMac-Display " + newVersion + " aus " + Path.GetFileName(zipPath) + " …");
+                    Program.Log("Installiere iMac-Display " + newVersion + " aus " + Path.GetFileName(zipPath) + " …");
                     if (Directory.Exists(staging)) Directory.Delete(staging, true);
                     foreach (ZipArchiveEntry entry in zip.Entries)
                     {
@@ -282,25 +279,22 @@ namespace ImacDisplay
                         entry.ExtractToFile(destination, true);
                         files.Add(relative);
                     }
-                    PrintChanges(zip, root);
                 }
                 foreach (string relative in files) Replace(Path.Combine(staging, relative), Path.Combine(target, relative));
                 RemoveStale(target, files);
                 Directory.Delete(staging, true);
-                Program.Log("iMac-Display ist jetzt auf Version " + newVersion + ".");
-                Console.WriteLine("LaptopScreen auf dem Mac zieht beim nächsten Verbinden nach: Der Mac fragt kurz, ob er sich aktualisieren soll.");
-                return true;
+                Program.Log("iMac-Display ist jetzt auf Version " + newVersion + ". LaptopScreen auf dem Mac fragt beim nächsten Verbinden, ob es nachziehen soll.");
+                return null;
             }
             catch (IOException ex) { return Failed(ex); }
             catch (InvalidDataException ex) { return Failed(ex); }
             catch (UnauthorizedAccessException ex) { return Failed(ex); }
         }
 
-        static bool Failed(Exception ex)
+        static string Failed(Exception ex)
         {
-            Console.WriteLine("Die Aktualisierung ist fehlgeschlagen: " + ex.Message);
-            Console.WriteLine("Notfalls die Zip-Datei von Hand entpacken und den Inhalt über diesen Ordner kopieren (tools\\ bleibt).");
-            return false;
+            Program.Log("Die Aktualisierung ist fehlgeschlagen: " + ex.Message);
+            return ex.Message + "\r\n\r\nNotfalls die Zip-Datei von Hand entpacken und den Inhalt über den Programmordner kopieren (tools\\ bleibt).";
         }
 
         /* No absolute paths or "..", and never ffmpeg (tools\), git data or our own staging folder */
@@ -354,44 +348,57 @@ namespace ImacDisplay
             }
         }
 
-        /* Shows the changelog sections that are newer than the installed version */
-        static void PrintChanges(ZipArchive zip, string root)
+        /* The changelog sections newer than the installed version, as plain text for the update dialog */
+        public static string Changes(string zipPath)
         {
-            ZipArchiveEntry entry = zip.Entries.FirstOrDefault(e => e.FullName.Replace('\\', '/') == root + "CHANGELOG.md");
-            if (entry == null) return;
-            var changes = new List<string>();
-            using (var reader = new StreamReader(entry.Open(), Encoding.UTF8))
+            try
             {
-                bool inside = false;
-                string line;
-                while ((line = reader.ReadLine()) != null)
+                using (ZipArchive zip = ZipFile.OpenRead(zipPath))
                 {
-                    if (line.StartsWith("## [", StringComparison.Ordinal))
+                    string root;
+                    if (ZipVersion(zip, out root) == null) return "";
+                    ZipArchiveEntry entry = zip.Entries.FirstOrDefault(e => e.FullName.Replace('\\', '/') == root + "CHANGELOG.md");
+                    if (entry == null) return "";
+                    var changes = new StringBuilder();
+                    using (var reader = new StreamReader(entry.Open(), Encoding.UTF8))
                     {
-                        int end = line.IndexOf(']');
-                        if (end > 4 && Compare(line.Substring(4, end - 4), Version) <= 0) break;
-                        inside = true;
+                        bool inside = false;
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (line.StartsWith("## [", StringComparison.Ordinal))
+                            {
+                                int end = line.IndexOf(']');
+                                if (end < 5) continue;
+                                if (Compare(line.Substring(4, end - 4), Version) <= 0) break;
+                                inside = true;
+                                line = "Version " + line.Substring(4, end - 4) + line.Substring(end + 1);
+                            }
+                            else if (line.StartsWith("### ", StringComparison.Ordinal)) line = line.Substring(4);
+                            else if (line.StartsWith("- ", StringComparison.Ordinal)) line = "• " + line.Substring(2);
+                            else if (line.StartsWith("  - ", StringComparison.Ordinal)) line = "    – " + line.Substring(4);
+                            if (inside) changes.AppendLine(line.Replace("**", "").Replace("`", ""));
+                        }
                     }
-                    if (inside) changes.Add(line.Replace("**", "").Replace("`", ""));
+                    return changes.ToString().Trim();
                 }
             }
-            if (changes.Count == 0) return;
-            Console.WriteLine();
-            Console.WriteLine("Neu seit Version " + Version + ":");
-            foreach (string change in changes) Console.WriteLine("  " + change);
-            Console.WriteLine();
+            catch (IOException) { return ""; }
+            catch (InvalidDataException) { return ""; }
+            catch (UnauthorizedAccessException) { return ""; }
         }
 
-        /* Starts the freshly installed exe in this console window; the caller exits right after */
-        public static void Restart(string[] args)
+        /* Starts the freshly installed exe; the caller exits right after. handOverDisplay: the Mac display stays on for it */
+        public static void Restart(IEnumerable<string> args, bool handOverDisplay)
         {
             var info = new ProcessStartInfo(Path.Combine(Program.BaseDirectory, "imac-display.exe"), JoinArguments(args));
             info.UseShellExecute = false;
-            info.EnvironmentVariables[RestartedVariable] = "1";
+            info.WorkingDirectory = Program.BaseDirectory;
+            info.EnvironmentVariables[RestartedVariable] = handOverDisplay ? "display" : "1";
             Process.Start(info);
         }
 
-        static string JoinArguments(string[] args)
+        static string JoinArguments(IEnumerable<string> args)
         {
             return string.Join(" ", args.Select(a =>
                 a.Length > 0 && a.IndexOfAny(new[] { ' ', '\t', '"' }) < 0 ? a : "\"" + a.Replace("\"", "\\\"") + "\""));

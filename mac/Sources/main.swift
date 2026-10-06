@@ -190,7 +190,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             container.overlay.text = "Am Laptop steckt kein HDMI-Dummy-Stecker.\n\n"
                 + "Bitte in den HDMI-Anschluss des Laptops stecken – das Bild kommt dann von selbst."
         } else if laptopLocked {
-            container.overlay.text = "Der Laptop ist gesperrt.\n\nBitte direkt am Laptop entsperren."
+            container.overlay.text = "Der Laptop ist gesperrt.\n\nBitte direkt am Laptop entsperren.\n\n"
+                + "Bleibt sein Bildschirm beim Aufklappen schwarz, den HDMI-Dummy-Stecker kurz ziehen: "
+                + "Dann zeigt Windows die Anmeldung auf dem Laptop. Danach wieder einstecken."
         } else {
             container.overlay.text = "Laptop verbunden – das Bild kommt gleich …"
         }

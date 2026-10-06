@@ -2,6 +2,28 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.4.0] – 2026-10-06
+
+### Hinzugefügt
+
+- **Ein richtiges Programmfenster statt der Konsole.** Ein farbiger Punkt und ein Satz zeigen, was gerade passiert: grün, wenn das Bild läuft, gelb beim Suchen und Verbinden, mit Pause-Zeichen bei gesperrtem Windows, rot bei einem Problem.
+  - „Verbindung trennen“ schaltet den Mac-Bildschirm ab, ohne das Programm zu beenden; „Verbinden“ holt ihn zurück. Ist der Deckel zu, fragt das Programm vorher nach, denn dann ist der Mac der einzige Bildschirm.
+  - Das Log erscheint nur noch auf Wunsch („Log“): live mitlaufend, mit „Diagnose“ (was bisher `--test` zeigte) und „Logdatei öffnen“.
+  - „Anleitung“ öffnet diese Beschreibung auf GitHub.
+  - Der Schalter „Zwischenablage mit dem Mac teilen“ wirkt sofort, auch während einer Verbindung.
+  - Das Taskleisten-Symbol trägt den Zustand als Badge und zeigt Downloads und das Umschalten der Anzeige als Fortschrittsbalken.
+  - Das Fenster folgt dem hellen oder dunklen App-Modus von Windows, auch beim Umschalten im laufenden Betrieb, und bleibt auf Bildschirmen mit verschiedener Skalierung scharf (Laptop 125 %, Mac 200 %).
+  - Ein zweiter Start holt das laufende Fenster nach vorne.
+- **Sucht selbst nach neuen Versionen.** Beim Start und danach alle sechs Stunden fragt iMac-Display bei GitHub nach der aktuellen Versionsnummer und schaut im Ordner „Downloads“ nach einer neueren Zip-Datei. Gibt es eine, bietet das Fenster sie an: „Aktualisieren …“ lädt sie direkt, zeigt, was neu ist, installiert sie und startet neu. Während einer Verbindung bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht, etwa wegen eines Firmen-Proxys, übernimmt der Browser.
+
+### Geändert
+
+- **Hauptbildschirm ist bei offenem Deckel jetzt das Laptop-Display**, nicht mehr der Mac. Windows zeigt die Anmeldung nach einer Sperre nur auf dem Hauptbildschirm; auf dem Mac-Bildschirm blieb sie unsichtbar, und das Laptop-Display blieb schwarz, auch nach dem Aufklappen. Die Taskleiste erscheint weiterhin auf beiden Bildschirmen, bei zugeklapptem Deckel ist der Mac ohnehin der einzige. Den Mac als Hauptbildschirm gibt es mit `--mac-primary`.
+- ffmpeg lädt das Programm beim ersten Start selbst, mit Fortschrittsbalken und Prüfsumme; `setup.cmd` und `windows\setup.ps1` entfallen.
+- `update.cmd` öffnet das Fenster und sucht sofort nach einer neuen Version; eine darauf gezogene Zip-Datei wird wie bisher installiert.
+- `imac-display.exe --test` schreibt die Diagnose nur noch, wenn die Ausgabe umgeleitet wird (etwa `| Out-String`), und zeigt sie sonst in einem Fenster.
+- Ist der Laptop gesperrt, nennt LaptopScreen auf dem Mac den Ausweg, falls das Laptop-Display beim Aufklappen schwarz bleibt: den HDMI-Dummy-Stecker kurz ziehen. Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten, und die Anmeldung liegt dann auf dem Mac-Bildschirm.
+
 ## [1.3.0] – 2026-10-06
 
 ### Geändert

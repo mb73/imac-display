@@ -20,7 +20,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $ffmpeg = Get-ChildItem (Join-Path $root 'tools') -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-if (-not $ffmpeg) { throw 'ffmpeg not found below tools\ (run setup.cmd first)' }
+if (-not $ffmpeg) { throw 'ffmpeg not found below tools\ (start imac-display.exe once, it fetches ffmpeg)' }
 $bin = $ffmpeg.DirectoryName
 $out = Join-Path ([System.IO.Path]::GetTempPath()) 'imac-display-latency'
 New-Item -ItemType Directory -Force $out | Out-Null

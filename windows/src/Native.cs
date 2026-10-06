@@ -203,16 +203,52 @@ namespace ImacDisplay
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr RegisterPowerSettingNotification(IntPtr recipient, ref Guid powerSettingGuid, int flags);
 
-        /* ---- console ---- */
+        /* ---- windows: another instance, DPI, dark title bars, themed scroll bars ---- */
 
-        public delegate bool ConsoleCtrlHandler(int ctrlType);
+        public const int SW_RESTORE = 9;
+        public const int WM_SETTINGCHANGE = 0x001A, WM_SYSCOLORCHANGE = 0x0015, WM_DPICHANGED = 0x02E0;
+        public const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct RECT { public int Left, Top, Right, Bottom; }
+
+        [DllImport("user32.dll")]
+        public static extern bool SetForegroundWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool ShowWindow(IntPtr hwnd, int command);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsIconic(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int width, int height, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetDpiForWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, ref RECT lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int RegisterWindowMessage(string name);
+
+        /* 20 = DWMWA_USE_IMMERSIVE_DARK_MODE (19 before Windows 10 20H1) */
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        public static extern int SetWindowTheme(IntPtr hwnd, string subAppName, string subIdList);
+
+        /* ---- standard output: redirected to a pipe or file, e.g. "imac-display.exe --test | Out-String"? ---- */
+
+        public const int STD_OUTPUT_HANDLE = -11, FILE_TYPE_DISK = 1, FILE_TYPE_PIPE = 3;
 
         [DllImport("kernel32.dll")]
-        public static extern bool SetConsoleCtrlHandler(ConsoleCtrlHandler handler, bool add);
+        public static extern IntPtr GetStdHandle(int which);
 
-        /* number of processes attached to this console: 1 means the window closes when we exit */
         [DllImport("kernel32.dll")]
-        public static extern uint GetConsoleProcessList([Out] uint[] processes, uint count);
+        public static extern int GetFileType(IntPtr handle);
 
         /* ---- shell folders and clipboard ---- */
 

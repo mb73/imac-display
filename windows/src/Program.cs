@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -8,6 +10,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Windows.Forms;
 
 namespace ImacDisplay
 {
@@ -17,66 +20,104 @@ namespace ImacDisplay
         public int Port = 47101;
         /* 200 %: Windows text is smaller than macOS text at the same logical size, 150 % reads too small on a Mac */
         public int Width = 3840, Height = 2160, Refresh = 60, Scale = 200, Fps = 60, Bitrate = 80;
-        public bool InternalPrimary, Repair, Test, Restore, Update;
+        /* the panel stays the main display while the lid is open: only there does Windows show the sign-in after a lock */
+        public bool InternalPrimary = true;
+        public bool Repair, Test, Restore, Update;
         public bool ShareClipboard = true;
         public string Code, UpdateZip;
+        /* what a restart after an update passes on; code and clipboard choice are remembered anyway */
+        public readonly List<string> Session = new List<string>();
 
-        public static Options Parse(string[] args)
+        public const string Usage =
+            "Optionen: --host <name|ip> --port <n> --size 3840x2160 --scale 200 --fps 60 --bitrate 80\r\n" +
+            "          --code <kopplungscode> --repair --clipboard on|off --mac-primary\r\n" +
+            "          --test --restore --update [zip]";
+
+        /* null and the reason if an option is unknown or lacks its value */
+        public static Options Parse(string[] args, out string error)
         {
+            error = null;
             var o = new Options();
             Settings.Load(o);
             for (int i = 0; i < args.Length; i++)
             {
                 string a = args[i].ToLowerInvariant();
                 string next = i + 1 < args.Length ? args[i + 1] : null;
-                switch (a)
+                try
                 {
-                    case "--host": o.Host = next; i++; break;
-                    case "--port": o.Port = int.Parse(next, CultureInfo.InvariantCulture); i++; break;
-                    case "--size":
-                        string[] wh = next.Split('x');
-                        o.Width = int.Parse(wh[0], CultureInfo.InvariantCulture);
-                        o.Height = int.Parse(wh[1], CultureInfo.InvariantCulture);
-                        i++;
-                        break;
-                    case "--scale": o.Scale = int.Parse(next, CultureInfo.InvariantCulture); i++; break;
-                    case "--fps": o.Fps = int.Parse(next, CultureInfo.InvariantCulture); i++; break;
-                    case "--bitrate": o.Bitrate = int.Parse(next, CultureInfo.InvariantCulture); i++; break;
-                    case "--code": o.Code = next; i++; break;
-                    case "--clipboard":
-                        /* remembered, so "--clipboard off" once is enough */
-                        o.ShareClipboard = !string.Equals(next, "off", StringComparison.OrdinalIgnoreCase);
-                        Settings.Save("clipboard", o.ShareClipboard ? 1 : 0);
-                        i++;
-                        break;
-                    case "--internal-primary": o.InternalPrimary = true; break;
-                    case "--repair": o.Repair = true; break;
-                    case "--test": o.Test = true; break;
-                    case "--restore": o.Restore = true; break;
-                    case "--update":
-                        o.Update = true;
-                        if (next != null && IsZip(next))
-                        {
-                            o.UpdateZip = next;
+                    switch (a)
+                    {
+                        case "--host": o.Host = Value(next); o.Keep(a, next); i++; break;
+                        case "--port": o.Port = Number(next); o.Keep(a, next); i++; break;
+                        case "--size":
+                            string[] wh = Value(next).Split('x');
+                            if (wh.Length != 2) throw new FormatException();
+                            o.Width = Number(wh[0]);
+                            o.Height = Number(wh[1]);
+                            o.Keep(a, next);
                             i++;
-                        }
-                        break;
-                    default:
-                        if (IsZip(args[i]))
-                        {
-                            /* a zip dropped onto the exe */
-                            o.Update = true;
-                            o.UpdateZip = args[i];
                             break;
-                        }
-                        Console.WriteLine("Unbekannte Option: " + args[i]);
-                        Console.WriteLine("Optionen: --host <name|ip> --port <n> --size 3840x2160 --scale 200 --fps 60 --bitrate 80");
-                        Console.WriteLine("          --code <kopplungscode> --repair --clipboard on|off --internal-primary");
-                        Console.WriteLine("          --test --restore --update [zip]");
-                        return null;
+                        case "--scale": o.Scale = Number(next); o.Keep(a, next); i++; break;
+                        case "--fps": o.Fps = Number(next); o.Keep(a, next); i++; break;
+                        case "--bitrate": o.Bitrate = Number(next); o.Keep(a, next); i++; break;
+                        case "--code": o.Code = Value(next); i++; break;
+                        case "--clipboard":
+                            /* remembered, so "--clipboard off" once is enough (the window has a switch for it, too) */
+                            o.ShareClipboard = !string.Equals(Value(next), "off", StringComparison.OrdinalIgnoreCase);
+                            Settings.Save("clipboard", o.ShareClipboard ? 1 : 0);
+                            i++;
+                            break;
+                        case "--internal-primary": o.InternalPrimary = true; break;  // the default since 1.4.0
+                        case "--mac-primary": o.InternalPrimary = false; o.Keep(a, null); break;
+                        case "--repair": o.Repair = true; break;
+                        case "--test": o.Test = true; break;
+                        case "--restore": o.Restore = true; break;
+                        case "--update":
+                            o.Update = true;
+                            if (next != null && IsZip(next))
+                            {
+                                o.UpdateZip = next;
+                                i++;
+                            }
+                            break;
+                        default:
+                            if (IsZip(args[i]))
+                            {
+                                /* a zip dropped onto the exe */
+                                o.Update = true;
+                                o.UpdateZip = args[i];
+                                break;
+                            }
+                            error = "Unbekannte Option: " + args[i];
+                            return null;
+                    }
+                }
+                catch (FormatException)
+                {
+                    error = "Fehlender oder ungültiger Wert für " + args[i] + ".";
+                    return null;
                 }
             }
             return o;
+        }
+
+        void Keep(string option, string value)
+        {
+            Session.Add(option);
+            if (value != null) Session.Add(value);
+        }
+
+        static string Value(string value)
+        {
+            if (value == null) throw new FormatException();
+            return value;
+        }
+
+        static int Number(string value)
+        {
+            int number;
+            if (value == null || !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out number)) throw new FormatException();
+            return number;
         }
 
         static bool IsZip(string path)
@@ -159,20 +200,10 @@ namespace ImacDisplay
             File.WriteAllText(FilePath, code);
         }
 
-        public static string Ask()
+        /* At least eight letters or digits, as the Mac shows them (e.g. ABCD-EFGH-JKLM) */
+        public static bool LooksValid(string code)
         {
-            while (true)
-            {
-                Console.Write("Kopplungscode vom Mac eingeben (steht im LaptopScreen-Fenster): ");
-                string line = Console.ReadLine();
-                if (line == null) return null;
-                if (Crypto.Normalize(line).Length >= 8)
-                {
-                    Save(line.Trim());
-                    return line.Trim();
-                }
-                Console.WriteLine("Das sieht nicht wie ein Kopplungscode aus (z. B. ABCD-EFGH-JKLM).");
-            }
+            return code != null && Crypto.Normalize(code).Length >= 8;
         }
     }
 
@@ -194,108 +225,301 @@ namespace ImacDisplay
         }
     }
 
+    /*
+     Entry point and agent. The window (MainWindow) runs on the main thread; the agent loop runs on its
+     own thread: find the Mac, handshake, then RunSession until the connection ends, the user
+     disconnects ("Verbindung trennen" sets paused) or the window closes (stopping). It reports to the
+     window with ShowStatus and asks through it (pairing code, ffmpeg download).
+     */
     internal static class Program
     {
         public static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string ExePath = Assembly.GetExecutingAssembly().Location;
+        public const string GuideUrl = "https://github.com/mb73/imac-display/blob/main/README.md";
 
-        static volatile bool stopping;
-        static Native.ConsoleCtrlHandler consoleHandler;  // kept in a field so the GC does not collect it
+        /* keepDisplay: an update hands the Mac display over to the new version instead of switching it off */
+        static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession;
         static Mutex instance;
+        static Thread agent;
+        static MainWindow window;
         static readonly object cleanupLock = new object();
         static readonly object logLock = new object();
         static readonly string LogPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "imac-display", "imac-display.log");
+        /* this run's log lines for the log window, and the log window itself while it is open */
+        static readonly Queue<string> recent = new Queue<string>();
+        static Action<string> logListeners;
         static VideoSender video;
         static LidWatcher lid;
         static bool displayExtended;
-        static string lastStatus;
+        static string lastLogged;
+        /* what the window shows while paused: the user's "Verbindung trennen" or the agent's own reason */
+        static AgentStatus pausedStatus;
         /* LaptopScreen's version in the current session; LaptopScreen before 1.2.0 never reports it */
         static string macVersion;
         static string reportedMacVersion;
         static bool warnedOldMac;
 
+        static readonly AgentStatus Disconnected = new AgentStatus(Light.Off, "Getrennt",
+            "Der Mac ist nicht mehr dein Bildschirm. „Verbinden“ holt ihn zurück.", ThinBar.None);
+
+        [STAThread]
         static int Main(string[] args)
         {
-            try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); }  // per-monitor v2: physical pixels everywhere
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            /* per-monitor v2, physical pixels everywhere; WinForms has done it already if imac-display.exe.config is there */
+            try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); }
             catch (EntryPointNotFoundException) { Native.SetProcessDPIAware(); }
-            Console.OutputEncoding = Encoding.UTF8;
-            Console.Title = "iMac-Display";
 
-            Options options = Options.Parse(args);
-            if (options == null) return Finish(2);
-            Console.WriteLine("iMac-Display " + Updater.Version + " – der Mac als Bildschirm für diesen Laptop");
-            Console.WriteLine();
-            if (options.Test) return Finish(RunTest(options));
+            string error;
+            Options options = Options.Parse(args, out error);
+            if (options == null)
+            {
+                Report(error + "\r\n\r\n" + Options.Usage, MessageBoxIcon.Warning);
+                return 2;
+            }
+            shareClipboard = options.ShareClipboard;
+            if (options.Test)
+            {
+                if (OutputRedirected())
+                {
+                    using (TextWriter output = StandardOutput()) RunTest(options, output.WriteLine);
+                }
+                else
+                {
+                    var text = new StringBuilder();
+                    RunTest(options, line => text.AppendLine(line));
+                    TextDialog.ShowText("iMac-Display – Diagnose", text.ToString());
+                }
+                return 0;
+            }
             if (options.Restore)
             {
                 /* emergency exit: only the laptop panel, e.g. after a crash left the invisible display active */
                 Displays.InternalOnly();
-                Console.WriteLine("Nur noch der Laptop-Bildschirm ist aktiv.");
-                return Finish(0);
-            }
-            if (options.Update) return Updater.Run(options.UpdateZip);
-            if (RunningFromArchive())
-            {
-                Console.WriteLine("iMac-Display läuft hier direkt aus der Zip-Datei heraus. Bitte entpacke sie zuerst");
-                Console.WriteLine("(Rechtsklick auf die Zip-Datei → „Alle extrahieren …“) und starte imac-display.exe dann");
-                Console.WriteLine("aus dem entpackten Ordner.");
-                return Finish(1);
-            }
-            bool restarted = Environment.GetEnvironmentVariable(Updater.RestartedVariable) != null;
-            if (!AcquireInstance(restarted))
-            {
-                Console.WriteLine("iMac-Display läuft schon in einem anderen Fenster.");
-                return Finish(1);
-            }
-            if (!restarted && Updater.OfferDownloadedUpdate())
-            {
-                ReleaseInstance();
-                Updater.Restart(args);
+                Report("Nur noch der Laptop-Bildschirm ist aktiv.", MessageBoxIcon.Information);
                 return 0;
             }
-
-            consoleHandler = OnConsoleEvent;
-            Native.SetConsoleCtrlHandler(consoleHandler, true);
-            RotateLog();
-            lid = LidWatcher.Start();
-
-            string ffmpeg = FindFfmpeg() ?? Setup.InstallFfmpeg();
-            if (ffmpeg == null) return Finish(1);
-
-            string code = options.Code ?? (options.Repair ? null : PairingStore.Load());
-            if (code == null)
+            if (RunningFromArchive())
             {
-                /* first start: make the program easy to find again */
-                Setup.EnsureStartMenuEntry();
-                code = PairingStore.Ask();
+                Report("iMac-Display läuft hier direkt aus der Zip-Datei heraus. Bitte entpacke sie zuerst "
+                    + "(Rechtsklick auf die Zip-Datei → „Alle extrahieren …“) und starte imac-display.exe dann aus dem entpackten Ordner.",
+                    MessageBoxIcon.Warning);
+                return 1;
             }
-            if (code == null) return Finish(1);
-            if (options.Code != null) PairingStore.Save(code);
+            string restarted = Environment.GetEnvironmentVariable(Updater.RestartedVariable);
+            Environment.SetEnvironmentVariable(Updater.RestartedVariable, null);  // neither for ffmpeg nor for a later restart
+            if (!AcquireInstance(restarted != null))
+            {
+                bool shown = ActivateOtherInstance();
+                if (options.UpdateZip != null)
+                    Report("iMac-Display läuft schon. Beende es und zieh die Zip-Datei dann noch einmal auf imac-display.exe.", MessageBoxIcon.Information);
+                else if (!shown) Report("iMac-Display läuft schon.", MessageBoxIcon.Information);
+                return 1;
+            }
+            Application.ThreadException += OnWindowError;
+            AppDomain.CurrentDomain.UnhandledException += OnCrash;
+            window = new MainWindow(options, restarted == "display");
+            Application.Run(window);
+            ReleaseInstance();
+            return 0;
+        }
 
-            Log("iMac-Display läuft. Beenden mit Strg+C oder durch Schließen dieses Fensters.");
+        /* ---- what the window uses ---- */
+
+        /* Starts the agent once the window is shown; displayHandedOver: the previous version left the Mac display on */
+        public static void StartAgent(Options options, bool displayHandedOver)
+        {
+            agent = new Thread(delegate () { RunAgent(options, displayHandedOver); });
+            agent.IsBackground = true;
+            agent.Name = "agent";
+            agent.Start();
+        }
+
+        public static bool Paused
+        {
+            get { return paused; }
+        }
+
+        /* Connected to the Mac right now (whether or not the picture runs) */
+        public static bool InSession
+        {
+            get { return inSession; }
+        }
+
+        /* Lid closed: the Mac display is the laptop's only screen */
+        public static bool LidClosed
+        {
+            get
+            {
+                LidWatcher watcher = lid;
+                return watcher != null && watcher.IsOpen == false;
+            }
+        }
+
+        /* "Verbindung trennen" (true) and "Verbinden" (false) */
+        public static void SetPaused(bool value)
+        {
+            if (value) pausedStatus = Disconnected;
+            paused = value;
+        }
+
+        /* The window's switch; a running session follows right away */
+        public static bool ShareClipboard
+        {
+            get { return shareClipboard; }
+            set
+            {
+                shareClipboard = value;
+                Settings.Save("clipboard", value ? 1 : 0);
+            }
+        }
+
+        /* Ends the agent and stops the video; switches back to the laptop panel unless handOver keeps the display for a restart */
+        public static void Shutdown(bool handOver)
+        {
+            lock (cleanupLock) keepDisplay = handOver && displayExtended;
+            stopping = true;
+            if (agent != null && !agent.Join(6000)) Log("Das Programm wartet nicht länger auf die Verbindung zum Mac.");
+            Cleanup();
+        }
+
+        /* After an update: the new version starts in place of this one and takes over the Mac display; false if it did not start */
+        public static bool RestartAfterUpdate(Options o)
+        {
+            Shutdown(true);
+            ReleaseInstance();
+            try
+            {
+                Updater.Restart(o.Session, keepDisplay);
+                return true;
+            }
+            catch (Win32Exception ex)
+            {
+                Log("Die neue Version ließ sich nicht starten: " + ex.Message);
+                keepDisplay = false;
+                Cleanup();
+                return false;
+            }
+        }
+
+        /* The log window's "Diagnose": the read-only checks of --test, into the log */
+        public static void Diagnose(Options o)
+        {
+            Log("Diagnose:");
+            RunTest(o, delegate (string line) { Log("  " + line); });
+        }
+
+        public static string LogFile
+        {
+            get { return LogPath; }
+        }
+
+        /* The log window listens from now on; returns this run's lines so far, without gap or overlap */
+        public static string[] ListenToLog(Action<string> listener)
+        {
+            lock (logLock)
+            {
+                logListeners += listener;
+                return recent.ToArray();
+            }
+        }
+
+        public static void StopListening(Action<string> listener)
+        {
+            lock (logLock) logListeners -= listener;
+        }
+
+        /* ---- the agent ---- */
+
+        static bool Active
+        {
+            get { return !stopping && !paused; }
+        }
+
+        static void RunAgent(Options options, bool displayHandedOver)
+        {
+            try { Agent(options, displayHandedOver); }
+            catch (Exception ex)
+            {
+                /* a bug: say so, and never leave the invisible display behind */
+                Log("Unerwarteter Fehler: " + ex);
+                keepDisplay = false;
+                Cleanup();
+                window.ShowStatus(new AgentStatus(Light.Problem, "Unerwarteter Fehler",
+                    ex.Message + " Details stehen im Log. Bitte iMac-Display neu starten.", ThinBar.None));
+            }
+        }
+
+        static void Agent(Options o, bool displayHandedOver)
+        {
+            RotateLog();
+            Log("iMac-Display " + Updater.Version + " läuft.");
+            lid = LidWatcher.Start();
+            string ffmpeg = null;
+            string code = o.Code ?? (o.Repair ? null : PairingStore.Load());
+            if (o.Code != null) PairingStore.Save(o.Code);
             DateTime? keepDisplayUntil = null;
+            if (displayHandedOver)
+            {
+                /* the previous version left the Mac display on: keep it if the Mac comes back soon */
+                lock (cleanupLock) displayExtended = true;
+                keepDisplayUntil = DateTime.UtcNow.AddSeconds(30);
+            }
             while (!stopping)
             {
+                if (paused)
+                {
+                    keepDisplayUntil = null;
+                    RevertDisplay("Getrennt: nur noch der Laptop-Bildschirm.");
+                    window.ShowStatus(pausedStatus ?? Disconnected);
+                    while (paused && !stopping) Thread.Sleep(100);
+                    continue;
+                }
                 if (keepDisplayUntil.HasValue && DateTime.UtcNow > keepDisplayUntil.Value)
                 {
                     keepDisplayUntil = null;
                     RevertDisplay("Der Mac ist nicht zurückgekommen: nur noch der Laptop-Bildschirm.");
                 }
-                List<MacEndpoint> endpoints = FindMac(options);
+                if (ffmpeg == null)
+                {
+                    ffmpeg = FindFfmpeg() ?? Setup.InstallFfmpeg(window);
+                    if (ffmpeg == null)
+                    {
+                        Pause(new AgentStatus(Light.Problem, "ffmpeg fehlt",
+                            "Ohne ffmpeg kann iMac-Display kein Bild übertragen. „Verbinden“ versucht es noch einmal.", ThinBar.None));
+                        continue;
+                    }
+                }
+                if (code == null)
+                {
+                    /* first start: make the program easy to find again */
+                    Setup.EnsureStartMenuEntry();
+                    code = AskCode(false);
+                    if (code == null) continue;
+                }
+
+                List<MacEndpoint> endpoints = FindMac(o);
+                if (!Active) continue;
                 if (endpoints.Count == 0)
                 {
-                    Status("Suche den Mac … (läuft dort LaptopScreen?)");
+                    LogOnce("Suche den Mac … (läuft dort LaptopScreen?)");
+                    window.ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …",
+                        "Läuft dort LaptopScreen? Beide brauchen eine Verbindung per Kabel oder über dasselbe Netz.", ThinBar.None));
                     Wait(3000);
                     continue;
                 }
                 ControlClient control = null;
+                MacEndpoint connected = null;
                 string error = null;
                 foreach (MacEndpoint endpoint in endpoints)
                 {
                     control = ControlClient.Connect(endpoint, code, out error);
                     if (control != null)
                     {
+                        connected = endpoint;
                         Log("Verbunden mit " + endpoint);
                         break;
                     }
@@ -309,44 +533,74 @@ namespace ImacDisplay
                         keepDisplayUntil = null;
                         RevertDisplay(null);
                         Log("Der Mac hat den Kopplungscode abgelehnt.");
-                        code = PairingStore.Ask();
-                        if (code == null) break;
+                        code = AskCode(true);
                     }
                     else
                     {
-                        Status("Verbindung zum Mac fehlgeschlagen: " + error);
+                        LogOnce("Verbindung zum Mac fehlgeschlagen: " + error);
+                        window.ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …", "Gefunden, aber keine Verbindung: " + error, ThinBar.None));
                         Wait(3000);
                     }
                     continue;
                 }
-                RunSession(control, ffmpeg, options);
+                RunSession(control, connected.Name, ffmpeg, o);
+                if (!Active) continue;
                 /* keep the Mac display for a moment: LaptopScreen may just be restarting, e.g. after an update */
                 keepDisplayUntil = DateTime.UtcNow.AddSeconds(15);
-                if (!stopping) Wait(2000);
+                window.ShowStatus(new AgentStatus(Light.Busy, "Verbindung unterbrochen",
+                    "Suche den Mac wieder … Der Mac-Bildschirm bleibt noch einen Moment.", ThinBar.None));
+                Wait(2000);
             }
             Cleanup();
             Log("Beendet.");
-            return 0;
         }
 
-        static void RunSession(ControlClient control, string ffmpeg, Options o)
+        /* The pairing code from the window; null (and paused) if the user cancels */
+        static string AskCode(bool denied)
+        {
+            string code = window.AskCode(denied);
+            if (code == null)
+            {
+                Pause(new AgentStatus(Light.Off, "Nicht gekoppelt",
+                    "„Verbinden“ fragt noch einmal nach dem Kopplungscode vom Mac.", ThinBar.None));
+                return null;
+            }
+            PairingStore.Save(code);
+            return code;
+        }
+
+        /* The agent stops by itself (no ffmpeg, no pairing code) until the user clicks "Verbinden" */
+        static void Pause(AgentStatus reason)
+        {
+            pausedStatus = reason;
+            paused = true;
+        }
+
+        static void RunSession(ControlClient control, string mac, string ffmpeg, Options o)
         {
             var injector = new Injector();
-            ClipboardSync clipboard = o.ShareClipboard ? new ClipboardSync() : null;
+            var clipboard = new ClipboardSync();
+            bool sharing = shareClipboard;
+            clipboard.Enabled = sharing;
             DateTime started = DateTime.UtcNow;
             macVersion = null;
+            inSession = true;
             try
             {
                 control.Send("VERSION " + Updater.Version);
-                control.Send(clipboard != null ? "CLIPBOARD on" : "CLIPBOARD off");
-                if (!WaitForDummy(control, clipboard)) return;
+                control.Send(sharing ? "CLIPBOARD on" : "CLIPBOARD off");
+                if (!WaitForDummy(control, clipboard) || !Active) return;
 
                 bool lidOpen = LidIsOpen();
                 Log(lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Deckel ist zu: Mac-Bildschirm wird der einzige Bildschirm …");
+                window.ShowStatus(new AgentStatus(Light.Busy, "Verbunden mit " + mac,
+                    lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Der Deckel ist zu: Der Mac wird der einzige Bildschirm …", ThinBar.Unknown));
                 DisplayInfo external = Configure(o, lidOpen);
                 if (external == null)
                 {
                     Log("Kein externer Bildschirm gefunden. Steckt der HDMI-Dummy-Stecker?");
+                    window.ShowStatus(new AgentStatus(Light.Problem, "Kein Mac-Bildschirm",
+                        "Windows hat den HDMI-Dummy-Stecker nicht als Bildschirm zugeschaltet. Steckt er richtig?", ThinBar.None));
                     Wait(5000);
                     return;
                 }
@@ -356,6 +610,8 @@ namespace ImacDisplay
                 if (output < 0)
                 {
                     Log("Den Bildschirm für die Aufnahme nicht gefunden.");
+                    window.ShowStatus(new AgentStatus(Light.Problem, "Keine Aufnahme möglich",
+                        "Den Mac-Bildschirm für die Aufnahme nicht gefunden. Details stehen im Log.", ThinBar.None));
                     return;
                 }
 
@@ -369,11 +625,12 @@ namespace ImacDisplay
                     video.Start();
                 }
                 Log("Übertragung läuft. Auf dem Mac LaptopScreen nach vorne holen.");
+                ShowSession(mac, lidOpen, locked);
 
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
                 DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow;
-                while (!stopping)
+                while (Active)
                 {
                     string line = control.ReadLine(250);
                     DateTime now = DateTime.UtcNow;
@@ -387,7 +644,14 @@ namespace ImacDisplay
                         Log("Der Mac antwortet nicht mehr.");
                         break;
                     }
-                    if (clipboard != null && !locked && (now - lastClipboard).TotalMilliseconds >= 250)
+                    if (sharing != shareClipboard)
+                    {
+                        sharing = shareClipboard;
+                        clipboard.Enabled = sharing;
+                        control.Send(sharing ? "CLIPBOARD on" : "CLIPBOARD off");
+                        Log(sharing ? "Die Zwischenablage wird jetzt geteilt." : "Die Zwischenablage wird nicht mehr geteilt.");
+                    }
+                    if (sharing && !locked && (now - lastClipboard).TotalMilliseconds >= 250)
                     {
                         lastClipboard = now;
                         List<string> lines = clipboard.Poll();
@@ -411,6 +675,7 @@ namespace ImacDisplay
                         control.Send(locked ? "STATE locked" : "STATE unlocked");
                         video.Pause(locked);
                         Log(locked ? "Windows ist gesperrt, Übertragung pausiert." : "Windows entsperrt, Übertragung läuft wieder.");
+                        ShowSession(mac, lidOpen, locked);
                     }
                     if (locked) continue;
 
@@ -420,6 +685,7 @@ namespace ImacDisplay
                     {
                         lidOpen = open;
                         Log(lidOpen ? "Deckel aufgeklappt: Laptop-Panel kommt wieder dazu." : "Deckel zugeklappt: nur noch der Mac-Bildschirm.");
+                        ShowSession(mac, lidOpen, false);
                         Thread.Sleep(1500);  // let Windows finish its own reconfiguration first
                         DisplayInfo reconfigured = Configure(o, lidOpen);
                         if (reconfigured != null) external = reconfigured;
@@ -464,10 +730,22 @@ namespace ImacDisplay
             catch (InvalidOperationException ex) { Log("Fehler: " + ex.Message); }
             finally
             {
+                inSession = false;
                 injector.ReleaseAll();
                 control.Dispose();
                 StopVideo();
             }
+        }
+
+        static void ShowSession(string mac, bool lidOpen, bool locked)
+        {
+            if (locked)
+                window.ShowStatus(new AgentStatus(Light.Paused, "Verbunden mit " + mac,
+                    "Windows ist gesperrt. Die Übertragung ruht, bis du den Laptop entsperrst.", ThinBar.None));
+            else
+                window.ShowStatus(new AgentStatus(Light.On, "Verbunden mit " + mac, lidOpen
+                    ? "Der Mac ist dein zweiter Bildschirm. Auf dem Mac LaptopScreen nach vorne holen."
+                    : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
         }
 
         /* Lines from the Mac that are not input events. Returns true if the line was handled here. */
@@ -490,12 +768,12 @@ namespace ImacDisplay
             }
             if (line.StartsWith("CLIP", StringComparison.Ordinal))
             {
-                if (clipboard != null) clipboard.Handle(line);
+                clipboard.Handle(line);
                 return true;
             }
             if (line.StartsWith("FOCUS ", StringComparison.Ordinal))
             {
-                if (clipboard != null) clipboard.SetFocus(line == "FOCUS 1");
+                clipboard.SetFocus(line == "FOCUS 1");
                 return true;
             }
             return false;
@@ -510,7 +788,10 @@ namespace ImacDisplay
             if (order < 0)
                 Log("LaptopScreen auf dem Mac hat Version " + version + ", dieses Programm " + Updater.Version + ": Der Mac bietet an, sich zu aktualisieren.");
             else if (order > 0)
-                Log("LaptopScreen auf dem Mac (" + version + ") ist neuer als dieses Programm (" + Updater.Version + "). Zum Aktualisieren update.cmd doppelklicken.");
+            {
+                Log("LaptopScreen auf dem Mac (" + version + ") ist neuer als dieses Programm (" + Updater.Version + "): Ich suche nach der neuen Version.");
+                window.CheckForUpdatesSoon();
+            }
         }
 
         /* LaptopScreen asked for the Mac sources this laptop carries (it builds and restarts itself) */
@@ -537,8 +818,10 @@ namespace ImacDisplay
             if (Displays.ExternalConnected()) return true;
             control.Send("STATE nodisplay");
             Log("Kein HDMI-Dummy-Stecker gefunden. Bitte in den HDMI-Anschluss des Laptops stecken.");
+            window.ShowStatus(new AgentStatus(Light.Problem, "Kein HDMI-Dummy-Stecker",
+                "Steck ihn in den HDMI-Anschluss des Laptops – das Bild kommt dann von selbst.", ThinBar.None));
             DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow;
-            while (!stopping)
+            while (Active)
             {
                 string line = control.ReadLine(250);
                 DateTime now = DateTime.UtcNow;
@@ -571,8 +854,11 @@ namespace ImacDisplay
             {
                 if (!lidOpen) return Displays.ExternalOnly(o.Width, o.Height, o.Refresh, o.Scale);
                 DisplayInfo current = Displays.External();
-                if (current != null && Displays.InternalActive() && current.Width == o.Width && current.Height == o.Height
-                    && current.ScalePercent == o.Scale && (o.InternalPrimary || (current.X == 0 && current.Y == 0)))
+                DisplayInfo panel = Displays.Internal();
+                /* the main display sits at (0,0) */
+                DisplayInfo primary = o.InternalPrimary ? panel : current;
+                if (current != null && panel != null && current.Width == o.Width && current.Height == o.Height
+                    && current.ScalePercent == o.Scale && primary.X == 0 && primary.Y == 0)
                     return current;  // still set up from before, e.g. LaptopScreen just restarted
                 return Displays.Extend(o.Width, o.Height, o.Refresh, o.Scale, !o.InternalPrimary);
             }
@@ -631,39 +917,44 @@ namespace ImacDisplay
             string direct = Path.Combine(BaseDirectory, "ffmpeg.exe");
             if (File.Exists(direct)) return direct;
             string tools = Path.Combine(BaseDirectory, "tools");
-            if (Directory.Exists(tools))
+            if (!Directory.Exists(tools)) return null;
+            foreach (string folder in Directory.GetDirectories(tools))
             {
-                string found = Directory.GetFiles(tools, "ffmpeg.exe", SearchOption.AllDirectories).FirstOrDefault();
+                /* not in ".unpack", where a download may have stopped halfway */
+                if (Path.GetFileName(folder).StartsWith(".", StringComparison.Ordinal)) continue;
+                string found = Directory.GetFiles(folder, "ffmpeg.exe", SearchOption.AllDirectories).FirstOrDefault();
                 if (found != null) return found;
             }
-            return null;
+            return Directory.GetFiles(tools, "ffmpeg.exe").FirstOrDefault();
         }
 
         /* Read-only diagnostics: displays, capture index, dummy, Quick Sync, Mac discovery */
-        static int RunTest(Options o)
+        static void RunTest(Options o, Action<string> line)
         {
-            Console.WriteLine("Bildschirme:");
+            line("iMac-Display " + Updater.Version);
+            line("Bildschirme:");
             foreach (DisplayInfo display in Displays.Active())
-                Console.WriteLine("  " + display + "  -> ddagrab output_idx " + Displays.DxgiOutputIndex(display.GdiName));
-            Console.WriteLine("HDMI-Dummy-Stecker: " + (Displays.ExternalConnected() ? "angeschlossen" : "nicht gefunden"));
-            Console.WriteLine("Windows gesperrt: " + Session.IsLocked());
-            LidWatcher watcher = LidWatcher.Start();
+                line("  " + display + "  -> ddagrab output_idx " + Displays.DxgiOutputIndex(display.GdiName));
+            line("HDMI-Dummy-Stecker: " + (Displays.ExternalConnected() ? "angeschlossen" : "nicht gefunden"));
+            line("Windows gesperrt: " + (Session.IsLocked() ? "ja" : "nein"));
+            LidWatcher watcher = lid ?? LidWatcher.Start();
             bool? open = watcher == null ? null : watcher.IsOpen;
-            Console.WriteLine("Deckel: " + (open == null ? "unbekannt" : open.Value ? "offen" : "zu"));
+            line("Deckel: " + (open == null ? "unbekannt" : open.Value ? "offen" : "zu"));
             string ffmpeg = FindFfmpeg();
-            Console.WriteLine("ffmpeg: " + (ffmpeg ?? "(nicht gefunden)"));
+            line("ffmpeg: " + (ffmpeg ?? "(nicht gefunden)"));
             if (ffmpeg != null)
             {
                 string problem = Setup.CheckQuickSync(ffmpeg);
-                Console.WriteLine("Intel Quick Sync: " + (problem == null ? "funktioniert" : "geht nicht – " + problem));
+                line("Intel Quick Sync: " + (problem == null ? "funktioniert" : "geht nicht – " + problem));
             }
-            Console.WriteLine("Zwischenablage teilen: " + (o.ShareClipboard ? "ja" : "nein"));
-            Console.WriteLine("Suche LaptopScreen per Bonjour …");
+            line("Zwischenablage teilen: " + (shareClipboard ? "ja" : "nein"));
+            line("Suche LaptopScreen per Bonjour …");
             List<MacEndpoint> found = Discovery.Find(1500);
-            foreach (MacEndpoint endpoint in found) Console.WriteLine("  " + endpoint);
-            if (found.Count == 0) Console.WriteLine("  (keinen gefunden)");
-            return 0;
+            foreach (MacEndpoint endpoint in found) line("  " + endpoint);
+            if (found.Count == 0) line("  (keinen gefunden)");
         }
+
+        /* ---- start and end ---- */
 
         /* Explorer runs an exe inside a zip from %TEMP%\Temp1_<name>.zip\…, other archivers copy just the exe to %TEMP% */
         static bool RunningFromArchive()
@@ -673,30 +964,31 @@ namespace ImacDisplay
                 || !File.Exists(Path.Combine(BaseDirectory, "VERSION"));
         }
 
-        /* Yes/no question in the console; Enter means yes */
-        public static bool Ask(string question)
+        /* A message from a run without window (--restore, wrong options): on stdout for scripts, otherwise in a box */
+        static void Report(string text, MessageBoxIcon icon)
         {
-            Console.Write(question + " [J/n] ");
-            string answer = Console.ReadLine();
-            if (answer == null) return false;
-            answer = answer.Trim().ToLowerInvariant();
-            return answer.Length == 0 || answer.StartsWith("j", StringComparison.Ordinal) || answer.StartsWith("y", StringComparison.Ordinal);
+            if (OutputRedirected())
+            {
+                using (TextWriter output = StandardOutput()) output.WriteLine(text);
+            }
+            else MessageBox.Show(text, "iMac-Display", MessageBoxButtons.OK, icon);
         }
 
-        public static void Pause()
+        /* True if stdout goes to a pipe or file, e.g. "imac-display.exe --test | Out-String"; a windowed program has no console */
+        static bool OutputRedirected()
         {
-            Console.WriteLine();
-            Console.Write("Taste drücken zum Schließen …");
-            try { Console.ReadKey(true); }
-            catch (InvalidOperationException) { }  // no interactive console
-            Console.WriteLine();
+            IntPtr handle = Native.GetStdHandle(Native.STD_OUTPUT_HANDLE);
+            if (handle == IntPtr.Zero || handle == new IntPtr(-1)) return false;
+            int type = Native.GetFileType(handle);
+            return type == Native.FILE_TYPE_DISK || type == Native.FILE_TYPE_PIPE;
         }
 
-        /* Started by double-click, the window would vanish together with the message: wait for a key first */
-        static int Finish(int code)
+        /* UTF-8 like the log; there is no console whose code page could be set */
+        static TextWriter StandardOutput()
         {
-            if (Native.GetConsoleProcessList(new uint[4], 4) == 1) Pause();
-            return code;
+            var writer = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false));
+            writer.AutoFlush = true;
+            return writer;
         }
 
         /* One agent at a time; right after an update the previous process may still be finishing */
@@ -705,23 +997,55 @@ namespace ImacDisplay
             bool created;
             instance = new Mutex(true, @"Local\imac-display", out created);
             if (created) return true;
-            try { return instance.WaitOne(restarted ? 5000 : 0); }
+            try
+            {
+                if (instance.WaitOne(restarted ? 8000 : 0)) return true;
+            }
             catch (AbandonedMutexException) { return true; }
+            instance.Dispose();
+            instance = null;
+            return false;
         }
 
         static void ReleaseInstance()
         {
+            if (instance == null) return;
             instance.ReleaseMutex();
             instance.Dispose();
             instance = null;
         }
 
-        static bool OnConsoleEvent(int type)
+        /* Started a second time: bring the running instance's window to the front instead */
+        static bool ActivateOtherInstance()
         {
-            stopping = true;
-            /* closing the window, logoff and shutdown kill the process right after this handler */
-            if (type == 2 || type == 5 || type == 6) Cleanup();
-            return true;
+            Process self = Process.GetCurrentProcess();
+            foreach (Process other in Process.GetProcessesByName(self.ProcessName))
+            {
+                using (other)
+                {
+                    if (other.Id == self.Id || other.SessionId != self.SessionId) continue;
+                    IntPtr handle = other.MainWindowHandle;
+                    if (handle == IntPtr.Zero) continue;
+                    if (Native.IsIconic(handle)) Native.ShowWindow(handle, Native.SW_RESTORE);
+                    Native.SetForegroundWindow(handle);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static void OnWindowError(object sender, ThreadExceptionEventArgs e)
+        {
+            Log("Fehler im Fenster: " + e.Exception);
+            MessageBox.Show(e.Exception.Message + "\r\n\r\nDetails stehen im Log.", "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        /* The process is about to die: at least do not leave the invisible display behind */
+        static void OnCrash(object sender, UnhandledExceptionEventArgs e)
+        {
+            Log("Absturz: " + e.ExceptionObject);
+            keepDisplay = false;
+            Cleanup();
         }
 
         static void StopVideo()
@@ -734,43 +1058,51 @@ namespace ImacDisplay
             }
         }
 
-        /* Back to the laptop panel alone; the invisible display must not outlive the connection for long */
+        /*
+         Back to the laptop panel alone; the invisible display must not outlive the connection for long.
+         While Windows is locked this fails (access denied: only the lock screen's desktop may switch displays).
+         */
         static void RevertDisplay(string message)
         {
+            string failure = null;
             lock (cleanupLock)
             {
                 if (!displayExtended) return;
                 try { Displays.InternalOnly(); }
-                catch (InvalidOperationException) { }
+                catch (InvalidOperationException ex) { failure = ex.Message; }
                 displayExtended = false;
             }
-            if (message != null) Log(message);
+            if (failure != null) Log("Zurück zum Laptop-Bildschirm ging nicht: " + failure);
+            else if (message != null) Log(message);
         }
 
         static void Cleanup()
         {
             StopVideo();
-            RevertDisplay(null);
+            if (!keepDisplay) RevertDisplay(null);
         }
 
         static void Wait(int milliseconds)
         {
-            for (int waited = 0; waited < milliseconds && !stopping; waited += 100) Thread.Sleep(100);
+            for (int waited = 0; waited < milliseconds && Active; waited += 100) Thread.Sleep(100);
         }
 
-        static void Status(string message)
+        /* Logs a message only if it differs from the last one, e.g. while searching */
+        static void LogOnce(string message)
         {
-            if (message == lastStatus) return;
+            if (message == lastLogged) return;
             Log(message);
         }
 
         public static void Log(string message)
         {
-            lastStatus = message;
+            lastLogged = message;
             DateTime now = DateTime.Now;
-            Console.WriteLine("[{0:HH:mm:ss}] {1}", now, message);
+            string line = now.ToString("HH:mm:ss", CultureInfo.InvariantCulture) + "  " + message;
             lock (logLock)
             {
+                recent.Enqueue(line);
+                while (recent.Count > 2000) recent.Dequeue();
                 try
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(LogPath));
@@ -778,6 +1110,7 @@ namespace ImacDisplay
                 }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
+                if (logListeners != null) logListeners(line);
             }
         }
 

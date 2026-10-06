@@ -27,7 +27,19 @@ namespace ImacDisplay
         readonly MemoryStream incoming = new MemoryStream();
         bool overflow;
         bool macFocused;
+        bool enabled = true;
         DateTime focusLost = DateTime.MinValue;
+
+        /* The window's switch, during a session too; what was copied while it was off stays on the laptop */
+        public bool Enabled
+        {
+            get { return enabled; }
+            set
+            {
+                if (value && !enabled) seenSequence = Native.GetClipboardSequenceNumber();
+                enabled = value;
+            }
+        }
 
         /* "FOCUS 1" or "FOCUS 0" from the Mac */
         public void SetFocus(bool focused)
@@ -39,6 +51,7 @@ namespace ImacDisplay
         /* Clipboard text that changed since the last call, framed for the Mac; null if there is nothing to send */
         public List<string> Poll()
         {
+            if (!enabled) return null;
             uint sequence = Native.GetClipboardSequenceNumber();
             if (sequence == seenSequence) return null;
             seenSequence = sequence;
@@ -71,7 +84,7 @@ namespace ImacDisplay
             }
             catch (FormatException) { overflow = true; }
             if (more) return true;
-            if (!overflow) Apply(Encoding.UTF8.GetString(incoming.ToArray()));
+            if (!overflow && enabled) Apply(Encoding.UTF8.GetString(incoming.ToArray()));
             incoming.SetLength(0);
             overflow = false;
             return true;

@@ -48,8 +48,8 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 ## Benutzung
 
 1. **Mac:** LaptopScreen starten. Es zeigt „Warte auf den Laptop …“ und den Kopplungscode.
-2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es im Konsolenfenster nach dem Kopplungscode und merkt ihn sich.
-3. Nach wenigen Sekunden erscheint der Laptop-Desktop auf dem Mac. Der neue Bildschirm ist jetzt der Windows-Hauptbildschirm mit Taskleiste; das Laptop-Display liegt zunächst links daneben (umstellen: siehe [Anordnung](#anordnung)).
+2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es nach dem Kopplungscode und merkt ihn sich. Das kleine Fenster zeigt, was gerade passiert; der Punkt davor und das Badge am Taskleisten-Symbol sind grün, wenn das Bild läuft, gelb beim Suchen oder bei gesperrtem Windows und rot bei einem Problem.
+3. Nach wenigen Sekunden erscheint auf dem Mac ein zweiter Windows-Bildschirm mit eigener Taskleiste. Hauptbildschirm bleibt das Laptop-Display, denn nur dort zeigt Windows nach einer Sperre die Anmeldung; bei zugeklapptem Deckel ist der Mac der einzige und damit der Hauptbildschirm. Wie die beiden Bildschirme zueinander liegen, stellst du in Windows ein (siehe [Anordnung](#anordnung)).
 
 Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Mac da ist.
 
@@ -80,7 +80,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 - **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit Cmd+V einfügen.
 - **Vom Laptop zum Mac:** Text auf dem Laptop kopieren, zu einem Mac-Programm wechseln, einfügen.
 
-Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, startet einmal `imac-display.exe --clipboard off`; das gilt dann dauerhaft (wieder an mit `--clipboard on`).
+Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, nimmt im Fenster den Haken bei „Zwischenablage mit dem Mac teilen“ heraus; das gilt sofort und dauerhaft.
 
 ### Deckel zuklappen
 
@@ -90,23 +90,25 @@ Hängt der Laptop am Ladekabel, kannst du ihn zuklappen: Dann ist der Mac sein e
 
 Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Mit Maus oder Touchpad des Laptops kommst du am rechten Rand hinüber. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am oberen Rand hinüber. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
+Wer lieber den Mac als Hauptbildschirm hat (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Dann erscheint die Anmeldung nach einer Sperre allerdings auf dem Mac-Bildschirm, wo man sie nicht sieht (siehe [Grenzen](#grenzen)).
+
 ### Skalierung
 
 Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das wie gewohnt: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` übernimmt deinen Wert und merkt ihn sich.
 
-### Beenden
+### Trennen und beenden
 
-Das Konsolenfenster von `imac-display.exe` schließen oder dort Strg+C drücken. Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display.
+„Verbindung trennen“ im Fenster schaltet den Mac-Bildschirm ab: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Das Programm bleibt offen, „Verbinden“ holt den Mac zurück. Zum Beenden das Fenster schließen. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst.
 
 ## Aktualisieren
 
-**Laptop:** Die neue Version auf GitHub herunterladen („Code“ → „Download ZIP“) und `imac-display.exe` starten. Es findet die Zip-Datei im Downloads-Ordner, zeigt, was neu ist, und fragt, ob es sie installieren soll. Noch einfacher: `update.cmd` im Programmordner doppelklicken – es öffnet den Download im Browser und installiert ihn, sobald er angekommen ist. Speichert der Browser woanders, zieh die Zip-Datei einfach auf `update.cmd`. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
+**Laptop:** Nichts zu suchen: iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
 
 **Mac:** Nichts zu tun. Bringt der Laptop eine neuere Version mit, fragt LaptopScreen beim Verbinden, ob es sich aktualisieren soll. Es baut die neue Version dann selbst (etwa eine Minute) und startet neu. Gut möglich, dass macOS danach noch einmal nach eingehenden Verbindungen und dem lokalen Netzwerk fragt: wieder beides erlauben.
 
 ## Grenzen
 
-- **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
+- **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
 - **Kein Ton,** und die Zwischenablage teilt nur Text. Ton spielt weiter der Laptop.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
@@ -119,11 +121,12 @@ Das Konsolenfenster von `imac-display.exe` schließen oder dort Strg+C drücken.
 | „Kopplungscode abgelehnt“ | Den Code so eingeben, wie er auf dem Mac steht; Groß- und Kleinschreibung sowie Bindestriche sind egal. |
 | LaptopScreen meldet „kein HDMI-Dummy-Stecker“ | Den Stecker in den HDMI-Anschluss des Laptops stecken. Das Bild kommt dann von selbst. |
 | Bild steht still | Ist Windows gesperrt? Dann am Laptop entsperren. |
+| Laptop gesperrt, Deckel war zu, beim Aufklappen bleibt das Display schwarz | Den HDMI-Dummy-Stecker kurz ziehen: Dann zeigt Windows die Anmeldung auf dem Laptop. Nach dem Entsperren wieder einstecken, das Bild auf dem Mac kommt von selbst. Win+P geht auf dem Sperrbildschirm nicht. |
 | „Intel Quick Sync geht hier nicht“ | Der Laptop hat keine passende Intel-Grafik; dann kann `imac-display.exe` das Bild nicht übertragen. |
 | Aktualisierung auf dem Mac schlägt fehl | Die Meldung nennt den Grund. Fehlen die Command Line Tools: im Terminal `xcode-select --install`. LaptopScreen läuft so lange in der alten Version weiter. |
-| Text kommt in der Zwischenablage nicht an | Erst kopieren, dann wechseln: Der Text wandert beim Wechsel zu LaptopScreen bzw. weg davon mit. Ist die Zwischenablage abgeschaltet? `imac-display.exe --test` zeigt es. |
+| Text kommt in der Zwischenablage nicht an | Erst kopieren, dann wechseln: Der Text wandert beim Wechsel zu LaptopScreen bzw. weg davon mit. Ist im Fenster der Haken bei „Zwischenablage mit dem Mac teilen“ gesetzt? |
 | Nach einem Absturz ist ein unsichtbarer Bildschirm aktiv | Win+P → „Nur PC-Bildschirm“ oder `imac-display.exe --restore`. |
-| Genauer nachsehen | `imac-display.exe --test` zeigt Bildschirme, Dummy-Stecker, Deckel, ffmpeg, Intel Quick Sync und gefundene Macs. Das Log liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
+| Genauer nachsehen | Im Fenster auf „Log“ klicken: Dort steht, was das Programm tut, und „Diagnose“ prüft Bildschirme, Dummy-Stecker, Deckel, ffmpeg und Intel Quick Sync und sucht den Mac. Die Logdatei liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
 
 Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zurück; danach fragt der Laptop erneut nach dem Code.
 
@@ -133,12 +136,14 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 - Der Laptop baut **nur ausgehende Verbindungen** zum Mac auf (TCP 47100 für das Bild, 47101 für die Steuerung). Auf dem Laptop öffnet sich kein Port.
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
 - **Updates für den Mac** kommen nur vom gekoppelten Laptop, sind mit dem Kopplungscode signiert und werden erst nach deiner Zustimmung auf dem Mac gebaut.
+- **Nach neuen Versionen** fragt der Laptop bei GitHub: Er lädt dafür beim Start und alle sechs Stunden die kleine Datei `VERSION`, ohne Angaben über dich. Die neue Version selbst lädt er nur auf deinen Klick.
 - Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb das direkte Kabel oder dein Heimnetz, kein fremdes WLAN.
 - Technisch ist das eine Fernsteuerung des Firmen-Laptops vom Mac aus, und die geteilte Zwischenablage trägt Text vom Firmen-Laptop auf deinen Mac. Stimme bitte mit der IT ab, ob das für dich in Ordnung ist.
 
 ## Für Entwickler
 
 - `windows\build.cmd` baut `imac-display.exe` mit dem C#-Compiler, der in jedem Windows steckt (.NET Framework 4.x).
+- `imac-display.exe --test | Out-String` gibt die Diagnose als Text aus; ohne Umleitung erscheint sie in einem Fenster.
 - `mac/build.sh` baut `LaptopScreen.app` mit den Command Line Tools, `mac/install.sh` installiert es.
 - Aufbau, Protokoll, Update-Mechanismus, Messwerkzeuge und Fallstricke stehen in [CLAUDE.md](CLAUDE.md), Änderungen in [CHANGELOG.md](CHANGELOG.md).
 
