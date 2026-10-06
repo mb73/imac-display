@@ -22,7 +22,7 @@ namespace ImacDisplay
      */
     internal static class Updater
     {
-        public const string DownloadUrl = "https://github.com/mb73/imac-display/archive/refs/heads/master.zip";
+        public const string DownloadUrl = "https://github.com/mb73/imac-display/archive/refs/heads/main.zip";
         /* set for the process started after an update, so it does not offer the same zip again */
         public const string RestartedVariable = "IMAC_DISPLAY_UPDATED";
 

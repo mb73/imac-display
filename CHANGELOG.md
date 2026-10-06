@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.3.0] – 2026-10-06
+
+### Geändert
+
+- **Die Bildschirm-Anordnung aus den Windows-Einstellungen bleibt erhalten.** Bisher legte `imac-display.exe` das Laptop-Display bei jedem Zuschalten links neben den Mac-Bildschirm, mit der Maus ging es also immer rechts hinüber. Jetzt gilt die Anordnung, die Windows sich merkt: Wer den Mac-Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display zieht, kommt am oberen Rand hinüber – auch nach dem Zu- und Aufklappen und beim nächsten Verbinden. Wer nichts umstellt, behält die bisherige Anordnung.
+
+### Behoben
+
+- `update.cmd` öffnete einen Download, den es nicht gibt (Branch `master` statt `main`), und die Einrichtung des Macs nannte den Ordner `imac-display-master` statt `imac-display-main`.
+
 ## [1.2.0] – 2026-10-06
 
 Erste öffentliche Version, unter der MIT-Lizenz auf GitHub.

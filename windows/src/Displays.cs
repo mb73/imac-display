@@ -114,7 +114,11 @@ namespace ImacDisplay
             SetTopology(SDC_TOPOLOGY_INTERNAL);
         }
 
-        /* Extends the desktop onto the external display and applies resolution, position and scaling */
+        /*
+         Extends the desktop onto the external display and applies resolution, primary display and scaling.
+         SDC_TOPOLOGY_EXTEND restores the arrangement Windows remembers for the extended desktop, i.e. the one
+         last chosen under Settings > System > Display; Arrange keeps it.
+         */
         public static DisplayInfo Extend(int width, int height, int refresh, int scale, bool externalPrimary)
         {
             SetTopology(SDC_TOPOLOGY_EXTEND);
@@ -124,8 +128,7 @@ namespace ImacDisplay
             if (externalDisplay == null) return null;
             if (internalDisplay != null)
             {
-                if (externalPrimary) Arrange(externalDisplay, internalDisplay, externalDisplay, width, height, refresh, true);
-                else Arrange(internalDisplay, externalDisplay, externalDisplay, width, height, refresh, false);
+                Arrange(internalDisplay, externalDisplay, width, height, refresh, externalPrimary);
                 Thread.Sleep(1000);
                 externalDisplay = External();
             }
@@ -157,12 +160,21 @@ namespace ImacDisplay
         {
             if (external.Width != width || external.Height != height)
             {
-                var mode = NewDevMode();
-                mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
-                mode.dmPelsWidth = width;
-                mode.dmPelsHeight = height;
-                mode.dmDisplayFrequency = refresh;
-                Check(Native.ChangeDisplaySettingsEx(external.GdiName, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero), "Auflösung");
+                DisplayInfo internalDisplay = InternalDisplay();
+                if (internalDisplay != null)
+                {
+                    /* extended desktop: keep the arrangement and the primary display (the one at 0,0) */
+                    Arrange(internalDisplay, external, width, height, refresh, external.X == 0 && external.Y == 0);
+                }
+                else
+                {
+                    var mode = NewDevMode();
+                    mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
+                    mode.dmPelsWidth = width;
+                    mode.dmPelsHeight = height;
+                    mode.dmDisplayFrequency = refresh;
+                    Check(Native.ChangeDisplaySettingsEx(external.GdiName, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero), "Auflösung");
+                }
                 Thread.Sleep(1000);
                 external = External();
                 if (external == null) return null;
@@ -190,9 +202,20 @@ namespace ImacDisplay
             if (rc != 0) throw new InvalidOperationException("SetDisplayConfig fehlgeschlagen: " + rc);
         }
 
-        /* Primary display at (0,0); the other one to its left or right; external display gets the requested mode */
-        static void Arrange(DisplayInfo primary, DisplayInfo secondary, DisplayInfo external, int width, int height, int refresh, bool secondaryLeft)
+        /*
+         Gives the external display the requested mode and puts the requested primary display at (0,0), keeping
+         the two displays where they are relative to each other. If the external display changes size, its edge
+         facing the laptop panel stays in place, so the two still touch.
+         */
+        static void Arrange(DisplayInfo internalDisplay, DisplayInfo external, int width, int height, int refresh, bool externalPrimary)
         {
+            /* top-left corner of the external display relative to the panel's, at the new size */
+            int dx = external.X - internalDisplay.X, dy = external.Y - internalDisplay.Y;
+            if (external.X + external.Width <= internalDisplay.X) dx -= width - external.Width;  // left of the panel
+            if (external.Y + external.Height <= internalDisplay.Y) dy -= height - external.Height;  // above the panel
+            DisplayInfo primary = externalPrimary ? external : internalDisplay;
+            DisplayInfo secondary = externalPrimary ? internalDisplay : external;
+
             var mode = NewDevMode();
             mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY;
             mode.dmPelsWidth = width;
@@ -204,11 +227,10 @@ namespace ImacDisplay
             first.dmFields = DM_POSITION;
             Check(Native.ChangeDisplaySettingsEx(primary.GdiName, ref first, IntPtr.Zero, CDS_SET_PRIMARY | CDS_UPDATEREGISTRY | CDS_NORESET, IntPtr.Zero), "Hauptbildschirm");
 
-            int primaryWidth = primary == external ? width : primary.Width;
             var second = NewDevMode();
             second.dmFields = DM_POSITION;
-            second.dmPositionX = secondaryLeft ? -secondary.Width : primaryWidth;
-            second.dmPositionY = 0;
+            second.dmPositionX = externalPrimary ? -dx : dx;
+            second.dmPositionY = externalPrimary ? -dy : dy;
             Check(Native.ChangeDisplaySettingsEx(secondary.GdiName, ref second, IntPtr.Zero, CDS_UPDATEREGISTRY | CDS_NORESET, IntPtr.Zero), "Anordnung");
 
             Check(Native.ChangeDisplaySettingsEx(null, IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero), "Übernehmen");

@@ -8,7 +8,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## So funktioniert es
 
-- **Ein HDMI-Dummy-Stecker** im Laptop gibt sich als 4K-Monitor aus. Ohne Adminrechte darf Windows keinen virtuellen Bildschirm anlegen – ein Stecker für rund 10 € löst das.
+- **Ein HDMI-Dummy-Stecker** im Laptop gibt sich als 4K-Monitor aus. Ohne Adminrechte darf Windows keinen virtuellen Bildschirm anlegen – ein Stecker für rund 6 € löst das.
 - **`imac-display.exe`** auf dem Laptop nimmt diesen Bildschirm auf, kodiert ihn mit der Intel-Grafik als H.264 und schickt ihn per Kabel oder WLAN an den Mac. Umgekehrt setzt es die Eingaben vom Mac um.
 - **LaptopScreen** auf dem Mac zeigt das Bild ohne Zwischenpuffer an (Verzögerung etwa 50–100 ms) und schickt Tastatur und Maus zurück.
 - Beide finden sich von selbst und koppeln sich über einen **Kopplungscode**, den der Mac anzeigt. Alles bleibt in deinem Netz, es gibt keinen Cloud-Dienst und kein Konto.
@@ -26,7 +26,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 ## Einrichtung auf dem Mac (einmalig)
 
 1. **Dieses Projekt herunterladen:** auf [github.com/mb73/imac-display](https://github.com/mb73/imac-display) „Code“ → „Download ZIP“. Safari entpackt es meist von selbst in den Ordner „Downloads“.
-2. **Einrichtung starten:** im Ordner `imac-display-master/mac` die Datei `install.command` doppelklicken.
+2. **Einrichtung starten:** im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken.
 3. **Beim ersten Mal blockiert macOS das,** weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat: „Fertig“ klicken, dann Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal und zeigt den Fortschritt.
 4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
@@ -49,7 +49,7 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 
 1. **Mac:** LaptopScreen starten. Es zeigt „Warte auf den Laptop …“ und den Kopplungscode.
 2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es im Konsolenfenster nach dem Kopplungscode und merkt ihn sich.
-3. Nach wenigen Sekunden erscheint der Laptop-Desktop auf dem Mac. Der neue Bildschirm ist jetzt der Windows-Hauptbildschirm mit Taskleiste; das Laptop-Display liegt links daneben.
+3. Nach wenigen Sekunden erscheint der Laptop-Desktop auf dem Mac. Der neue Bildschirm ist jetzt der Windows-Hauptbildschirm mit Taskleiste; das Laptop-Display liegt zunächst links daneben (umstellen: siehe [Anordnung](#anordnung)).
 
 Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Mac da ist.
 
@@ -85,6 +85,10 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 ### Deckel zuklappen
 
 Hängt der Laptop am Ladekabel, kannst du ihn zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel schickt Windows den Laptop beim Zuklappen womöglich in den Standby.
+
+### Anordnung
+
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Mit Maus oder Touchpad des Laptops kommst du am rechten Rand hinüber. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am oberen Rand hinüber. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
 ### Skalierung
 
