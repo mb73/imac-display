@@ -1,0 +1,5 @@
+tools/
+mac/LaptopScreen.app/
+.claude/
+*.log
+*.exe.old
