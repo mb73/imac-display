@@ -2,6 +2,21 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.6.0] – 2026-10-06
+
+### Hinzugefügt
+
+- **MacBooks bekommen eine passende Auflösung.** LaptopScreen meldet die Größe seines Bildschirms, und `imac-display.exe` wählt den Modus des Dummy-Steckers, der ihn am besten ausfüllt: 3840 × 2160 für einen iMac wie bisher, 2560 × 1600 für die 16:10-Bildschirme der MacBooks. Bisher gab es dort schwarze Balken und zu kleine Schrift. Wer in den Windows-Einstellungen eine andere Auflösung wählt, behält sie; `imac-display.exe` merkt sie sich für diesen Mac. LaptopScreen auf dem Mac braucht dafür ebenfalls 1.6.0.
+
+### Geändert
+
+- **Das X schließt nur das Fenster, nicht die Verbindung.** Es legt das Fenster in die Taskleiste, und der Mac bleibt dein Bildschirm. Beenden lässt sich iMac-Display über die Taskleiste (Rechtsklick auf das Symbol → „Fenster schließen“) oder mit Alt+F4; bei zugeklapptem Deckel fragt es wie bisher vorher nach.
+
+### Behoben
+
+- **Das Fenster ging nach dem Auf- oder Zuklappen verloren:** War es minimiert, während der Mac-Bildschirm seinen Platz wechselte, kam es neben allen Bildschirmen zurück und flackerte beim Klick aufs Taskleisten-Symbol nur kurz auf. Jetzt erscheint es dann in der Mitte des Bildschirms mit dem Mauszeiger.
+- Rückfragen und Meldungen folgen jetzt dem dunklen Modus, etwa die Warnung bei zugeklapptem Deckel; bisher erschienen sie als helle Windows-Meldungsfenster. Ihre Knöpfe sagen, was passiert („Beenden“, „Trennen“, „Herunterladen“), statt „Ja“ und „Nein“.
+
 ## [1.5.0] – 2026-10-06
 
 ### Hinzugefügt

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -117,9 +118,10 @@ namespace ImacDisplay
         /*
          Extends the desktop onto the external display and applies resolution, primary display and scaling.
          SDC_TOPOLOGY_EXTEND restores the arrangement Windows remembers for the extended desktop, i.e. the one
-         last chosen under Settings > System > Display; Arrange keeps it.
+         last chosen under Settings > System > Display; Arrange keeps it. The mode is chosen once the external
+         display is active: only then does it list its modes.
          */
-        public static DisplayInfo Extend(int width, int height, int refresh, int scale, bool externalPrimary)
+        public static DisplayInfo Extend(Func<DisplayInfo, Size> mode, int refresh, int scale, bool externalPrimary)
         {
             SetTopology(SDC_TOPOLOGY_EXTEND);
             Thread.Sleep(1500);
@@ -128,7 +130,8 @@ namespace ImacDisplay
             if (externalDisplay == null) return null;
             if (internalDisplay != null)
             {
-                Arrange(internalDisplay, externalDisplay, width, height, refresh, externalPrimary);
+                Size size = mode(externalDisplay);
+                Arrange(internalDisplay, externalDisplay, size.Width, size.Height, refresh, externalPrimary);
                 Thread.Sleep(1000);
                 externalDisplay = External();
             }
@@ -142,7 +145,7 @@ namespace ImacDisplay
         }
 
         /* Lid closed: the external display alone, as primary, with the requested mode and scaling */
-        public static DisplayInfo ExternalOnly(int width, int height, int refresh, int scale)
+        public static DisplayInfo ExternalOnly(Func<DisplayInfo, Size> mode, int refresh, int scale)
         {
             /* when the lid closes, Windows usually drops the panel by itself; only switch if it is still active */
             if (Internal() != null)
@@ -152,7 +155,64 @@ namespace ImacDisplay
             }
             DisplayInfo external = External();
             if (external == null) return null;
-            return EnsureMode(external, width, height, refresh, scale);
+            Size size = mode(external);
+            return EnsureMode(external, size.Width, size.Height, refresh, scale);
+        }
+
+        /* The display's sizes at the given refresh rate that H.264 can carry (at most 4096 x 2304), largest first */
+        public static List<Size> Modes(string gdiName, int refresh)
+        {
+            var result = new List<Size>();
+            for (int i = 0; ; i++)
+            {
+                var mode = NewDevMode();
+                if (!Native.EnumDisplaySettings(gdiName, i, ref mode)) break;
+                var size = new Size(mode.dmPelsWidth, mode.dmPelsHeight);
+                if (mode.dmBitsPerPel == 32 && mode.dmDisplayFrequency == refresh && size.Width <= 4096 && size.Height <= 2304
+                    && !result.Contains(size)) result.Add(size);
+            }
+            result.Sort((a, b) => (b.Width * b.Height).CompareTo(a.Width * a.Height));
+            return result;
+        }
+
+        /*
+         The mode that fills a screen best: shown as large as possible without distortion, it covers the most of
+         the screen; among nearly equal ones the largest, for the sharpest picture. Enlarged more than 1.5 times, a
+         mode gets blurry and does not count (else a 21:9 screen would get 1280 x 600); screens beyond 6K, where all
+         modes would be, get the largest. A 16:9 iMac gets 3840 x 2160, a 16:10 MacBook 2560 x 1600 (the FUERAN dummy
+         offers neither 2880 x 1800 nor 3072 x 1920). Size.Empty if there are no modes.
+         */
+        public static Size BestFit(List<Size> modes, Size screen)
+        {
+            var sharp = modes.FindAll(mode => Factor(mode, screen) <= 1.5);
+            if (sharp.Count == 0) return Largest(modes, 0, screen);
+            double best = 0;
+            foreach (Size mode in sharp) best = Math.Max(best, Coverage(mode, screen));
+            return Largest(sharp, best - 0.02, screen);
+        }
+
+        /* The largest of the modes that cover at least the given share of the screen */
+        static Size Largest(List<Size> modes, double coverage, Size screen)
+        {
+            Size chosen = Size.Empty;
+            foreach (Size mode in modes)
+            {
+                if (Coverage(mode, screen) >= coverage && mode.Width * mode.Height > chosen.Width * chosen.Height) chosen = mode;
+            }
+            return chosen;
+        }
+
+        /* How much the mode is enlarged (above 1) or reduced to fit the screen */
+        static double Factor(Size mode, Size screen)
+        {
+            return Math.Min((double)screen.Width / mode.Width, (double)screen.Height / mode.Height);
+        }
+
+        /* The share of the screen the mode covers, scaled to fit */
+        static double Coverage(Size mode, Size screen)
+        {
+            double factor = Factor(mode, screen);
+            return mode.Width * factor * mode.Height * factor / ((double)screen.Width * screen.Height);
         }
 
         /* Re-applies resolution and scaling if Windows changed them, e.g. after the lid was closed */

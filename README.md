@@ -99,9 +99,11 @@ Wer lieber den Mac als Hauptbildschirm hat (mit Infobereich der Taskleiste und B
 
 Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das wie gewohnt: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` übernimmt deinen Wert und merkt ihn sich.
 
+Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 × 2160 für einen iMac, 2560 × 1600 für ein MacBook. Stellst du an derselben Stelle eine andere Auflösung ein, merkt es sich die für diesen Mac.
+
 ### Trennen und beenden
 
-„Verbindung trennen“ im Fenster schaltet den Mac-Bildschirm ab: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Das Programm bleibt offen, „Verbinden“ holt den Mac zurück. Zum Beenden das Fenster schließen. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst.
+„Verbindung trennen“ im Fenster schaltet den Mac-Bildschirm ab: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Das Programm bleibt offen, „Verbinden“ holt den Mac zurück. Das X oben rechts legt das Fenster nur in die Taskleiste, die Verbindung bleibt bestehen. Zum Beenden mit der rechten Maustaste auf das Symbol in der Taskleiste klicken und „Fenster schließen“ wählen, oder im Fenster Alt+F4 drücken. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst.
 
 ## Aktualisieren
 
@@ -113,8 +115,10 @@ Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1
 
 - **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
+- **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel, PIN oder Windows Hello), erledigst du direkt am Laptop.
 - **Kein Ton,** und die Zwischenablage teilt nur Text. Ton spielt weiter der Laptop.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
+- **MacBooks** haben Bildschirme im Format 16:10, die der Dummy-Stecker nicht pixelgenau kann (etwa 2880 × 1800). Sie bekommen 2560 × 1600, leicht hochskaliert und ohne schwarze Balken. Für ein Kabel brauchen sie einen USB-C-Ethernet-Adapter.
 
 ## Wenn etwas nicht klappt
 

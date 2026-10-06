@@ -157,13 +157,16 @@ namespace ImacDisplay
         [StructLayout(LayoutKind.Sequential)]
         public struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
 
-        public const uint MONITOR_DEFAULTTONULL = 0, MONITOR_DEFAULTTONEAREST = 2;
+        public const uint MONITOR_DEFAULTTONULL = 0, MONITOR_DEFAULTTOPRIMARY = 1, MONITOR_DEFAULTTONEAREST = 2;
 
         [DllImport("user32.dll")]
         public static extern bool GetCursorPos(out POINT point);
 
         [DllImport("user32.dll")]
         public static extern IntPtr MonitorFromPoint(POINT point, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromRect(ref RECT rect, uint flags);
 
         [DllImport("user32.dll")]
         public static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
@@ -222,14 +225,19 @@ namespace ImacDisplay
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr RegisterPowerSettingNotification(IntPtr recipient, ref Guid powerSettingGuid, int flags);
 
-        /* ---- windows: another instance, DPI, dark title bars, themed scroll bars ---- */
+        /* ---- windows: another instance, DPI, dark title bars, themed scroll bars, the close button ---- */
 
         public const int SW_RESTORE = 9;
         public const int WM_SETTINGCHANGE = 0x001A, WM_SYSCOLORCHANGE = 0x0015, WM_DPICHANGED = 0x02E0;
+        public const int WM_SYSCOMMAND = 0x0112, WM_NCHITTEST = 0x0084, SC_CLOSE = 0xF060, HTCLOSE = 20;
+        public const int WM_SIZE = 0x0005, SIZE_MINIMIZED = 1, WM_WINDOWPOSCHANGING = 0x0046;
         public const uint SWP_NOSIZE = 0x1, SWP_NOMOVE = 0x2, SWP_NOZORDER = 0x4, SWP_NOACTIVATE = 0x10, SWP_FRAMECHANGED = 0x20;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT { public int Left, Top, Right, Bottom; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINDOWPOS { public IntPtr hwnd, hwndInsertAfter; public int x, y, cx, cy; public uint flags; }
 
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hwnd);
@@ -248,6 +256,9 @@ namespace ImacDisplay
 
         [DllImport("user32.dll")]
         public static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, ref RECT lParam);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int RegisterWindowMessage(string name);

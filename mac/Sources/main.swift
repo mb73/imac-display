@@ -50,9 +50,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                name: NSApplication.didResignActiveNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(appBecameActive),
                                                name: NSApplication.didBecomeActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(screenChanged),
+                                               name: NSWindow.didChangeScreenNotification, object: window)
+        NotificationCenter.default.addObserver(self, selector: #selector(screenChanged),
+                                               name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        screenChanged()
         refresh()
         receiver.start()
         control.start()
+    }
+
+    /* The laptop picks its display mode by the pixels of the screen LaptopScreen shows it on */
+    @objc private func screenChanged() {
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        let scale = screen.backingScaleFactor
+        control.setScreen(width: Int((screen.frame.width * scale).rounded()),
+                          height: Int((screen.frame.height * scale).rounded()))
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }

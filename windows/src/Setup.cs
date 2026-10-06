@@ -24,7 +24,7 @@ namespace ImacDisplay
         /* ffmpeg is missing: asks, fetches it into tools\ and checks Quick Sync; null if that did not work */
         public static string InstallFfmpeg(MainWindow window)
         {
-            if (!window.Ask("Für die Übertragung braucht iMac-Display das freie Programm ffmpeg (einmalig, ca. 110 MB).\r\n\r\nJetzt herunterladen?"))
+            if (!window.Ask("Für die Übertragung braucht iMac-Display das freie Programm ffmpeg (einmalig, ca. 110 MB).\r\n\r\nJetzt herunterladen?", "Herunterladen"))
                 return null;
             string zip = Path.Combine(Path.GetTempPath(), FfmpegName + ".zip");
             try

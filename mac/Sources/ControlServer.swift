@@ -27,7 +27,8 @@ final class LineReader {
    Mac   -> "LAPTOPSCREEN 1 <nonceMac>"
    Agent -> "HELLO <nonceAgent> <hmac(code, "agent|<nonceMac>|<nonceAgent>")>"
    Mac   -> "WELCOME <hmac(code, "mac|<nonceAgent>|<nonceMac>")> <videoPort>"   or "DENIED"
- Right after it both sides announce "VERSION <x>", the agent also "CLIPBOARD on|off".
+ Right after it both sides announce "VERSION <x>", the agent also "CLIPBOARD on|off", the Mac also
+ "SCREEN <width> <height>" (pixels of its screen, again after every change; the agent picks its display mode by it).
  Afterwards the Mac sends input events and "P" pings; the agent answers with "P" and reports
  "STATE locked", "STATE unlocked" or "STATE nodisplay"; "POINTER away" when its cursor went over the
  edge onto another display, "POINTER home x y" when it is back. Clipboard text travels in both directions
@@ -74,6 +75,9 @@ final class ControlServer {
     private var lastHeard = Date.distantPast
     private let hostLock = NSLock()
     private var agentHost: String?
+    /* pixels of the Mac screen LaptopScreen is on; set on the main queue, read on this server's queue */
+    private let screenLock = NSLock()
+    private var screen: (width: Int, height: Int)?
     /* nonces of the agent's session; an update must be signed with them */
     private var sessionNonces: (mac: String, agent: String)?
     private var incomingUpdate: IncomingUpdate?
@@ -138,6 +142,22 @@ final class ControlServer {
         send("GETUPDATE")
     }
 
+    /* The pixels of the Mac screen LaptopScreen is on; the agent picks its display mode by them */
+    func setScreen(width: Int, height: Int) {
+        screenLock.lock()
+        let changed = screen?.width != width || screen?.height != height
+        screen = (width, height)
+        screenLock.unlock()
+        if changed { send("SCREEN \(width) \(height)") }
+    }
+
+    private func screenLine() -> String? {
+        screenLock.lock()
+        defer { screenLock.unlock() }
+        guard let screen = screen else { return nil }
+        return "SCREEN \(screen.width) \(screen.height)"
+    }
+
     // MARK: - Handshake
 
     private func handshake(_ connection: NWConnection) {
@@ -190,7 +210,10 @@ final class ControlServer {
             return
         }
         let proof = Pairing.hmacHex("mac|\(parts[1])|\(nonce)", code: code)
-        connection.send(content: Data("WELCOME \(proof) \(videoPort)\nVERSION \(AppInfo.version)\n".utf8), completion: .idempotent)
+        /* the screen goes with the greeting: the agent picks the display mode before it switches the display on */
+        var greeting = "WELCOME \(proof) \(videoPort)\nVERSION \(AppInfo.version)\n"
+        if let line = screenLine() { greeting += line + "\n" }
+        connection.send(content: Data(greeting.utf8), completion: .idempotent)
         adopt(connection, reader: reader, nonces: (mac: nonce, agent: parts[1]))
         for line in rest { handleAgentLine(line) }
     }

@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -161,6 +162,8 @@ namespace ImacDisplay
     internal class ThemedForm : Form
     {
         static Icon appIcon;
+        /* minimized since the last WM_SIZE: the next move is the restore (see WndProc) */
+        bool minimized;
 
         protected ThemedForm()
         {
@@ -245,6 +248,72 @@ namespace ImacDisplay
             suggested.Bottom = bounds.Top + (int)Math.Round(bounds.Height * factor);
             Native.SendMessage(Handle, Native.WM_DPICHANGED, new IntPtr((dpi << 16) | dpi), ref suggested);
             return true;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+            if (m.Msg == Native.WM_SIZE)
+            {
+                bool restored = minimized && (long)m.WParam != Native.SIZE_MINIMIZED;
+                minimized = (long)m.WParam == Native.SIZE_MINIMIZED;
+                /* WinForms may move the window once more after the restore, to where it remembers it */
+                if (restored) Post(KeepOnScreen);
+            }
+            else if (m.Msg == Native.WM_WINDOWPOSCHANGING && minimized) KeepReachable(m.LParam);
+        }
+
+        void KeepOnScreen()
+        {
+            if (WindowState != FormWindowState.Normal) return;
+            Rectangle bounds = Bounds;
+            if (Reachable(new Native.RECT { Left = bounds.Left, Top = bounds.Top, Right = bounds.Right, Bottom = bounds.Bottom })) return;
+            Location = Middle(bounds.Width, bounds.Height);
+        }
+
+        /*
+         The restore of a minimized window: Windows moves windows along when a screen moves or goes, but not the place
+         a minimized one returns to. After the lid opened, the main window came back where the Mac display had been,
+         beside every screen. Such a return goes to the middle of the screen with the mouse pointer instead.
+         */
+        static void KeepReachable(IntPtr windowPos)
+        {
+            var pos = (Native.WINDOWPOS)Marshal.PtrToStructure(windowPos, typeof(Native.WINDOWPOS));
+            /* -32000 is where Windows parks minimized windows */
+            if ((pos.flags & (Native.SWP_NOMOVE | Native.SWP_NOSIZE)) != 0 || pos.x <= -30000 || pos.y <= -30000) return;
+            var target = new Native.RECT { Left = pos.x, Top = pos.y, Right = pos.x + pos.cx, Bottom = pos.y + pos.cy };
+            if (Reachable(target)) return;
+            Point middle = Middle(pos.cx, pos.cy);
+            pos.x = middle.X;
+            pos.y = middle.Y;
+            Marshal.StructureToPtr(pos, windowPos, false);
+        }
+
+        /* Top left corner for a window in the middle of the screen with the mouse pointer */
+        static Point Middle(int width, int height)
+        {
+            Native.POINT cursor;
+            if (!Native.GetCursorPos(out cursor)) cursor = new Native.POINT();  // e.g. while locked: the main display
+            var info = new Native.MONITORINFO();
+            info.cbSize = Marshal.SizeOf(typeof(Native.MONITORINFO));
+            Native.GetMonitorInfo(Native.MonitorFromPoint(cursor, Native.MONITOR_DEFAULTTONEAREST), ref info);
+            Native.RECT work = info.rcWork;
+            return new Point(work.Left + Math.Max(0, (work.Right - work.Left - width) / 2), work.Top + Math.Max(0, (work.Bottom - work.Top - height) / 2));
+        }
+
+        /* A good piece of the title bar lies in a screen's work area, where the mouse can grab it */
+        static bool Reachable(Native.RECT window)
+        {
+            Native.RECT caption = window;
+            caption.Bottom = Math.Min(window.Bottom, window.Top + 24);
+            IntPtr monitor = Native.MonitorFromRect(ref caption, Native.MONITOR_DEFAULTTONULL);
+            if (monitor == IntPtr.Zero) return false;
+            var info = new Native.MONITORINFO();
+            info.cbSize = Marshal.SizeOf(typeof(Native.MONITORINFO));
+            if (!Native.GetMonitorInfo(monitor, ref info)) return true;
+            int width = Math.Min(caption.Right, info.rcWork.Right) - Math.Max(caption.Left, info.rcWork.Left);
+            int height = Math.Min(caption.Bottom, info.rcWork.Bottom) - Math.Max(caption.Top, info.rcWork.Top);
+            return width >= Math.Min(caption.Right - caption.Left, 100) && height > 0;
         }
 
         /* Runs action on the window's thread later; does nothing once the window is gone */

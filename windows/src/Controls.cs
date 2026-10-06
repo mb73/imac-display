@@ -66,6 +66,28 @@ namespace ImacDisplay
             }
         }
 
+        /* The symbol of a message, like the lights: an exclamation mark on amber (warning) or red (error), an i on blue */
+        public static void DrawSymbol(Graphics g, RectangleF r, MessageKind kind, bool dark)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            Color fill = kind == MessageKind.Error ? ColorOf(Light.Problem, dark)
+                : kind == MessageKind.Warning ? ColorOf(Light.Busy, dark)
+                : dark ? Color.FromArgb(0x2F, 0x80, 0xDD) : Color.FromArgb(0x1D, 0x6C, 0xE0);
+            using (var brush = new SolidBrush(fill)) g.FillEllipse(brush, r);
+            /* the i is the exclamation mark upside down */
+            bool info = kind == MessageKind.Information;
+            float w = r.Width, h = r.Height, x = r.X + w / 2f;
+            float from = info ? 0.48f : 0.25f, to = info ? 0.75f : 0.52f, dot = info ? 0.28f : 0.72f;
+            using (var bar = new Pen(Color.White, w * 0.12f))
+            {
+                bar.StartCap = LineCap.Round;
+                bar.EndCap = LineCap.Round;
+                g.DrawLine(bar, x, r.Y + h * from, x, r.Y + h * to);
+            }
+            float d = w * 0.15f;
+            g.FillEllipse(Brushes.White, x - d / 2f, r.Y + h * dot - d / 2f, d, d);
+        }
+
         /* Icon handle for the taskbar badge, IntPtr.Zero for Off (no badge); each made once and kept */
         public static IntPtr TaskbarIcon(Light light)
         {
@@ -134,6 +156,31 @@ namespace ImacDisplay
             if (side <= 0) return;
             Badges.Draw(e.Graphics, new RectangleF((ClientSize.Width - side) / 2f, (ClientSize.Height - side) / 2f, side, side),
                 light, Theme.Current.Dark, false);
+        }
+    }
+
+    /* The symbol in front of a message (MessageDialog) */
+    internal sealed class MessageIcon : Control
+    {
+        readonly MessageKind kind;
+
+        public MessageIcon(MessageKind kind)
+        {
+            this.kind = kind;
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw
+                | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor, true);
+            BackColor = Color.Transparent;
+            TabStop = false;
+            AccessibleRole = AccessibleRole.Graphic;
+            AccessibleName = kind == MessageKind.Error ? "Fehler" : kind == MessageKind.Warning ? "Warnung" : "Information";
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            float side = Math.Min(ClientSize.Width, ClientSize.Height) - 1;
+            if (side <= 0) return;
+            Badges.DrawSymbol(e.Graphics, new RectangleF((ClientSize.Width - side) / 2f, (ClientSize.Height - side) / 2f, side, side),
+                kind, Theme.Current.Dark);
         }
     }
 

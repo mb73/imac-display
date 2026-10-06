@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -18,11 +19,15 @@ namespace ImacDisplay
     {
         public string Host;
         public int Port = 47101;
-        /* 200 %: Windows text is smaller than macOS text at the same logical size, 150 % reads too small on a Mac */
+        /*
+         The size only counts with --size (SizeGiven) or when LaptopScreen does not report its screen: otherwise the
+         session picks the mode for the Mac (Program.ChooseMode). 200 %: Windows text is smaller than macOS text at
+         the same logical size, 150 % reads too small on a Mac.
+         */
         public int Width = 3840, Height = 2160, Refresh = 60, Scale = 200, Fps = 60, Bitrate = 80;
         /* the panel stays the main display while the lid is open: only there does Windows show the sign-in after a lock */
         public bool InternalPrimary = true;
-        public bool Repair, Test, Restore, Update;
+        public bool SizeGiven, Repair, Test, Restore, Update;
         public bool ShareClipboard = true;
         public string Code, UpdateZip;
         /* what a restart after an update passes on; code and clipboard choice are remembered anyway */
@@ -54,6 +59,7 @@ namespace ImacDisplay
                             if (wh.Length != 2) throw new FormatException();
                             o.Width = Number(wh[0]);
                             o.Height = Number(wh[1]);
+                            o.SizeGiven = true;
                             o.Keep(a, next);
                             i++;
                             break;
@@ -126,7 +132,11 @@ namespace ImacDisplay
         }
     }
 
-    /* Remembered preferences (%APPDATA%\imac-display\settings.txt, lines "key=value"); command-line options win */
+    /*
+     Remembered preferences (%APPDATA%\imac-display\settings.txt, lines "key=value"); command-line options win.
+     "scale" and "clipboard" hold numbers, "size.<Mac screen>" the mode the user chose for that Mac, e.g.
+     "size.2880x1800=2560x1600".
+     */
     internal static class Settings
     {
         static string FilePath
@@ -136,37 +146,49 @@ namespace ImacDisplay
 
         public static void Load(Options o)
         {
-            foreach (KeyValuePair<string, int> pair in Read())
+            foreach (KeyValuePair<string, string> pair in Read())
             {
-                if (pair.Key == "scale") o.Scale = pair.Value;
-                else if (pair.Key == "clipboard") o.ShareClipboard = pair.Value != 0;
+                int value;
+                if (!int.TryParse(pair.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)) continue;
+                if (pair.Key == "scale") o.Scale = value;
+                else if (pair.Key == "clipboard") o.ShareClipboard = value != 0;
             }
+        }
+
+        /* null if not set */
+        public static string Get(string key)
+        {
+            string value;
+            return Read().TryGetValue(key, out value) ? value : null;
         }
 
         public static void Save(string key, int value)
         {
-            Dictionary<string, int> all = Read();
+            Save(key, value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        public static void Save(string key, string value)
+        {
+            Dictionary<string, string> all = Read();
             all[key] = value;
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
-                File.WriteAllLines(FilePath, all.Select(pair => pair.Key + "=" + pair.Value.ToString(CultureInfo.InvariantCulture)));
+                File.WriteAllLines(FilePath, all.Select(pair => pair.Key + "=" + pair.Value));
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         }
 
-        static Dictionary<string, int> Read()
+        static Dictionary<string, string> Read()
         {
-            var result = new Dictionary<string, int>();
+            var result = new Dictionary<string, string>();
             try
             {
                 foreach (string line in File.ReadAllLines(FilePath))
                 {
                     string[] pair = line.Split(new[] { '=' }, 2);
-                    int value;
-                    if (pair.Length == 2 && int.TryParse(pair[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
-                        result[pair[0].Trim()] = value;
+                    if (pair.Length == 2) result[pair[0].Trim()] = pair[1].Trim();
                 }
             }
             catch (IOException) { }
@@ -259,6 +281,10 @@ namespace ImacDisplay
         static string macVersion;
         static string reportedMacVersion;
         static bool warnedOldMac;
+        /* the Mac's screen in pixels, as LaptopScreen 1.6.0 and newer report it; the Mac display's mode chosen for it */
+        static Size? macScreen;
+        static Size mode;
+        static Size? announcedMode;
 
         static readonly AgentStatus Disconnected = new AgentStatus(Light.Off, "Getrennt",
             "Der Mac ist nicht mehr dein Bildschirm. „Verbinden“ holt ihn zurück.", ThinBar.None);
@@ -277,7 +303,7 @@ namespace ImacDisplay
             Options options = Options.Parse(args, out error);
             if (options == null)
             {
-                Report(error + "\r\n\r\n" + Options.Usage, MessageBoxIcon.Warning);
+                Report(error + "\r\n\r\n" + Options.Usage, MessageKind.Warning);
                 return 2;
             }
             shareClipboard = options.ShareClipboard;
@@ -299,14 +325,14 @@ namespace ImacDisplay
             {
                 /* emergency exit: only the laptop panel, e.g. after a crash left the invisible display active */
                 Displays.InternalOnly();
-                Report("Nur noch der Laptop-Bildschirm ist aktiv.", MessageBoxIcon.Information);
+                Report("Nur noch der Laptop-Bildschirm ist aktiv.", MessageKind.Information);
                 return 0;
             }
             if (RunningFromArchive())
             {
                 Report("iMac-Display läuft hier direkt aus der Zip-Datei heraus. Bitte entpacke sie zuerst "
                     + "(Rechtsklick auf die Zip-Datei → „Alle extrahieren …“) und starte imac-display.exe dann aus dem entpackten Ordner.",
-                    MessageBoxIcon.Warning);
+                    MessageKind.Warning);
                 return 1;
             }
             string restarted = Environment.GetEnvironmentVariable(Updater.RestartedVariable);
@@ -315,8 +341,8 @@ namespace ImacDisplay
             {
                 bool shown = ActivateOtherInstance();
                 if (options.UpdateZip != null)
-                    Report("iMac-Display läuft schon. Beende es und zieh die Zip-Datei dann noch einmal auf imac-display.exe.", MessageBoxIcon.Information);
-                else if (!shown) Report("iMac-Display läuft schon.", MessageBoxIcon.Information);
+                    Report("iMac-Display läuft schon. Beende es und zieh die Zip-Datei dann noch einmal auf imac-display.exe.", MessageKind.Information);
+                else if (!shown) Report("iMac-Display läuft schon.", MessageKind.Information);
                 return 1;
             }
             Application.ThreadException += OnWindowError;
@@ -584,12 +610,17 @@ namespace ImacDisplay
             clipboard.Enabled = sharing;
             DateTime started = DateTime.UtcNow;
             macVersion = null;
+            macScreen = null;
+            announcedMode = null;
+            mode = new Size(o.Width, o.Height);
             inSession = true;
             try
             {
                 control.Send("VERSION " + Updater.Version);
                 control.Send(sharing ? "CLIPBOARD on" : "CLIPBOARD off");
                 if (!WaitForDummy(control, clipboard) || !Active) return;
+                AwaitScreen(control, clipboard);
+                Size? chosenFor = macScreen;
 
                 bool lidOpen = LidIsOpen();
                 Log(lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Deckel ist zu: Mac-Bildschirm wird der einzige Bildschirm …");
@@ -700,25 +731,38 @@ namespace ImacDisplay
                     }
 
                     string layout = Displays.Describe();
-                    if (!lidChanged && layout == lastLayout) continue;
+                    bool screenChanged = !Nullable.Equals(macScreen, chosenFor);
+                    if (!lidChanged && !screenChanged && layout == lastLayout) continue;
+                    if (layout != lastLayout) Log("Anzeige: " + layout);
                     lastLayout = layout;
-                    Log("Anzeige: " + layout);
 
                     DisplayInfo current = Displays.External();
                     if (current == null) continue;
-                    bool windowsReset = current.Width != o.Width || current.Height != o.Height
-                        || (DateTime.UtcNow - lastReconfigure).TotalSeconds < 10;
-                    if (current.ScalePercent > 0 && current.ScalePercent != o.Scale && !windowsReset)
+                    if (screenChanged)
                     {
-                        /* only the scaling changed, long after any lid change: the user chose it, so keep it */
-                        o.Scale = current.ScalePercent;
-                        Settings.Save("scale", o.Scale);
-                        Log("Skalierung " + o.Scale + " % übernommen und für das nächste Mal gemerkt.");
+                        /* LaptopScreen moved to another screen of the Mac, or that screen changed its resolution */
+                        chosenFor = macScreen;
+                        ChooseMode(o, current);
+                        lastReconfigure = DateTime.UtcNow;
                     }
-                    else if (current.Width != o.Width || current.Height != o.Height || current.ScalePercent != o.Scale)
+                    /* long after any lid change, a change the program did not make is the user's choice in Windows' settings */
+                    bool settled = (DateTime.UtcNow - lastReconfigure).TotalSeconds >= 10;
+                    bool resized = current.Width != mode.Width || current.Height != mode.Height;
+                    if (settled && resized && UserChoseMode(o, current, lidOpen))
                     {
-                        Log("Stelle " + o.Width + "x" + o.Height + " bei " + o.Scale + " % wieder her.");
-                        try { current = Displays.EnsureMode(current, o.Width, o.Height, o.Refresh, o.Scale) ?? current; }
+                        mode = new Size(current.Width, current.Height);
+                        Settings.Save(ModeKey(macScreen.Value), mode.Width + "x" + mode.Height);
+                        Log("Auflösung " + mode.Width + "x" + mode.Height + " übernommen und für diesen Mac gemerkt.");
+                        if (current.ScalePercent > 0 && current.ScalePercent != o.Scale) AdoptScale(o, current.ScalePercent);
+                    }
+                    else if (settled && !resized && current.ScalePercent > 0 && current.ScalePercent != o.Scale)
+                    {
+                        AdoptScale(o, current.ScalePercent);
+                    }
+                    else if (resized || current.ScalePercent != o.Scale)
+                    {
+                        Log("Stelle " + mode.Width + "x" + mode.Height + " bei " + o.Scale + " % wieder her.");
+                        try { current = Displays.EnsureMode(current, mode.Width, mode.Height, o.Refresh, o.Scale) ?? current; }
                         catch (InvalidOperationException ex) { Log(ex.Message); }
                     }
                     external = current;
@@ -768,6 +812,11 @@ namespace ImacDisplay
                 NoteMacVersion(line.Substring(8).Trim());
                 return true;
             }
+            if (line.StartsWith("SCREEN ", StringComparison.Ordinal))
+            {
+                NoteMacScreen(line.Substring(7).Trim());
+                return true;
+            }
             if (line == "GETUPDATE")
             {
                 SendMacUpdate(control);
@@ -798,6 +847,26 @@ namespace ImacDisplay
             {
                 Log("LaptopScreen auf dem Mac (" + version + ") ist neuer als dieses Programm (" + Updater.Version + "): Ich suche nach der neuen Version.");
                 window.CheckForUpdatesSoon();
+            }
+        }
+
+        /* "SCREEN 2880 1800": the pixels of the Mac screen LaptopScreen shows the laptop on, with the greeting and after changes */
+        static void NoteMacScreen(string size)
+        {
+            Size screen = ParseSize(size.Replace(' ', 'x'));
+            if (screen.Width < 320 || screen.Height < 200 || macScreen == screen) return;
+            macScreen = screen;
+            Log("Der Mac-Bildschirm hat " + screen.Width + "x" + screen.Height + " Pixel.");
+        }
+
+        /* LaptopScreen 1.6.0 and newer report their screen together with the greeting; older ones never do */
+        static void AwaitScreen(ControlClient control, ClipboardSync clipboard)
+        {
+            DateTime until = DateTime.UtcNow.AddMilliseconds(500);
+            while (!macScreen.HasValue && DateTime.UtcNow < until && Active)
+            {
+                string line = control.ReadLine(100);
+                if (line != null) HandleControl(control, line, clipboard);
             }
         }
 
@@ -853,27 +922,88 @@ namespace ImacDisplay
             return false;
         }
 
-        /* Lid open: extended desktop; lid closed: only the Mac display. Both with the requested mode. */
+        /* Lid open: extended desktop; lid closed: only the Mac display. Both with the mode for the Mac (ChooseMode). */
         static DisplayInfo Configure(Options o, bool lidOpen)
         {
             lock (cleanupLock) displayExtended = true;
+            Func<DisplayInfo, Size> choose = delegate (DisplayInfo external) { return ChooseMode(o, external); };
             try
             {
-                if (!lidOpen) return Displays.ExternalOnly(o.Width, o.Height, o.Refresh, o.Scale);
+                if (!lidOpen) return Displays.ExternalOnly(choose, o.Refresh, o.Scale);
                 DisplayInfo current = Displays.External();
                 DisplayInfo panel = Displays.Internal();
                 /* the main display sits at (0,0) */
                 DisplayInfo primary = o.InternalPrimary ? panel : current;
-                if (current != null && panel != null && current.Width == o.Width && current.Height == o.Height
+                if (current != null && panel != null && choose(current) == new Size(current.Width, current.Height)
                     && current.ScalePercent == o.Scale && primary.X == 0 && primary.Y == 0)
                     return current;  // still set up from before, e.g. LaptopScreen just restarted
-                return Displays.Extend(o.Width, o.Height, o.Refresh, o.Scale, !o.InternalPrimary);
+                return Displays.Extend(choose, o.Refresh, o.Scale, !o.InternalPrimary);
             }
             catch (InvalidOperationException ex)
             {
                 Log("Anzeige-Umschaltung fehlgeschlagen: " + ex.Message);
                 return Displays.External();
             }
+        }
+
+        /*
+         The Mac display's mode for this session: --size; else the one the user chose in Windows' settings for this
+         Mac's screen; else the dummy's mode that fills the Mac's screen best (Displays.BestFit). LaptopScreen before
+         1.6.0 does not report its screen: 3840 x 2160 as ever. Needs the dummy active, only then does it list its modes.
+         */
+        static Size ChooseMode(Options o, DisplayInfo external)
+        {
+            mode = new Size(o.Width, o.Height);
+            if (o.SizeGiven || !macScreen.HasValue) return mode;
+            List<Size> modes = Displays.Modes(external.GdiName, o.Refresh);
+            Size remembered = ParseSize(Settings.Get(ModeKey(macScreen.Value)));
+            bool own = modes.Contains(remembered);
+            Size chosen = own ? remembered : Displays.BestFit(modes, macScreen.Value);
+            if (chosen.IsEmpty) return mode;
+            mode = chosen;
+            if (announcedMode != mode)
+            {
+                announcedMode = mode;
+                Log("Auflösung für den Mac: " + mode.Width + "x" + mode.Height + (own ? " (für diesen Mac gemerkt)." : " (passt am besten zu seinem Bildschirm)."));
+            }
+            return mode;
+        }
+
+        /*
+         Whether a resolution the program did not set is the user's choice in Windows' settings: only with a known Mac
+         screen and without --size, and only in the usual arrangement, because Win+P "Duplicate" changes it, too
+         */
+        static bool UserChoseMode(Options o, DisplayInfo external, bool lidOpen)
+        {
+            if (o.SizeGiven || !macScreen.HasValue) return false;
+            DisplayInfo panel = Displays.Internal();
+            if (lidOpen != (panel != null)) return false;
+            return panel == null || panel.X != external.X || panel.Y != external.Y;
+        }
+
+        /* The user changed the scaling in Windows' settings: keep it, for the next time too */
+        static void AdoptScale(Options o, int percent)
+        {
+            o.Scale = percent;
+            Settings.Save("scale", percent);
+            Log("Skalierung " + percent + " % übernommen und für das nächste Mal gemerkt.");
+        }
+
+        /* The settings key of a mode chosen for a Mac screen, e.g. "size.2880x1800" */
+        static string ModeKey(Size screen)
+        {
+            return "size." + screen.Width + "x" + screen.Height;
+        }
+
+        /* "2560x1600" as a size; Size.Empty if it is none */
+        static Size ParseSize(string text)
+        {
+            string[] parts = text == null ? new string[0] : text.Split('x');
+            int width, height;
+            if (parts.Length == 2 && int.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out width)
+                && int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out height) && width > 0 && height > 0)
+                return new Size(width, height);
+            return Size.Empty;
         }
 
         static bool LidIsOpen()
@@ -941,7 +1071,11 @@ namespace ImacDisplay
             line("iMac-Display " + Updater.Version);
             line("Bildschirme:");
             foreach (DisplayInfo display in Displays.Active())
+            {
                 line("  " + display + "  -> ddagrab output_idx " + Displays.DxgiOutputIndex(display.GdiName));
+                if (!display.Internal)
+                    line("    Modi bei " + o.Refresh + " Hz: " + string.Join(", ", Displays.Modes(display.GdiName, o.Refresh).Select(s => s.Width + "x" + s.Height)));
+            }
             line("HDMI-Dummy-Stecker: " + (Displays.ExternalConnected() ? "angeschlossen" : "nicht gefunden"));
             line("Windows gesperrt: " + (Session.IsLocked() ? "ja" : "nein"));
             LidWatcher watcher = lid ?? LidWatcher.Start();
@@ -972,13 +1106,13 @@ namespace ImacDisplay
         }
 
         /* A message from a run without window (--restore, wrong options): on stdout for scripts, otherwise in a box */
-        static void Report(string text, MessageBoxIcon icon)
+        static void Report(string text, MessageKind kind)
         {
             if (OutputRedirected())
             {
                 using (TextWriter output = StandardOutput()) output.WriteLine(text);
             }
-            else MessageBox.Show(text, "iMac-Display", MessageBoxButtons.OK, icon);
+            else MessageDialog.Show(null, text, kind);
         }
 
         /* True if stdout goes to a pipe or file, e.g. "imac-display.exe --test | Out-String"; a windowed program has no console */
@@ -1044,7 +1178,14 @@ namespace ImacDisplay
         static void OnWindowError(object sender, ThreadExceptionEventArgs e)
         {
             Log("Fehler im Fenster: " + e.Exception);
-            MessageBox.Show(e.Exception.Message + "\r\n\r\nDetails stehen im Log.", "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            string text = e.Exception.Message + "\r\n\r\nDetails stehen im Log.";
+            try { MessageDialog.Show(window != null && window.Visible ? window : null, text, MessageKind.Error); }
+            catch (Exception ex)
+            {
+                /* the error may sit in the program's own windows: Windows' box still works */
+                Log("Auch die Fehlermeldung scheiterte: " + ex.Message);
+                MessageBox.Show(text, "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         /* The process is about to die: at least do not leave the invisible display behind */

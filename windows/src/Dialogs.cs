@@ -2,6 +2,8 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Media;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -136,7 +138,7 @@ namespace ImacDisplay
             {
                 /* no program for .log files */
                 try { Process.Start("notepad.exe", "\"" + path + "\""); }
-                catch (Win32Exception ex) { MessageBox.Show(this, ex.Message + "\r\n\r\n" + path, "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+                catch (Win32Exception ex) { MessageDialog.Show(this, ex.Message + "\r\n\r\n" + path, MessageKind.Warning); }
             }
         }
     }
@@ -312,6 +314,122 @@ namespace ImacDisplay
         {
             using (var dialog = new TextDialog(title, null, body, null, "Schließen", false))
                 dialog.ShowDialog();
+        }
+    }
+
+    /* What a message is about: its symbol and its sound */
+    internal enum MessageKind { Information, Warning, Error }
+
+    /*
+     Messages and questions in the program's colors; Windows draws a MessageBox light even in dark mode.
+     Otherwise like one: symbol, text, buttons at the bottom, its sound, Ctrl+C copies the text.
+     */
+    internal sealed class MessageDialog : ThemedForm
+    {
+        const int TextWidth = 380;
+
+        readonly string message;
+
+        MessageDialog(MessageKind kind, string message, string acceptText, string cancelText, bool acceptIsDefault, bool owned)
+        {
+            this.message = message;
+            Text = "iMac-Display";
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            ShowInTaskbar = !owned;
+            StartPosition = owned ? FormStartPosition.CenterParent : FormStartPosition.CenterScreen;
+            AutoSize = true;
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+
+            var symbol = new MessageIcon(kind);
+            symbol.Size = new Size(32, 32);
+            symbol.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            symbol.Margin = new Padding(0, 0, 14, 0);
+            /* a single line sits in the middle of the symbol, longer text starts at its top */
+            var label = new Label();
+            label.AutoSize = true;
+            label.UseMnemonic = false;
+            label.MinimumSize = new Size(240, 0);
+            label.MaximumSize = new Size(TextWidth, 0);
+            label.Anchor = AnchorStyles.Left;
+            label.Margin = Padding.Empty;
+            label.Text = message;
+            var content = new TableLayoutPanel();
+            content.ColumnCount = 2;
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            content.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            content.AutoSize = true;
+            content.Margin = new Padding(20, 20, 24, 20);
+            content.Controls.Add(symbol, 0, 0);
+            content.Controls.Add(label, 1, 0);
+
+            var accept = new Button();
+            accept.Text = acceptText;
+            accept.DialogResult = DialogResult.OK;
+            Button preferred = accept;
+            FlowLayoutPanel bar;
+            if (cancelText == null)
+            {
+                CancelButton = accept;  // Esc closes a plain message, too
+                bar = LogWindow.ButtonBar(accept);
+            }
+            else
+            {
+                var cancel = new Button();
+                cancel.Text = cancelText;
+                cancel.DialogResult = DialogResult.Cancel;
+                CancelButton = cancel;
+                if (!acceptIsDefault) preferred = cancel;
+                bar = LogWindow.ButtonBar(cancel, accept);
+            }
+
+            var root = new TableLayoutPanel();
+            root.ColumnCount = 1;
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            root.AutoSize = true;
+            root.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            root.Margin = Padding.Empty;
+            root.Controls.Add(content, 0, 0);
+            root.Controls.Add(bar, 0, 1);
+            Controls.Add(root);
+            AcceptButton = preferred;
+            ActiveControl = preferred;
+            EndLayout();
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.Control | Keys.C))
+            {
+                try { Clipboard.SetText(Text + "\r\n\r\n" + message); }
+                catch (ExternalException) { }  // another program holds the clipboard
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        /* A message with "OK"; without owner it is centered on the screen and has a taskbar button of its own */
+        public static void Show(IWin32Window owner, string message, MessageKind kind)
+        {
+            Run(owner, kind, message, "OK", null, true);
+        }
+
+        /* A question with two buttons, true for accept. Where accepting is risky it is not the default, so Enter does not trigger it. */
+        public static bool Confirm(IWin32Window owner, string message, MessageKind kind, string acceptText, string cancelText, bool acceptIsDefault)
+        {
+            return Run(owner, kind, message, acceptText, cancelText, acceptIsDefault) == DialogResult.OK;
+        }
+
+        static DialogResult Run(IWin32Window owner, MessageKind kind, string message, string acceptText, string cancelText, bool acceptIsDefault)
+        {
+            /* a minimized owner comes back first: centered on it, the dialog would land in a corner of the screen */
+            var form = owner as Form;
+            if (form != null && form.WindowState == FormWindowState.Minimized) form.WindowState = FormWindowState.Normal;
+            if (kind == MessageKind.Warning) SystemSounds.Exclamation.Play();
+            else if (kind == MessageKind.Error) SystemSounds.Hand.Play();
+            using (var dialog = new MessageDialog(kind, message, acceptText, cancelText, acceptIsDefault, owner != null))
+                return dialog.ShowDialog(owner);
         }
     }
 }

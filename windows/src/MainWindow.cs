@@ -220,11 +220,13 @@ namespace ImacDisplay
             }
         }
 
+        /* Alt+F4 or "Fenster schließen" on the taskbar (the X only minimizes, see WndProc); taskkill sends a bare WM_CLOSE */
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
             if (e.Cancel || restarting) return;
-            if (e.CloseReason == CloseReason.UserClosing && !LidConfirmed("Trotzdem beenden?"))
+            bool byUser = e.CloseReason == CloseReason.UserClosing || e.CloseReason == CloseReason.TaskManagerClosing;
+            if (byUser && !LidConfirmed("Trotzdem beenden?", "Beenden"))
             {
                 e.Cancel = true;
                 return;
@@ -237,6 +239,12 @@ namespace ImacDisplay
 
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == Native.WM_SYSCOMMAND && ((long)m.WParam & 0xFFF0) == Native.SC_CLOSE && OnCloseButton(m.LParam))
+            {
+                /* the X puts the window into the taskbar; the connection stays */
+                WindowState = FormWindowState.Minimized;
+                return;
+            }
             if (m.Msg == Taskbar.ButtonCreatedMessage && m.Msg != 0)
             {
                 if (taskbar == null) taskbar = Taskbar.For(Handle);
@@ -255,6 +263,15 @@ namespace ImacDisplay
                 }
             }
             base.WndProc(ref m);
+        }
+
+        /*
+         A click on the X sends SC_CLOSE with the cursor position. Alt+F4, the window menu and "Fenster schließen"
+         on the taskbar do not point at the X: they end the program.
+         */
+        bool OnCloseButton(IntPtr cursor)
+        {
+            return cursor != IntPtr.Zero && Native.SendMessage(Handle, Native.WM_NCHITTEST, IntPtr.Zero, cursor) == (IntPtr)Native.HTCLOSE;
         }
 
         /* ---- for the agent (any thread) ---- */
@@ -276,13 +293,13 @@ namespace ImacDisplay
             UpdateTaskbar();
         }
 
-        /* Yes/no question; false if the window is closing */
-        public bool Ask(string question)
+        /* A question with accept or "Abbrechen"; false if cancelled or the window is closing */
+        public bool Ask(string question, string accept)
         {
             return OnWindow<bool>(delegate
             {
                 ComeForward();
-                return MessageBox.Show(this, question, "iMac-Display", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+                return MessageDialog.Confirm(this, question, MessageKind.Information, accept, "Abbrechen", true);
             }, false);
         }
 
@@ -291,7 +308,7 @@ namespace ImacDisplay
             OnWindow<bool>(delegate
             {
                 ComeForward();
-                MessageBox.Show(this, message, "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageDialog.Show(this, message, MessageKind.Warning);
                 return true;
             }, false);
         }
@@ -341,25 +358,25 @@ namespace ImacDisplay
         void OnConnectClicked()
         {
             bool pause = !Program.Paused;
-            if (pause && !LidConfirmed("Trotzdem trennen?")) return;
+            if (pause && !LidConfirmed("Trotzdem trennen?", "Trennen")) return;
             Program.SetPaused(pause);
             if (pause) ShowStatus(new AgentStatus(Light.Busy, "Trenne …", "Der Mac-Bildschirm wird abgeschaltet.", ThinBar.Unknown));
             else ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …", "", ThinBar.None));
         }
 
         /* With the lid closed the Mac is the only screen: without it the laptop shows nothing until the lid opens */
-        bool LidConfirmed(string question)
+        bool LidConfirmed(string question, string action)
         {
             if (!Program.InSession || !Program.LidClosed) return true;
-            return MessageBox.Show(this, "Der Deckel ist zu, der Mac ist der einzige Bildschirm des Laptops. "
+            return MessageDialog.Confirm(this, "Der Deckel ist zu, der Mac ist der einzige Bildschirm des Laptops. "
                 + "Ohne ihn siehst du den Laptop erst wieder, wenn du ihn aufklappst.\r\n\r\n" + question,
-                "iMac-Display", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+                MessageKind.Warning, action, "Abbrechen", false);
         }
 
         void OpenInBrowser(string url)
         {
             try { Process.Start(url); }
-            catch (Win32Exception) { MessageBox.Show(this, "Bitte im Browser öffnen:\r\n" + url, "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+            catch (Win32Exception) { MessageDialog.Show(this, "Bitte im Browser öffnen:\r\n" + url, MessageKind.Information); }
         }
 
         void ShowLog()
@@ -398,8 +415,7 @@ namespace ImacDisplay
             if (Updater.IsGitCheckout(Program.BaseDirectory))
             {
                 if (requested)
-                    MessageBox.Show(this, "Dieser Ordner ist ein Git-Arbeitsverzeichnis: bitte mit git pull aktualisieren.",
-                        "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageDialog.Show(this, "Dieser Ordner ist ein Git-Arbeitsverzeichnis: bitte mit git pull aktualisieren.", MessageKind.Information);
                 return;
             }
             online = online || DateTime.UtcNow >= nextOnlineCheck;
@@ -461,12 +477,11 @@ namespace ImacDisplay
         {
             if (error == null)
             {
-                MessageBox.Show(this, "iMac-Display ist auf dem neuesten Stand (" + Updater.Version + ").",
-                    "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageDialog.Show(this, "iMac-Display ist auf dem neuesten Stand (" + Updater.Version + ").", MessageKind.Information);
                 return;
             }
-            if (MessageBox.Show(this, "GitHub ist gerade nicht erreichbar (" + error + ").\r\n\r\nDie aktuelle Version im Browser herunterladen?",
-                "iMac-Display", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageDialog.Confirm(this, "GitHub ist gerade nicht erreichbar (" + error + ").\r\n\r\nDie aktuelle Version im Browser herunterladen?",
+                MessageKind.Information, "Im Browser laden", "Abbrechen", true))
                 WaitForBrowser();
         }
 
@@ -524,15 +539,13 @@ namespace ImacDisplay
         {
             if (Updater.IsGitCheckout(Program.BaseDirectory))
             {
-                MessageBox.Show(this, "Dieser Ordner ist ein Git-Arbeitsverzeichnis: bitte mit git pull aktualisieren.",
-                    "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageDialog.Show(this, "Dieser Ordner ist ein Git-Arbeitsverzeichnis: bitte mit git pull aktualisieren.", MessageKind.Information);
                 return;
             }
             string zipVersion = Updater.ZipVersion(zip);
             if (zipVersion == null)
             {
-                MessageBox.Show(this, Path.GetFileName(zip) + " ist keine Zip-Datei von imac-display.",
-                    "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageDialog.Show(this, Path.GetFileName(zip) + " ist keine Zip-Datei von imac-display.", MessageKind.Warning);
                 return;
             }
             offer = new UpdateOffer(zipVersion, zip);
@@ -571,8 +584,7 @@ namespace ImacDisplay
                     updating = false;
                     if (temporary) offer = new UpdateOffer(newVersion, null);
                     ShowOffer();
-                    MessageBox.Show(this, "Die Aktualisierung ist fehlgeschlagen:\r\n\r\n" + error,
-                        "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageDialog.Show(this, "Die Aktualisierung ist fehlgeschlagen:\r\n\r\n" + error, MessageKind.Warning);
                 });
             });
         }
@@ -585,8 +597,8 @@ namespace ImacDisplay
             closing = true;
             timer.Stop();
             if (!Program.RestartAfterUpdate(options))
-                MessageBox.Show(this, "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal.",
-                    "iMac-Display", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageDialog.Show(this, "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal.",
+                    MessageKind.Warning);
             Close();
         }
     }
