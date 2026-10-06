@@ -19,7 +19,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | | |
 |---|---|
 | Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
-| Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. von FUERAN, ca. 10 €. |
+| Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. von FUERAN, ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
 | Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung). Sonst geht es auch über das gemeinsame WLAN. |
 
@@ -31,7 +31,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
 
-Es geht auch ohne Doppelklick: das Programm „Terminal“ öffnen (Spotlight: Cmd+Leertaste, „Terminal“ tippen), `sh ` tippen (mit Leerzeichen dahinter), die Datei `install.sh` aus demselben Ordner ins Fenster ziehen und Return drücken.
+Alternative ohne Doppelklick und Systemeinstellungen: das Programm „Terminal“ öffnen (Spotlight: Cmd+Leertaste, „Terminal“ tippen), `sh ` tippen (mit Leerzeichen dahinter), die Datei `install.sh` aus demselben Ordner ins Fenster ziehen und Return drücken.
 
 Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
