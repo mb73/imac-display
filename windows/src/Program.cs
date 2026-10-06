@@ -248,10 +248,74 @@ namespace ImacDisplay
     }
 
     /*
+     Keeps Windows from sending the laptop to sleep after a while without input, as long as the picture runs: with
+     the lid closed, the user may work on the Mac alone for a while, and only opening the lid would wake the laptop.
+     Not while Windows is locked: nobody can work on the laptop from the Mac then, so it may sleep as usual. A power
+     request rather than SetThreadExecutionState, so that "powercfg /requests" names the reason. Closing the lid and
+     the power button still do what Windows is set to.
+     */
+    internal sealed class StayAwake : IDisposable
+    {
+        const string Reason = "iMac-Display überträgt den Bildschirm an den Mac.";
+        static readonly IntPtr Invalid = new IntPtr(-1);
+        readonly Action<string> log;
+        IntPtr request = IntPtr.Zero;
+        bool held, failed;
+
+        public StayAwake(Action<string> log)
+        {
+            this.log = log;
+        }
+
+        public void Hold(bool on)
+        {
+            if (on == held || failed) return;
+            if (request == IntPtr.Zero)
+            {
+                var context = new Native.REASON_CONTEXT
+                {
+                    Version = 0,
+                    Flags = Native.POWER_REQUEST_CONTEXT_SIMPLE_STRING,
+                    SimpleReasonString = Reason
+                };
+                IntPtr created = Native.PowerCreateRequest(ref context);
+                if (created == Invalid || created == IntPtr.Zero)
+                {
+                    Fail();
+                    return;
+                }
+                request = created;
+            }
+            bool done = on
+                ? Native.PowerSetRequest(request, Native.PowerRequestSystemRequired)
+                : Native.PowerClearRequest(request, Native.PowerRequestSystemRequired);
+            if (done) held = on;
+            else Fail();
+        }
+
+        /* Windows refused: say so once; the session runs on, the laptop just may fall asleep */
+        void Fail()
+        {
+            failed = true;
+            log("Windows lässt den Laptop nicht wach halten: " + new Win32Exception().Message);
+        }
+
+        public void Dispose()
+        {
+            if (request == IntPtr.Zero) return;
+            if (held) Native.PowerClearRequest(request, Native.PowerRequestSystemRequired);
+            Native.CloseHandle(request);
+            request = IntPtr.Zero;
+            held = false;
+        }
+    }
+
+    /*
      Entry point and agent. The window (MainWindow) runs on the main thread; the agent loop runs on its
-     own thread: find the Mac, handshake, then RunSession until the connection ends, the user
-     disconnects ("Verbindung trennen" sets paused) or the window closes (stopping). It reports to the
-     window with ShowStatus and asks through it (pairing code, ffmpeg download).
+     own thread: find the Mac, handshake, then RunSession until the connection ends, the agent pauses
+     itself (no ffmpeg, no pairing code; "Verbinden" resumes) or the window closes (stopping, also by
+     "Trennen und beenden"). It reports to the window with ShowStatus and asks through it (pairing
+     code, ffmpeg download).
      */
     internal static class Program
     {
@@ -275,7 +339,7 @@ namespace ImacDisplay
         static LidWatcher lid;
         static bool displayExtended;
         static string lastLogged;
-        /* what the window shows while paused: the user's "Verbindung trennen" or the agent's own reason */
+        /* what the window shows while the agent has paused itself, and why */
         static AgentStatus pausedStatus;
         /* LaptopScreen's version in the current session; LaptopScreen before 1.2.0 never reports it */
         static string macVersion;
@@ -285,9 +349,6 @@ namespace ImacDisplay
         static Size? macScreen;
         static Size mode;
         static Size? announcedMode;
-
-        static readonly AgentStatus Disconnected = new AgentStatus(Light.Off, "Getrennt",
-            "Der Mac ist nicht mehr dein Bildschirm. „Verbinden“ holt ihn zurück.", ThinBar.None);
 
         [STAThread]
         static int Main(string[] args)
@@ -385,11 +446,10 @@ namespace ImacDisplay
             }
         }
 
-        /* "Verbindung trennen" (true) and "Verbinden" (false) */
-        public static void SetPaused(bool value)
+        /* "Verbinden" after the agent paused itself */
+        public static void Resume()
         {
-            if (value) pausedStatus = Disconnected;
-            paused = value;
+            paused = false;
         }
 
         /* The window's switch; a running session follows right away */
@@ -500,7 +560,7 @@ namespace ImacDisplay
                 {
                     keepDisplayUntil = null;
                     RevertDisplay("Getrennt: nur noch der Laptop-Bildschirm.");
-                    window.ShowStatus(pausedStatus ?? Disconnected);
+                    window.ShowStatus(pausedStatus);
                     while (paused && !stopping) Thread.Sleep(100);
                     continue;
                 }
@@ -606,6 +666,7 @@ namespace ImacDisplay
         {
             var injector = new Injector();
             var clipboard = new ClipboardSync();
+            var awake = new StayAwake(Log);
             bool sharing = shareClipboard;
             clipboard.Enabled = sharing;
             DateTime started = DateTime.UtcNow;
@@ -655,6 +716,7 @@ namespace ImacDisplay
                     video.Pause(locked);
                     video.Start();
                 }
+                awake.Hold(!locked);
                 Log("Übertragung läuft. Auf dem Mac LaptopScreen nach vorne holen.");
                 ShowSession(mac, lidOpen, locked);
 
@@ -712,6 +774,7 @@ namespace ImacDisplay
                         if (locked) injector.ReleaseAll();
                         control.Send(locked ? "STATE locked" : "STATE unlocked");
                         video.Pause(locked);
+                        awake.Hold(!locked);
                         Log(locked ? "Windows ist gesperrt, Übertragung pausiert." : "Windows entsperrt, Übertragung läuft wieder.");
                         ShowSession(mac, lidOpen, locked);
                     }
@@ -782,6 +845,7 @@ namespace ImacDisplay
             finally
             {
                 inSession = false;
+                awake.Dispose();
                 injector.ReleaseAll();
                 control.Dispose();
                 StopVideo();

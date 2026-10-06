@@ -26,11 +26,11 @@ namespace ImacDisplay
     }
 
     /*
-     The program window: what the agent is doing, "Verbindung trennen" / "Verbinden", the clipboard
-     switch, links to the guide and the log, and the offer of a newer version when there is one.
-     The taskbar button shows the state as a badge and downloads and display switches as progress.
-     The agent runs on its own thread; ShowStatus, Ask, AskCode, Warn and CheckForUpdatesSoon may be
-     called from there.
+     The program window: what the agent is doing, "Trennen und beenden" (or "Verbinden" after the agent
+     paused itself), the clipboard switch, links to the guide and the log, and the offer of a newer
+     version when there is one. The taskbar button shows the state as a badge and downloads and display
+     switches as progress. The agent runs on its own thread; ShowStatus, Ask, AskCode, Warn and
+     CheckForUpdatesSoon may be called from there.
      */
     internal sealed class MainWindow : ThemedForm
     {
@@ -139,7 +139,7 @@ namespace ImacDisplay
             clipboard.CheckedChanged += delegate { Program.ShareClipboard = clipboard.Checked; };
 
             /* button bar */
-            connect.Text = "Verbindung trennen";
+            connect.Text = "Trennen und beenden";
             connect.AutoSize = true;
             connect.MinimumSize = new Size(150, 30);
             connect.Anchor = AnchorStyles.Left;
@@ -220,7 +220,7 @@ namespace ImacDisplay
             }
         }
 
-        /* Alt+F4 or "Fenster schließen" on the taskbar (the X only minimizes, see WndProc); taskkill sends a bare WM_CLOSE */
+        /* Alt+F4, "Fenster schließen" on the taskbar or "Trennen und beenden" (the X only minimizes, see WndProc); taskkill sends a bare WM_CLOSE */
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
@@ -289,7 +289,7 @@ namespace ImacDisplay
             headline.Text = next.Headline;
             detail.Text = next.Detail;
             progress.Value = next.Progress;
-            connect.Text = Program.Paused ? "Verbinden" : "Verbindung trennen";
+            connect.Text = Program.Paused ? "Verbinden" : "Trennen und beenden";
             UpdateTaskbar();
         }
 
@@ -355,13 +355,16 @@ namespace ImacDisplay
 
         /* ---- buttons and links ---- */
 
+        /* "Trennen und beenden" closes the window like Alt+F4, so OnFormClosing asks first if the lid is closed */
         void OnConnectClicked()
         {
-            bool pause = !Program.Paused;
-            if (pause && !LidConfirmed("Trotzdem trennen?", "Trennen")) return;
-            Program.SetPaused(pause);
-            if (pause) ShowStatus(new AgentStatus(Light.Busy, "Trenne …", "Der Mac-Bildschirm wird abgeschaltet.", ThinBar.Unknown));
-            else ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …", "", ThinBar.None));
+            if (!Program.Paused)
+            {
+                Close();
+                return;
+            }
+            Program.Resume();
+            ShowStatus(new AgentStatus(Light.Busy, "Suche den Mac …", "", ThinBar.None));
         }
 
         /* With the lid closed the Mac is the only screen: without it the laptop shows nothing until the lid opens */

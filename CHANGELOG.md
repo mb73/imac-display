@@ -2,6 +2,17 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.6.1] – 2026-10-06
+
+### Hinzugefügt
+
+- Die Anleitung erklärt Schritt für Schritt, wie Windows den Laptop beim Zuklappen weiterlaufen lässt („Beim Zuklappen: Nichts unternehmen“): über die Systemsteuerung und in neueren Versionen von Windows 11 über die Einstellungen.
+
+### Geändert
+
+- **Der Laptop schläft nicht mehr ein, solange das Bild läuft.** Bisher konnte Windows ihn nach einer Weile ohne Eingabe in den Energiesparmodus schicken, auch mitten in einer Verbindung – etwa zugeklappt, während du nur am Mac gearbeitet hast, und wach wurde er erst wieder beim Aufklappen. Jetzt hält `imac-display.exe` ihn wach, solange das Bild zum Mac läuft. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows. Auf dem Mac ändert sich nichts.
+- **„Verbindung trennen“ beendet jetzt auch das Programm** und heißt deshalb „Trennen und beenden“. Bisher blieb iMac-Display danach offen und musste eigens über die Taskleiste beendet werden. Für die nächste Verbindung startest du es wieder. Ist der Deckel zu, fragt es wie bisher vorher nach.
+
 ## [1.6.0] – 2026-10-06
 
 ### Hinzugefügt

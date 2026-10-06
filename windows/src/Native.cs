@@ -225,6 +225,33 @@ namespace ImacDisplay
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr RegisterPowerSettingNotification(IntPtr recipient, ref Guid powerSettingGuid, int flags);
 
+        /* ---- power requests: the laptop does not fall asleep while the picture runs ---- */
+
+        public const uint POWER_REQUEST_CONTEXT_SIMPLE_STRING = 0x1;
+        public const int PowerRequestSystemRequired = 1;
+
+        /* only the simple-string member of the union; Version is POWER_REQUEST_CONTEXT_VERSION (0) */
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct REASON_CONTEXT
+        {
+            public uint Version;
+            public uint Flags;
+            [MarshalAs(UnmanagedType.LPWStr)] public string SimpleReasonString;
+        }
+
+        /* INVALID_HANDLE_VALUE (-1) on failure */
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr PowerCreateRequest(ref REASON_CONTEXT context);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool PowerSetRequest(IntPtr request, int type);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool PowerClearRequest(IntPtr request, int type);
+
+        [DllImport("kernel32.dll")]
+        public static extern bool CloseHandle(IntPtr handle);
+
         /* ---- windows: another instance, DPI, dark title bars, themed scroll bars, the close button ---- */
 
         public const int SW_RESTORE = 9;

@@ -50,15 +50,14 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
 1. Win+R drücken, `powercfg.cpl` eingeben und Enter drücken. Die „Energieoptionen“ öffnen sich.
-2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
-3. In den „Energieoptionen“ links auf „Energiesparmodus ändern“ klicken. „Energiesparmodus nach:“ in der Spalte „Netzbetrieb“ auf „Niemals“ stellen und „Änderungen speichern“ klicken. Sonst schläft der Laptop trotzdem ein, wenn du eine Weile nur am Mac arbeitest.
+2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
+3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
 
-Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 2 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen. Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
+Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen. Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
 
-In neueren Versionen von Windows 11 geht es auch über Einstellungen → System → Strom und Akku, jeweils in der Spalte „Eingesteckt“:
+In neueren Versionen von Windows 11 geht es auch über Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: „Wenn ich den Deckel schließe, wird mein PC“ in der Spalte „Eingesteckt“ auf „Keine Aktion ausführen“ stellen.
 
-- „Deckel, Ein/Aus und Standbymodus“ → „Wenn ich den Deckel schließe, wird mein PC“ → „Keine Aktion ausführen“
-- „Timeouts für Bildschirm, Standbymodus und Ruhezustand“ → „Mein Gerät in den Standbymodus versetzen nach“ → „Nie“
+Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: Solange das Bild zum Mac läuft, hält `imac-display.exe` den Laptop wach, auch wenn du gerade nur am Mac arbeitest. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows.
 
 ## Benutzung
 
@@ -118,7 +117,7 @@ Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 �
 
 ### Trennen und beenden
 
-„Verbindung trennen“ im Fenster schaltet den Mac-Bildschirm ab: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Das Programm bleibt offen, „Verbinden“ holt den Mac zurück. Das X oben rechts legt das Fenster nur in die Taskleiste, die Verbindung bleibt bestehen. Zum Beenden mit der rechten Maustaste auf das Symbol in der Taskleiste klicken und „Fenster schließen“ wählen, oder im Fenster Alt+F4 drücken. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst.
+„Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirken ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“ und Alt+F4 im Fenster. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
 
 ## Aktualisieren
 
