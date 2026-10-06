@@ -29,7 +29,8 @@ final class LineReader {
    Mac   -> "WELCOME <hmac(code, "mac|<nonceAgent>|<nonceMac>")> <videoPort>"   or "DENIED"
  Right after it both sides announce "VERSION <x>", the agent also "CLIPBOARD on|off".
  Afterwards the Mac sends input events and "P" pings; the agent answers with "P" and reports
- "STATE locked", "STATE unlocked" or "STATE nodisplay". Clipboard text travels in both directions
+ "STATE locked", "STATE unlocked" or "STATE nodisplay"; "POINTER away" when its cursor went over the
+ edge onto another display, "POINTER home x y" when it is back. Clipboard text travels in both directions
  as "CLIP+ <base64>" … "CLIP <base64>"; "FOCUS 1|0" from the Mac says whether LaptopScreen is in
  front, and only then does the agent send its clipboard. On "GETUPDATE" the agent sends the LaptopScreen sources
  it carries: "UPDATE <version> <bytes> <sha256> <proof>", "D <base64>" lines and "E", or "NOUPDATE";
@@ -41,6 +42,8 @@ final class ControlServer {
         case connected
         case locked(Bool)
         case noDisplay
+        case pointerAway
+        case pointerHome(x: Int, y: Int)
         case agentVersion(String)
         case clipboardEnabled(Bool)
         case clipboard(String)
@@ -245,6 +248,13 @@ final class ControlServer {
                 emit(.locked(false))
             } else if argument == "nodisplay" {
                 emit(.noDisplay)
+            }
+        case "POINTER":
+            let fields = argument.split(separator: " ").map { String($0) }
+            if fields.first == "away" {
+                emit(.pointerAway)
+            } else if fields.count == 3, fields[0] == "home", let x = Int(fields[1]), let y = Int(fields[2]) {
+                emit(.pointerHome(x: x, y: y))
             }
         case "VERSION":
             if !argument.isEmpty { emit(.agentVersion(argument)) }

@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.5.0] – 2026-10-06
+
+### Hinzugefügt
+
+- **Die Maus vom Mac kommt auch auf das Laptop-Display.** Ist der Deckel offen, schiebst du sie einfach über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt: Der Zeiger läuft auf dem Laptop weiter, wie bei einem zweiten Monitor, und über denselben Rand kommt er zurück. So ziehst du auch Fenster mit der Mac-Maus von einem Bildschirm auf den anderen. Welcher Rand das ist, bestimmt die Anordnung in den Windows-Einstellungen. LaptopScreen auf dem Mac braucht dafür ebenfalls 1.5.0 und bietet die Aktualisierung beim Verbinden an.
+- Die Anleitung nennt Ctrl+Shift+← / →: Damit schiebst du das aktive Fenster auf den anderen Bildschirm.
+
 ## [1.4.0] – 2026-10-06
 
 ### Hinzugefügt

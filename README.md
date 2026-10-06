@@ -65,6 +65,7 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 | Cmd+↑ / ↓ | Dokumentanfang / Dokumentende |
 | Option+Backspace | Wort löschen |
 | Ctrl+Taste | Windows-Taste+Taste, z. B. Ctrl+E für den Explorer |
+| Ctrl+Shift+← / → | aktives Fenster auf den anderen Bildschirm schieben |
 | Ctrl+Klick | Rechtsklick |
 | Cmd+Scrollen | Zoomen (Strg+Mausrad) |
 | Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie der Mac sie tippt |
@@ -72,6 +73,8 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 | Cmd+Tab | zu einem anderen Mac-Programm wechseln |
 | Ctrl+Cmd+F | Vollbild ein/aus |
 | Cmd+Q | LaptopScreen beenden |
+
+Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
 
 ### Zwischenablage
 
@@ -88,7 +91,7 @@ Hängt der Laptop am Ladekabel, kannst du ihn zuklappen: Dann ist der Mac sein e
 
 ### Anordnung
 
-Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Mit Maus oder Touchpad des Laptops kommst du am rechten Rand hinüber. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am oberen Rand hinüber. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Stell es am besten so ein, wie die beiden wirklich stehen. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
 Wer lieber den Mac als Hauptbildschirm hat (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Dann erscheint die Anmeldung nach einer Sperre allerdings auf dem Mac-Bildschirm, wo man sie nicht sieht (siehe [Grenzen](#grenzen)).
 

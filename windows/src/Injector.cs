@@ -10,7 +10,8 @@ namespace ImacDisplay
      Turns the Mac's input lines into SendInput calls (works for a standard user; only windows
      running elevated and the secure desktop are out of reach).
        M x y                   absolute move, 0..65535 across the external display
-       B button down x y mods  1 left, 2 right, 3 middle, 4/5 back/forward
+       N dx dy                 relative move in the same units; may leave the external display
+       B button down x y mods  1 left, 2 right, 3 middle, 4/5 back/forward; x y = -1 -1: where the cursor is
        W dy dx mods            wheel in Windows units (120 per notch)
        K vk down mods ext      virtual key
        C codepoint down mods   shortcut by character, mapped with the current keyboard layout
@@ -19,6 +20,11 @@ namespace ImacDisplay
        R                       release everything
      Modifier bits: 1 Shift, 2 Ctrl, 4 Alt, 8 Win. Alt and Win are pressed only together with a
      key or click, so Windows never sees them alone (no menu activation, no Start menu).
+     The Mac sends "N" when its pointer pushes against an edge of the screen. Where Windows has another
+     display next to the external one (the laptop's own panel, lid open), the cursor goes over as with
+     a real mouse, and Handle answers "POINTER away": the Mac parks its pointer and sends only "N" and
+     clicks without position. Back on the external display, Handle answers "POINTER home x y", and the
+     Mac continues with its own pointer from there.
      */
     internal sealed class Injector
     {
@@ -29,6 +35,13 @@ namespace ImacDisplay
         readonly Dictionary<ushort, bool> pressedKeys = new Dictionary<ushort, bool>();
         readonly HashSet<int> pressedButtons = new HashSet<int>();
         int areaX, areaY, areaWidth = 1, areaHeight = 1;
+        /* where this class last put the cursor, in physical pixels: GetCursorPos lags behind SendInput */
+        double cursorX, cursorY;
+        bool tracked;
+        DateTime lastMove;
+        /* the Mac was told "POINTER away": its pointer rests while the cursor is on another display */
+        bool macAway;
+        DateTime awaySince;
 
         public void SetArea(DisplayInfo display)
         {
@@ -38,13 +51,15 @@ namespace ImacDisplay
             areaHeight = Math.Max(1, display.Height);
         }
 
-        public void Handle(string line)
+        /* Carries out one line from the Mac; returns a line for the Mac, or null */
+        public string Handle(string line)
         {
             string[] p = line.Split(' ');
             switch (p[0])
             {
-                case "M": Move(Int(p, 1), Int(p, 2)); break;
-                case "B": Button(Int(p, 1), Int(p, 2) == 1, Int(p, 3), Int(p, 4), Int(p, 5)); break;
+                case "M": return Move(Int(p, 1), Int(p, 2));
+                case "N": return Nudge(Int(p, 1), Int(p, 2));
+                case "B": return Button(Int(p, 1), Int(p, 2) == 1, Int(p, 3), Int(p, 4), Int(p, 5));
                 case "W": Wheel(Int(p, 1), Int(p, 2), Int(p, 3)); break;
                 case "K": Key((ushort)Int(p, 1), Int(p, 2) == 1, Int(p, 3), Int(p, 4) == 1); break;
                 case "C": Character(Int(p, 1), Int(p, 2) == 1, Int(p, 3)); break;
@@ -52,6 +67,7 @@ namespace ImacDisplay
                 case "S": Sync(Int(p, 1)); break;
                 case "R": ReleaseAll(); break;
             }
+            return null;
         }
 
         public void ReleaseAll()
@@ -61,6 +77,9 @@ namespace ImacDisplay
             foreach (int button in pressedButtons.ToList()) SendButton(button, false);
             pressedButtons.Clear();
             ApplyModifiers(0);
+            /* the Mac sends "R" whenever it stops controlling, and takes its own pointer back then */
+            macAway = false;
+            tracked = false;
         }
 
         static int Int(string[] parts, int index)
@@ -69,10 +88,53 @@ namespace ImacDisplay
             return index < parts.Length && int.TryParse(parts[index], NumberStyles.Integer, CultureInfo.InvariantCulture, out value) ? value : 0;
         }
 
-        void Move(int x, int y)
+        string Move(int x, int y)
         {
-            double px = areaX + x / 65535.0 * (areaWidth - 1);
-            double py = areaY + y / 65535.0 * (areaHeight - 1);
+            /* still on its way from before the Mac parked its pointer: the cursor has gone over already */
+            if (macAway && (DateTime.UtcNow - awaySince).TotalMilliseconds < 500) return null;
+            MoveTo(areaX + x / 65535.0 * (areaWidth - 1), areaY + y / 65535.0 * (areaHeight - 1));
+            if (!macAway) return null;
+            /* the Mac did not park its pointer after all: it gets the cursor back */
+            macAway = false;
+            return Home();
+        }
+
+        string Nudge(int dx, int dy)
+        {
+            if (!tracked || (DateTime.UtcNow - lastMove).TotalMilliseconds > 150)
+            {
+                /* after a pause the cursor may have moved without us, e.g. by the laptop's touchpad */
+                Native.POINT actual;
+                if (!Native.GetCursorPos(out actual)) return null;
+                cursorX = actual.X;
+                cursorY = actual.Y;
+            }
+            double x = cursorX + dx / 65535.0 * (areaWidth - 1);
+            double y = cursorY + dy / 65535.0 * (areaHeight - 1);
+            Native.RECT display;
+            if (!DisplayAt(Pixel(x), Pixel(y), false, out display))
+            {
+                /* no display there: the cursor stays on the one it is on, as with a real mouse */
+                if (!DisplayAt(Pixel(cursorX), Pixel(cursorY), true, out display)) return null;
+                x = Math.Max(display.Left, Math.Min(display.Right - 1, x));
+                y = Math.Max(display.Top, Math.Min(display.Bottom - 1, y));
+            }
+            MoveTo(x, y);
+            int px = Pixel(x), py = Pixel(y);
+            bool away = px < areaX || px >= areaX + areaWidth || py < areaY || py >= areaY + areaHeight;
+            if (away == macAway) return null;
+            macAway = away;
+            awaySince = DateTime.UtcNow;
+            return away ? "POINTER away" : Home();
+        }
+
+        /* Absolute move to a point of the virtual desktop, in physical pixels */
+        void MoveTo(double px, double py)
+        {
+            cursorX = px;
+            cursorY = py;
+            tracked = true;
+            lastMove = DateTime.UtcNow;
             int vx = Native.GetSystemMetrics(Native.SM_XVIRTUALSCREEN);
             int vy = Native.GetSystemMetrics(Native.SM_YVIRTUALSCREEN);
             int vw = Math.Max(2, Native.GetSystemMetrics(Native.SM_CXVIRTUALSCREEN));
@@ -82,13 +144,44 @@ namespace ImacDisplay
             Send(Mouse(nx, ny, 0, Native.MOUSEEVENTF_MOVE | Native.MOUSEEVENTF_ABSOLUTE | Native.MOUSEEVENTF_VIRTUALDESK));
         }
 
-        void Button(int button, bool down, int x, int y, int mods)
+        /* The cursor's place on the external display, in the units of "M" */
+        string Home()
         {
-            Move(x, y);
+            int x = (int)Math.Round((cursorX - areaX) * 65535.0 / Math.Max(1, areaWidth - 1));
+            int y = (int)Math.Round((cursorY - areaY) * 65535.0 / Math.Max(1, areaHeight - 1));
+            return string.Format(CultureInfo.InvariantCulture, "POINTER home {0} {1}",
+                Math.Max(0, Math.Min(65535, x)), Math.Max(0, Math.Min(65535, y)));
+        }
+
+        static int Pixel(double value)
+        {
+            return (int)Math.Floor(value + 0.5);
+        }
+
+        /* Bounds of the display at a point; with nearest, of the closest one if there is none */
+        static bool DisplayAt(int x, int y, bool nearest, out Native.RECT bounds)
+        {
+            bounds = new Native.RECT();
+            var point = new Native.POINT();
+            point.X = x;
+            point.Y = y;
+            IntPtr monitor = Native.MonitorFromPoint(point, nearest ? Native.MONITOR_DEFAULTTONEAREST : Native.MONITOR_DEFAULTTONULL);
+            if (monitor == IntPtr.Zero) return false;
+            var info = new Native.MONITORINFO();
+            info.cbSize = Marshal.SizeOf(typeof(Native.MONITORINFO));
+            if (!Native.GetMonitorInfo(monitor, ref info)) return false;
+            bounds = info.rcMonitor;
+            return true;
+        }
+
+        string Button(int button, bool down, int x, int y, int mods)
+        {
+            string reply = x >= 0 && y >= 0 ? Move(x, y) : null;
             if (down) ApplyModifiers(mods);
             SendButton(button, down);
             if (down) pressedButtons.Add(button);
             else pressedButtons.Remove(button);
+            return reply;
         }
 
         static void SendButton(int button, bool down)

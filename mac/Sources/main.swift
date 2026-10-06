@@ -57,6 +57,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
+    /* gives the mouse back to the pointer if it was parked for the laptop's own display */
+    func applicationWillTerminate(_ notification: Notification) {
+        input.releaseAll()
+    }
+
     @objc private func enterFullScreen() {
         if !window.styleMask.contains(.fullScreen) { window.toggleFullScreen(nil) }
     }
@@ -103,6 +108,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             dummyMissing = false
         case .noDisplay:
             dummyMissing = true
+        case .pointerAway:
+            input.pointerAway()
+            return
+        case .pointerHome(let x, let y):
+            input.pointerHome(x: x, y: y)
+            return
         case .agentVersion(let version):
             offerUpdate(version)
         case .clipboardEnabled(let enabled):

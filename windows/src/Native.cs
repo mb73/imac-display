@@ -149,6 +149,25 @@ namespace ImacDisplay
         [DllImport("user32.dll")]
         public static extern uint GetWindowThreadProcessId(IntPtr hwnd, IntPtr processId);
 
+        /* ---- cursor and monitors (physical pixels: the process is per-monitor DPI aware) ---- */
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT { public int X, Y; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MONITORINFO { public int cbSize; public RECT rcMonitor; public RECT rcWork; public uint dwFlags; }
+
+        public const uint MONITOR_DEFAULTTONULL = 0, MONITOR_DEFAULTTONEAREST = 2;
+
+        [DllImport("user32.dll")]
+        public static extern bool GetCursorPos(out POINT point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromPoint(POINT point, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
+
         /* ---- job objects: ffmpeg dies together with the agent ---- */
 
         [StructLayout(LayoutKind.Sequential)]

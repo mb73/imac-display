@@ -7,7 +7,12 @@ import AppKit
  - Shortcuts (Cmd or Ctrl held) are sent as Windows keys: Cmd -> Ctrl, Ctrl -> Win, Option -> Alt.
  - Ctrl+click becomes a right click. System shortcuts such as Ctrl+Left/Right (switch desktop)
    or Cmd+Tab never reach the app, so they keep working for macOS.
- Protocol lines: M x y | B button down x y mods | W dy dx mods | K vk down mods ext |
+ - Pushing the pointer against an edge of the screen also sends the movement beyond it ("N"). Where
+   Windows has another display next to this one (the laptop's own panel, lid open), the agent moves its
+   cursor over and answers "POINTER away": the Mac pointer then rests in the middle of the screen,
+   detached from the mouse, and only movements and clicks without position go over, until the agent
+   reports "POINTER home x y" and the Mac pointer continues from there.
+ Protocol lines: M x y | N dx dy | B button down x y mods | W dy dx mods | K vk down mods ext |
                  C codepoint down mods | T utf16hex | S mods | R
  */
 final class InputCapture {
@@ -25,6 +30,14 @@ final class InputCapture {
     private var rightClickViaControl = false
     private var scrollRemainderX = 0.0
     private var scrollRemainderY = 0.0
+    /* the laptop's cursor is on another of its displays; the Mac pointer rests in the middle meanwhile */
+    private var away = false
+    /* uptime just before the last warp of the Mac pointer */
+    private var warpedAt: TimeInterval = -1
+    /* the first movement after a warp may carry the jump in its delta */
+    private var distrustDelta = false
+    private var nudgeRemainderX = 0.0
+    private var nudgeRemainderY = 0.0
 
     func install() {
         let mask: NSEvent.EventTypeMask = [
@@ -39,11 +52,37 @@ final class InputCapture {
     }
 
     func releaseAll() {
+        if away {
+            /* the Mac pointer stays where it rests, attached to the mouse again */
+            away = false
+            CGAssociateMouseAndMouseCursorPosition(1)
+        }
         pressedSpecial.removeAll()
         pressedChar.removeAll()
         lastMods = -1
         rightClickViaControl = false
         send?("R")
+    }
+
+    /* "POINTER away": the cursor went over to another display; park the Mac pointer, detached from the mouse */
+    func pointerAway() {
+        guard isEnabled, NSApp.isActive, !away, let view = view else { return }
+        away = true
+        /* in the middle: at the edge, macOS might show the Dock or the menu bar */
+        warp(to: NSPoint(x: view.bounds.midX, y: view.bounds.midY), in: view)
+        CGAssociateMouseAndMouseCursorPosition(0)
+    }
+
+    /* "POINTER home x y": the cursor is back on the laptop's picture; the Mac pointer continues there */
+    func pointerHome(x: Int, y: Int) {
+        guard away, let view = view else { return }
+        away = false
+        let rect = videoRect(in: view.bounds)
+        /* a little inside the edge, so that the next small movement does not push it over again */
+        let inner = view.bounds.insetBy(dx: 2, dy: 2)
+        let px = min(max(rect.minX + CGFloat(x) / 65535 * rect.width, inner.minX), inner.maxX)
+        let py = min(max(rect.maxY - CGFloat(y) / 65535 * rect.height, inner.minY), inner.maxY)
+        warp(to: NSPoint(x: px, y: py), in: view)
     }
 
     private func handle(_ event: NSEvent) -> NSEvent? {
@@ -127,17 +166,45 @@ final class InputCapture {
     // MARK: - Mouse
 
     private func mouse(_ event: NSEvent, in view: NSView) {
-        let point = view.convert(event.locationInWindow, from: nil)
         let rect = videoRect(in: view.bounds)
-        let nx = max(0, min(1, (point.x - rect.minX) / rect.width))
-        let ny = max(0, min(1, (rect.maxY - point.y) / rect.height))
-        let x = Int(nx * 65535)
-        let y = Int(ny * 65535)
         let mods = InputCapture.mods(event.modifierFlags)
+        /*
+         An event from before the last warp belongs to the other side of the edge. Just after the warp,
+         an event may still show the old position, and the first movement may carry the jump in its delta.
+         */
+        let stale = event.timestamp <= warpedAt
+        let settled = event.timestamp > warpedAt + 0.02
+        /* "-1 -1": wherever the laptop's cursor is */
+        var x = -1
+        var y = -1
+        if !away && settled {
+            let point = view.convert(event.locationInWindow, from: nil)
+            let nx = max(0, min(1, (point.x - rect.minX) / rect.width))
+            let ny = max(0, min(1, (rect.maxY - point.y) / rect.height))
+            x = Int(nx * 65535)
+            y = Int(ny * 65535)
+        }
 
         switch event.type {
         case .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
+            var first = false
+            if !stale {
+                first = distrustDelta
+                distrustDelta = false
+            }
+            if away || stale {
+                if stale || (settled && !first) { nudge(Double(event.deltaX), Double(event.deltaY), in: rect) }
+                return
+            }
+            /* the next movement sends the position; "M" is absolute, so nothing gets lost */
+            guard settled else { return }
+            var push = (dx: 0.0, dy: 0.0)
+            if !first { push = outward(event, in: view) }
+            /* pushing against an edge: the cursor goes right up to it, and the rest beyond */
+            if push.dx < 0 { x = 0 } else if push.dx > 0 { x = 65535 }
+            if push.dy < 0 { y = 0 } else if push.dy > 0 { y = 65535 }
             send?("M \(x) \(y)")
+            if push.dx != 0 || push.dy != 0 { nudge(push.dx, push.dy, in: rect) }
         case .leftMouseDown:
             if mods & KeyMap.win != 0 {
                 rightClickViaControl = true
@@ -163,6 +230,57 @@ final class InputCapture {
         default:
             break
         }
+    }
+
+    /*
+     Movement past an edge of the screen while the pointer is pinned to it; none where another Mac screen
+     continues. NSEvent's deltaY grows downwards, like y in the protocol.
+     */
+    private func outward(_ event: NSEvent, in view: NSView) -> (dx: Double, dy: Double) {
+        guard let window = view.window, let screen = window.screen?.frame else { return (0, 0) }
+        let location = window.convertPoint(toScreen: event.locationInWindow)
+        let deltaX = Double(event.deltaX)
+        let deltaY = Double(event.deltaY)
+        var dx = 0.0
+        var dy = 0.0
+        if deltaX < 0 && location.x <= screen.minX + 1 && !InputCapture.macScreen(at: NSPoint(x: screen.minX - 2, y: location.y)) {
+            dx = deltaX
+        } else if deltaX > 0 && location.x >= screen.maxX - 1 && !InputCapture.macScreen(at: NSPoint(x: screen.maxX + 2, y: location.y)) {
+            dx = deltaX
+        }
+        if deltaY > 0 && location.y <= screen.minY + 1 && !InputCapture.macScreen(at: NSPoint(x: location.x, y: screen.minY - 2)) {
+            dy = deltaY
+        } else if deltaY < 0 && location.y >= screen.maxY - 1 && !InputCapture.macScreen(at: NSPoint(x: location.x, y: screen.maxY + 2)) {
+            dy = deltaY
+        }
+        return (dx, dy)
+    }
+
+    private static func macScreen(at point: NSPoint) -> Bool {
+        return NSScreen.screens.contains { $0.frame.contains(point) }
+    }
+
+    /* Relative movement in the units of "M", where 65535 spans the laptop's picture */
+    private func nudge(_ deltaX: Double, _ deltaY: Double, in rect: CGRect) {
+        guard rect.width > 0, rect.height > 0 else { return }
+        nudgeRemainderX += deltaX / Double(rect.width) * 65535
+        nudgeRemainderY += deltaY / Double(rect.height) * 65535
+        let dx = Int(nudgeRemainderX)
+        let dy = Int(nudgeRemainderY)
+        nudgeRemainderX -= Double(dx)
+        nudgeRemainderY -= Double(dy)
+        if dx != 0 || dy != 0 { send?("N \(dx) \(dy)") }
+    }
+
+    /* Moves the Mac pointer to a point of the view */
+    private func warp(to point: NSPoint, in view: NSView) {
+        guard let window = view.window, let primary = NSScreen.screens.first else { return }
+        let location = window.convertPoint(toScreen: view.convert(point, to: nil))
+        warpedAt = ProcessInfo.processInfo.systemUptime
+        distrustDelta = true
+        CGWarpMouseCursorPosition(CGPoint(x: location.x, y: primary.frame.maxY - location.y))
+        /* attached again right away, macOS does not ignore the mouse for a moment after the warp */
+        CGAssociateMouseAndMouseCursorPosition(1)
     }
 
     private func scroll(_ event: NSEvent) {

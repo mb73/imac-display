@@ -630,6 +630,7 @@ namespace ImacDisplay
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
                 DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow;
+                bool crossed = false;
                 while (Active)
                 {
                     string line = control.ReadLine(250);
@@ -637,7 +638,13 @@ namespace ImacDisplay
                     if (line != null)
                     {
                         lastHeard = now;
-                        if (!HandleControl(control, line, clipboard) && !locked) injector.Handle(line);
+                        string reply = (HandleControl(control, line, clipboard) || locked) ? null : injector.Handle(line);
+                        if (reply != null) control.Send(reply);
+                        if (reply == "POINTER away" && !crossed)
+                        {
+                            crossed = true;
+                            Log("Die Maus vom Mac ist über den Rand auf einen anderen Bildschirm gewechselt.");
+                        }
                     }
                     else if ((now - lastHeard).TotalSeconds > 8)
                     {
