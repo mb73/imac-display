@@ -31,7 +31,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
 
-Alternative ohne Doppelklick und Systemeinstellungen: das Programm „Terminal“ öffnen (Spotlight: Cmd+Leertaste, „Terminal“ tippen), `sh ` tippen (mit Leerzeichen dahinter), die Datei `install.sh` aus demselben Ordner ins Fenster ziehen und Return drücken.
+Alternative ohne Systemeinstellungen: das Programm „Terminal“ öffnen (Spotlight: Cmd+Leertaste, „Terminal“ tippen), `sh ` tippen (mit Leerzeichen dahinter), die Datei `install.sh` aus demselben Ordner ins Fenster ziehen und Return drücken.
 
 Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
@@ -44,6 +44,21 @@ Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Doc
 5. **`imac-display.exe` doppelklicken.** Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
 
 Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
+
+### Zugeklappt benutzen
+
+Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
+
+1. Win+R drücken, `powercfg.cpl` eingeben und Enter drücken. Die „Energieoptionen“ öffnen sich.
+2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
+3. In den „Energieoptionen“ links auf „Energiesparmodus ändern“ klicken. „Energiesparmodus nach:“ in der Spalte „Netzbetrieb“ auf „Niemals“ stellen und „Änderungen speichern“ klicken. Sonst schläft der Laptop trotzdem ein, wenn du eine Weile nur am Mac arbeitest.
+
+Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 2 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen. Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
+
+In neueren Versionen von Windows 11 geht es auch über Einstellungen → System → Strom und Akku, jeweils in der Spalte „Eingesteckt“:
+
+- „Deckel, Ein/Aus und Standbymodus“ → „Wenn ich den Deckel schließe, wird mein PC“ → „Keine Aktion ausführen“
+- „Timeouts für Bildschirm, Standbymodus und Ruhezustand“ → „Mein Gerät in den Standbymodus versetzen nach“ → „Nie“
 
 ## Benutzung
 
@@ -87,13 +102,13 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 
 ### Deckel zuklappen
 
-Hängt der Laptop am Ladekabel, kannst du ihn zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel schickt Windows den Laptop beim Zuklappen womöglich in den Standby.
+Ist Windows dafür eingestellt (siehe [Zugeklappt benutzen](#zugeklappt-benutzen)), kannst du den Laptop zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel geht das nur, wenn du die Einstellung auch für den Akku gesetzt hast; sonst schickt Windows den Laptop beim Zuklappen in den Energiesparmodus.
 
 ### Anordnung
 
 Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Stell es am besten so ein, wie die beiden wirklich stehen. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
-Wer lieber den Mac als Hauptbildschirm hat (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Dann erscheint die Anmeldung nach einer Sperre allerdings auf dem Mac-Bildschirm, wo man sie nicht sieht (siehe [Grenzen](#grenzen)).
+Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Warnung: Davon wird abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
 ### Skalierung
 
@@ -116,7 +131,8 @@ Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 �
 - **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
 - **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel, PIN oder Windows Hello), erledigst du direkt am Laptop.
-- **Kein Ton,** und die Zwischenablage teilt nur Text. Ton spielt weiter der Laptop.
+- **Ton** spielt weiterhin (nur) der Laptop.
+- **Die Zwischenablage** teilt nur Text. Keine Bilder oder Dateien.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
 - **MacBooks** haben Bildschirme im Format 16:10, die der Dummy-Stecker nicht pixelgenau kann (etwa 2880 × 1800). Sie bekommen 2560 × 1600, leicht hochskaliert und ohne schwarze Balken. Für ein Kabel brauchen sie einen USB-C-Ethernet-Adapter.
 
