@@ -2,7 +2,7 @@
 
 Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
-Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>⌃</kbd> +<kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
+Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15).
 
@@ -27,8 +27,8 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
-1. **Das Programm „Terminal“ öffnen,** etwa <kbd>⌘</kbd>+Leertaste dann „terminal“ tippen und <kbd>↵</kbd> drücken.
-2. **Folge Zeile kopieren (Knopf rechts), ins Terminal einfügen (<kbd>⌘</kbd> + <kbd>V</kbd>) und <kbd>↵</kbd> drücken:**
+1. **Das Programm „Terminal“ öffnen,** etwa <kbd>cmd</kbd> + Leertaste dann „terminal“ tippen und <kbd>↵</kbd> drücken.
+2. **Folge Zeile kopieren (Knopf rechts), ins Terminal einfügen (<kbd>cmd</kbd> + <kbd>V</kbd>) und <kbd>↵</kbd> drücken:**
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
    ```
@@ -78,20 +78,20 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 
 | Auf dem Mac | Wirkung in Windows |
 |---|---|
-| <kbd>⌘</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … | <kbd>⌃</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … |
-| <kbd>⌥</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Wort zurück / vor |
-| <kbd>⌘</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
-| <kbd>⌘</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
-| <kbd>⌥</kbd> + <kbd>Backspace</kbd> | Wort löschen |
-| <kbd>⌃</kbd> + Taste | <kbd>⊞</kbd>+Taste, z. B. ⌃+E für den Explorer |
-| <kbd>⌃</kbd> + <kbd>⇧</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
-| <kbd>⌃</kbd> + Klick | Rechtsklick |
-| <kbd>⌘</kbd> + Scrollen | Zoomen (<kbd>⌃</kbd> + Mausrad) |
+| <kbd>cmd</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … | <kbd>ctrl</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … |
+| <kbd>opt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Wort zurück / vor |
+| <kbd>cmd</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
+| <kbd>cmd</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
+| <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
+| <kbd>ctrl</kbd> + Taste | <kbd>windows</kbd> + Taste, z. B. ctrl+E für den Explorer |
+| <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
+| <kbd>ctrl</kbd> + Klick | Rechtsklick |
+| <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
 | Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie sie am Mac getippt werden |
-| <kbd>⌃</kbd> +<kbd>←</kbd> / <kbd>→</kbd> oder Wischgeste | **zwischen macOS und Laptop wechseln** |
-| <kbd>⌘</kbd> + <kbd>↹</kbd> | zu einem anderen Mac-Programm wechseln |
-| <kbd>⌃</kbd> + <kbd>⌘</kbd> + <kbd>F</kbd> | Vollbild ein/aus |
-| <kbd>⌘</kbd> + <kbd>Q</kbd> | LaptopScreen beenden |
+| <kbd>ctrl</kbd> +<kbd>←</kbd> / <kbd>→</kbd> oder Wischgeste | **zwischen macOS und Laptop wechseln** |
+| <kbd>cmd</kbd> + <kbd>tab</kbd> | zu einem anderen Mac-Programm wechseln |
+| <kbd>ctrl</kbd> + <kbd>cmd</kbd> + <kbd>F</kbd> | Vollbild ein/aus |
+| <kbd>cmd</kbd> + <kbd>Q</kbd> | LaptopScreen beenden |
 
 Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
 
@@ -99,7 +99,7 @@ Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display
 
 Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 
-- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit ⌘+V einfügen.
+- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit cmd+V einfügen.
 - **Vom Laptop zum Mac:** Text auf dem Laptop kopieren, zu einem Mac-Programm wechseln, einfügen.
 
 Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, nimmt im Fenster den Haken bei „Zwischenablage mit dem Mac teilen“ heraus; das gilt sofort und dauerhaft.
