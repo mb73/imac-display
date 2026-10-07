@@ -53,7 +53,7 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 
 Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
-1. Win+R drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
+1. <kbd>win</kbd> + <kbd>R</kbd> drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
 2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
 3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
 
@@ -82,7 +82,7 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 | <kbd>cmd</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
 | <kbd>cmd</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
 | <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
-| <kbd>ctrl</kbd> + Taste | <kbd>windows</kbd> + Taste, z. B. ctrl+E für den Explorer |
+| <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. ctrl+E für den Explorer |
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
@@ -147,11 +147,11 @@ Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 �
 | „Kopplungscode abgelehnt“ | Den Code so eingeben, wie er auf dem Mac steht; Groß- und Kleinschreibung sowie Bindestriche sind egal. |
 | LaptopScreen meldet „kein HDMI-Dummy-Stecker“ | Den Stecker in den HDMI-Anschluss des Laptops stecken. Das Bild kommt dann von selbst. |
 | Bild steht still | Ist Windows gesperrt? Dann am Laptop entsperren. |
-| Laptop gesperrt, Deckel war zu, beim Aufklappen bleibt das Display schwarz | Den HDMI-Dummy-Stecker kurz ziehen: Dann zeigt Windows die Anmeldung auf dem Laptop. Nach dem Entsperren wieder einstecken, das Bild auf dem Mac kommt von selbst. Win+P geht auf dem Sperrbildschirm nicht. |
+| Laptop gesperrt, Deckel war zu, beim Aufklappen bleibt das Display schwarz | Den HDMI-Dummy-Stecker kurz ziehen: Dann zeigt Windows die Anmeldung auf dem Laptop. Nach dem Entsperren wieder einstecken, das Bild auf dem Mac kommt von selbst. <kbd>win</kbd> + <kbd>P</kbd> geht auf dem Sperrbildschirm nicht. |
 | „Intel Quick Sync geht hier nicht“ | Der Laptop hat keine passende Intel-Grafik; dann kann `imac-display.exe` das Bild nicht übertragen. |
 | Aktualisierung auf dem Mac schlägt fehl | Die Meldung nennt den Grund. Fehlen die Command Line Tools: im Terminal `xcode-select --install`. LaptopScreen läuft so lange in der alten Version weiter. |
 | Text kommt in der Zwischenablage nicht an | Erst kopieren, dann wechseln: Der Text wandert beim Wechsel zu LaptopScreen bzw. weg davon mit. Ist im Fenster der Haken bei „Zwischenablage mit dem Mac teilen“ gesetzt? |
-| Nach einem Absturz ist ein unsichtbarer Bildschirm aktiv | Win+P → „Nur PC-Bildschirm“ oder `imac-display.exe --restore`. |
+| Nach einem Absturz ist ein unsichtbarer Bildschirm aktiv | <kbd>win</kbd> + <kbd>P</kbd> → „Nur PC-Bildschirm“ oder `imac-display.exe --restore`. |
 | Genauer nachsehen | Im Fenster auf „Log“ klicken: Dort steht, was das Programm tut, und „Diagnose“ prüft Bildschirme, Dummy-Stecker, Deckel, ffmpeg und Intel Quick Sync und sucht den Mac. Die Logdatei liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
 
 Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zurück; danach fragt der Laptop erneut nach dem Code.
