@@ -8,7 +8,7 @@ cd "$(dirname "$0")"
 
 if ! xcode-select -p >/dev/null 2>&1; then
     echo "LaptopScreen wird auf diesem Mac gebaut und braucht dafür Apples kostenlose Command Line Tools."
-    echo "Gleich erscheint ein Fenster: dort „Installieren“ wählen und warten, bis es fertig ist."
+    echo "Gleich erscheint ein Fenster. Dort bitte „Installieren“ wählen und warten, bis es fertig ist."
     xcode-select --install >/dev/null 2>&1 || true
     printf "Warte auf die Command Line Tools (Abbrechen mit Ctrl+C) …"
     until xcode-select -p >/dev/null 2>&1; do
@@ -37,5 +37,5 @@ rm -rf LaptopScreen.app
 echo
 echo "LaptopScreen liegt jetzt in $target und startet gleich."
 echo "Beim ersten Start fragt macOS, ob LaptopScreen eingehende Verbindungen annehmen und das"
-echo "lokale Netzwerk nutzen darf: bitte beides erlauben."
+echo "lokale Netzwerk nutzen darf. Bitte beides erlauben."
 open "$target/LaptopScreen.app"
