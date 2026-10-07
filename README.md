@@ -1,15 +1,17 @@
 # imac-display
 
-Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop.
+Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
 Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit Ctrl+←/→ wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15).
 
+**Warnung:** Manchmal gehen die Daten unverschlüsselt übers WLAN (etwa wenn das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
+
 ## So funktioniert es
 
 - **Ein HDMI-Dummy-Stecker** im Laptop gibt sich als 4K-Monitor aus. Ohne Adminrechte darf Windows keinen virtuellen Bildschirm anlegen – ein Stecker für rund 6 € löst das.
-- **`imac-display.exe`** auf dem Laptop nimmt diesen Bildschirm auf, kodiert ihn mit der Intel-Grafik als H.264 und schickt ihn per Kabel oder WLAN an den Mac. Umgekehrt setzt es die Eingaben vom Mac um.
+- **`imac-display.exe`** auf dem Laptop nimmt diesen Bildschirm auf, kodiert ihn mit der Intel-Grafik als H.264 und schickt ihn per LAN-Kabel oder WLAN an den Mac. Umgekehrt setzt es die Eingaben vom Mac um.
 - **LaptopScreen** auf dem Mac zeigt das Bild ohne Zwischenpuffer an (Verzögerung etwa 50–100 ms) und schickt Tastatur und Maus zurück.
 - Beide finden sich von selbst und koppeln sich über einen **Kopplungscode**, den der Mac anzeigt. Alles bleibt in deinem Netz, es gibt keinen Cloud-Dienst und kein Konto.
 - **Updates** holst du nur auf den Laptop; den Mac bringt der Laptop dann selbst auf den neuen Stand.
@@ -21,7 +23,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
 | Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. [von FUERAN](https://www.amazon.de/dp/B0FMG2CPL6/?th=1), ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
-| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [ein Cat6](https://www.amazon.de/dp/B00N2VIALK/?th=1), ca. 4 €. Sonst geht es auch über das gemeinsame WLAN. |
+| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [ein Cat6](https://www.amazon.de/dp/B00N2VIALK/?th=1), ca. 4 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
 
 ## Einrichtung auf dem Mac (einmalig)
 
@@ -154,12 +156,12 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 
 ## Sicherheit
 
+- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb das direkte Kabel oder dein Heimnetz, **kein fremdes WLAN**.
 - Auf dem Laptop läuft alles **ohne Adminrechte**. Geändert werden nur deine eigenen Anzeige-Einstellungen; installiert wird nichts außer einem Startmenü-Eintrag für dich.
 - Der Laptop baut **nur ausgehende Verbindungen** zum Mac auf (TCP 47100 für das Bild, 47101 für die Steuerung). Auf dem Laptop öffnet sich kein Port.
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
 - **Updates für den Mac** kommen nur vom gekoppelten Laptop, sind mit dem Kopplungscode signiert und werden erst nach deiner Zustimmung auf dem Mac gebaut.
 - **Nach neuen Versionen** fragt der Laptop bei GitHub: Er lädt dafür beim Start und alle sechs Stunden die kleine Datei `VERSION`, ohne Angaben über dich. Die neue Version selbst lädt er nur auf deinen Klick.
-- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb das direkte Kabel oder dein Heimnetz, kein fremdes WLAN.
 - Technisch ist das eine Fernsteuerung des Firmen-Laptops vom Mac aus, und die geteilte Zwischenablage trägt Text vom Firmen-Laptop auf deinen Mac. Stimme bitte mit der IT ab, ob das für dich in Ordnung ist.
 
 ## Für Entwickler
