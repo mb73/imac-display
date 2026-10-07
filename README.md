@@ -6,7 +6,7 @@ Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – o
 
 Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
 
-Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15).
+Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15). In dem Fall werden die 4K sauber auf 5K hochskaliert.
 
 **Warnung:** Manchmal gehen die Daten unverschlüsselt übers WLAN (etwa wenn das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
 
