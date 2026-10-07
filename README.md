@@ -30,7 +30,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 1. **Folge Zeile kopieren (Knopf rechts):**
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
-   ```   
+   ```
 2. **Im Programm „Terminal“** (<kbd>cmd</kbd> + Leertaste dann „terminal“ tippen) erst <kbd>cmd</kbd> + <kbd>V</kbd> und dann <kbd>↵</kbd> drücken. Obiger Befehl lädt dann dieses Projekt von GitHub und baut daraus LaptopScreen; was er genau tut, steht in [mac/install.sh](mac/install.sh).
 3. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
 4. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
