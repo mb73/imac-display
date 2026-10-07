@@ -322,6 +322,7 @@ namespace ImacDisplay
         public static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string ExePath = Assembly.GetExecutingAssembly().Location;
         public const string GuideUrl = "https://github.com/mb73/imac-display/blob/main/README.md";
+        public const string LicenseUrl = "https://github.com/mb73/imac-display/blob/main/LICENSE";
 
         /* keepDisplay: an update hands the Mac display over to the new version instead of switching it off */
         static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession, macAsleep, cableChecking;

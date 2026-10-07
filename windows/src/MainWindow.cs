@@ -54,7 +54,7 @@ namespace ImacDisplay
         readonly ThinBar bannerProgress = new ThinBar();
         readonly ThemedCheckBox clipboard = new ThemedCheckBox();
         readonly Button connect = new Button();
-        readonly LinkLabel guide = new LinkLabel(), log = new LinkLabel();
+        readonly LinkLabel guide = new LinkLabel(), license = new LinkLabel(), log = new LinkLabel();
         readonly Label version = new Label();
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
 
@@ -163,6 +163,10 @@ namespace ImacDisplay
             guide.AutoSize = true;
             guide.Margin = new Padding(0, 0, 14, 0);
             guide.LinkClicked += delegate { OpenInBrowser(Program.GuideUrl); };
+            license.Text = "Lizenz";
+            license.AutoSize = true;
+            license.Margin = new Padding(0, 0, 14, 0);
+            license.LinkClicked += delegate { OpenInBrowser(Program.LicenseUrl); };
             log.Text = "Log";
             log.AutoSize = true;
             log.Margin = new Padding(0, 0, 14, 0);
@@ -176,7 +180,7 @@ namespace ImacDisplay
             links.WrapContents = false;
             links.Anchor = AnchorStyles.Right;
             links.Margin = Padding.Empty;
-            links.Controls.AddRange(new Control[] { guide, log, version });
+            links.Controls.AddRange(new Control[] { guide, license, log, version });
             var bar = new TableLayoutPanel();
             bar.Tag = "bar";
             bar.Dock = DockStyle.Fill;

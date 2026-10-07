@@ -9,4 +9,7 @@ enum Config {
     /* upper limits for data arriving over the control channel */
     static let maxUpdateBytes = 16 << 20
     static let maxClipboardBytes = 4 << 20
+    /* the project LaptopScreen belongs to and its license, linked in the About panel */
+    static let projectURL = URL(string: "https://github.com/mb73/imac-display")!
+    static let licenseURL = URL(string: "https://github.com/mb73/imac-display/blob/main/LICENSE")!
 }

@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.7.7] – 2026-10-07
+
+### Hinzugefügt
+
+- **Lizenz verlinkt.** Im Fenster von iMac-Display öffnet „Lizenz“ die MIT-Lizenz auf GitHub. Auf dem Mac nennt „Über LaptopScreen“ jetzt das Projekt imac-display, zu dem LaptopScreen gehört, und verlinkt es samt Lizenz. Der Mac aktualisiert sich wie gewohnt selbst.
+
 ## [1.7.5] – 2026-10-07
 
 ### Behoben

@@ -125,6 +125,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refresh()
     }
 
+    /* the standard About panel; below the version it names the project LaptopScreen belongs to and its license */
+    @objc private func showAbout() {
+        let centered = NSMutableParagraphStyle()
+        centered.alignment = .center
+        let font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        let parts: [(String, URL?)] = [("Gehört zu ", nil), ("imac-display", Config.projectURL),
+                                       ("\n\n", nil), ("MIT-Lizenz", Config.licenseURL)]
+        let credits = NSMutableAttributedString()
+        for (text, link) in parts {
+            var attributes: [NSAttributedString.Key: Any] = [.font: font, .paragraphStyle: centered]
+            /* links take the text view's link color, plain text the label color, which follows dark mode */
+            if let link = link { attributes[.link] = link } else { attributes[.foregroundColor] = NSColor.labelColor }
+            credits.append(NSAttributedString(string: text, attributes: attributes))
+        }
+        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
+    }
+
     private func videoChanged(_ state: VideoReceiver.State) {
         switch state {
         case .receiving: videoRunning = true
@@ -278,8 +295,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appItem = NSMenuItem()
         mainMenu.addItem(appItem)
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Über LaptopScreen",
-                        action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        let about = appMenu.addItem(withTitle: "Über LaptopScreen", action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
         appMenu.addItem(NSMenuItem.separator())
         let fullScreen = appMenu.addItem(withTitle: "Vollbild ein/aus",
                                          action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")

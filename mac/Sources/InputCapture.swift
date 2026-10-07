@@ -63,7 +63,8 @@ final class InputCapture {
      Sometimes the mouse moves over the picture, but its events no longer reach LaptopScreen: after the Mac
      wakes up and is unlocked, or when a notification shows up at the top right. The pointer then froze until
      a click. Now the polled position goes to the laptop instead, and LaptopScreen takes the focus back from
-     the login window or the notifications, though not from apps the user chose (Spotlight, Mission Control).
+     the login window or the notifications, though not from apps the user chose (Spotlight, Mission Control)
+     nor from its own About panel, whose links could not be clicked otherwise.
      */
     private func poll() {
         let location = NSEvent.mouseLocation
@@ -71,6 +72,7 @@ final class InputCapture {
         lastPolled = location
         guard moved, isEnabled, !away, let view = view, let window = view.window, window.isVisible,
               window.isOnActiveSpace, window.attachedSheet == nil, window.frame.contains(location),
+              NSApp.keyWindow == nil || NSApp.keyWindow === window,
               ProcessInfo.processInfo.systemUptime - lastEventAt > 0.1 else { return }
         let point = view.convert(window.convertPoint(fromScreen: location), from: nil)
         let rect = videoRect(in: view.bounds)
