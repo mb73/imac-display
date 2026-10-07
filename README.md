@@ -27,13 +27,16 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
-1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip. Safari entpackt es meist von selbst in den Ordner „Downloads“.
-2. **Einrichtung starten:** im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken.
-3. **Beim ersten Mal blockiert macOS das,** weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat: „Fertig“ klicken, dann Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal und zeigt den Fortschritt.
-4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
-5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
+1. **Das Programm „Terminal“ öffnen,** etwa ⌘+Leertaste dann „terminal“ tippen.
+2. **Diese Zeile kopieren, ins Terminal einfügen und Return drücken:**
+   ```sh
+   curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
+   ```
+   Der Befehl lädt dieses Projekt von GitHub und baut daraus LaptopScreen; was er genau tut, steht in [mac/install.sh](mac/install.sh).
+3. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
+4. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
 
-Alternative ohne Systemeinstellungen: das Programm „Terminal“ öffnen (Spotlight: Cmd+Leertaste, „Terminal“ tippen), `sh ` tippen (mit Leerzeichen dahinter), die Datei `install.sh` aus demselben Ordner ins Fenster ziehen und Return drücken.
+**Alternative ohne Terminal:** Dieses Projekt mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip herunterladen (Safari entpackt es meist von selbst in den Ordner „Downloads“) und im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken. Beim ersten Mal blockiert macOS das, weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat: „Fertig“ klicken, dann Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal, und es geht weiter wie oben ab Schritt 3.
 
 Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
@@ -75,20 +78,20 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 
 | Auf dem Mac | Wirkung in Windows |
 |---|---|
-| Cmd+C, V, X, Z, S, A, F … | Strg+C, V, X, Z, S, A, F … |
-| Option+← / → | Wort zurück / vor |
-| Cmd+← / → | Zeilenanfang / Zeilenende |
-| Cmd+↑ / ↓ | Dokumentanfang / Dokumentende |
-| Option+Backspace | Wort löschen |
-| Ctrl+Taste | Windows-Taste+Taste, z. B. Ctrl+E für den Explorer |
-| Ctrl+Shift+← / → | aktives Fenster auf den anderen Bildschirm schieben |
-| Ctrl+Klick | Rechtsklick |
-| Cmd+Scrollen | Zoomen (Strg+Mausrad) |
+| ⌘ + C, V, X, Z, S, A, F … | Strg+C, V, X, Z, S, A, F … |
+| ⌥ + ← / → | Wort zurück / vor |
+| ⌘ + ← / → | Zeilenanfang / Zeilenende |
+| ⌘ + ↑ / ↓ | Dokumentanfang / Dokumentende |
+| ⌥ + Backspace | Wort löschen |
+| ⌃ + Taste | Windows-Taste+Taste, z. B. ⌃+E für den Explorer |
+| ⌃ + ⇧ + ← / → | aktives Fenster auf den anderen Bildschirm schieben |
+| ⌃ + Klick | Rechtsklick |
+| ⌘ + Scrollen | Zoomen (Strg+Mausrad) |
 | Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie der Mac sie tippt |
-| **Ctrl+← / →** oder Wischgeste | zwischen macOS und Laptop wechseln |
-| Cmd+Tab | zu einem anderen Mac-Programm wechseln |
-| Ctrl+Cmd+F | Vollbild ein/aus |
-| Cmd+Q | LaptopScreen beenden |
+| **⌃ + ← / →** oder Wischgeste | zwischen macOS und Laptop wechseln |
+| ⌘ + Tab | zu einem anderen Mac-Programm wechseln |
+| ⌃ + ⌘ + F | Vollbild ein/aus |
+| ⌘ + Q | LaptopScreen beenden |
 
 Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
 
@@ -96,7 +99,7 @@ Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display
 
 Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 
-- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit Cmd+V einfügen.
+- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit ⌘+V einfügen.
 - **Vom Laptop zum Mac:** Text auf dem Laptop kopieren, zu einem Mac-Programm wechseln, einfügen.
 
 Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, nimmt im Fenster den Haken bei „Zwischenablage mit dem Mac teilen“ heraus; das gilt sofort und dauerhaft.
@@ -168,7 +171,7 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 
 - `windows\build.cmd` baut `imac-display.exe` mit dem C#-Compiler, der in jedem Windows steckt (.NET Framework 4.x).
 - `imac-display.exe --test | Out-String` gibt die Diagnose als Text aus; ohne Umleitung erscheint sie in einem Fenster.
-- `mac/build.sh` baut `LaptopScreen.app` mit den Command Line Tools, `mac/install.sh` installiert es.
+- `mac/build.sh` baut `LaptopScreen.app` mit den Command Line Tools, `mac/install.sh` installiert es; per `curl … | sh` gestartet, lädt das Skript vorher den Stand von `main` von GitHub.
 - Aufbau, Protokoll, Update-Mechanismus, Messwerkzeuge und Fallstricke stehen in [CLAUDE.md](CLAUDE.md), Änderungen in [CHANGELOG.md](CHANGELOG.md).
 
 ## Lizenz

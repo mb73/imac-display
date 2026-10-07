@@ -51,7 +51,10 @@ powershell -File windows\dev\latency-probe.ps1
 cd mac && sh build.sh && open LaptopScreen.app
 
 # on the Mac: first installation (Command Line Tools if missing, build, copy to /Applications, start);
-# for users: double-click mac/install.command (Gatekeeper blocks it once: Privacy & Security -> Open Anyway)
+# the README's way: piped, without sources next to it, install.sh first fetches the main branch from GitHub
+curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
+# the same from a checkout or the downloaded zip; or double-click mac/install.command
+# (Gatekeeper blocks a downloaded copy once: Privacy & Security -> Open Anyway)
 sh mac/install.sh
 ```
 
@@ -131,6 +134,7 @@ Auf dem Laptop dann `powershell -File windows\dev\send-to-mac.ps1`: Es packt `bu
 - **Swift wie Swift 5.3/5.4 und macOS-11-SDK:** Der Compiler auf dem iMac des Benutzers ist älter als Swift 5.5. Also kein `@MainActor`, keine `Task`, kein `async`/`await`, kein `sampleBufferRenderer`; mehrzeilige Closures mit expliziter Signatur; `NWListener.Service(type:)` statt der mehrdeutigen Überladung mit `txtRecord: nil`.
 - Kommentare auf Englisch, eigenständige Kommentarzeilen als `/* … */`; Meldungen an den Benutzer auf Deutsch.
 - `.sh`, `.command`, `.swift`, `.plist` mit LF, `.cmd` und `.ps1` mit CRLF (`.gitattributes`). `mac/install.command` braucht im Repo das Ausführungsrecht (Modus 100755), sonst startet der Doppelklick nicht; Windows kennt es nicht, deshalb `git update-index --chmod=+x`. `.ps1` mit Umlauten brauchen ein UTF-8-BOM, sonst liest Windows PowerShell 5.1 sie als ANSI.
+- `mac/install.sh` läuft auch per `curl … | sh` (README): Die Shell liest das Skript dann von stdin, also darf nichts darin von stdin lesen, und alles steht in `main`, damit ein abgebrochener Download als Syntaxfehler scheitert, statt halb zu laufen. Nach einem Push liefert `raw.githubusercontent.com` bis zu 5 Minuten lang noch die alte Fassung (`max-age=300`).
 - Die gebaute `imac-display.exe` wird mit eingecheckt (samt `imac-display.exe.config`), damit niemand selbst bauen muss; ffmpeg nicht (lädt der erste Start, Version und SHA-256 in `Setup.cs` gepinnt). Ebenfalls eingecheckt: die Icons `windows\imac-display.ico` und `mac\AppIcon.icns` aus `windows\dev\make-icons.ps1`.
 - `build.cmd` erzeugt Titel und Dateiversion der exe aus `VERSION` (temporäre AssemblyInfo), damit Taskleiste und Explorer „iMac-Display“ zeigen.
 
