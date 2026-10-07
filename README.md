@@ -8,7 +8,7 @@ Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac 
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15). In dem Fall werden die 4K sauber auf 5K hochskaliert.
 
-**Warnung:** Manchmal gehen die Daten unverschlüsselt übers WLAN (etwa wenn das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
+**Warnung:** Mitunter gehen Daten unverschlüsselt übers WLAN (z. B. solange das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
 
 ## So funktioniert es
 
