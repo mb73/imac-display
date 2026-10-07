@@ -1,5 +1,7 @@
 # imac-display
 
+<img width="826" height="288" alt="LaptopScreen2" src="https://github.com/user-attachments/assets/c85ac203-7045-4db8-af25-b5c85fc06d1e" />
+
 Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
 Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
@@ -39,6 +41,8 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
+<img width="453" height="190" alt="Dock" src="https://github.com/user-attachments/assets/df2a7f27-caf1-438c-9ac6-2c188e9e5adc" />
+
 ## Einrichtung auf dem Laptop (einmalig)
 
 1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip.
@@ -48,6 +52,8 @@ Tipp: Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Doc
 5. **`imac-display.exe` doppelklicken.** Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
 
 Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
+
+<img width="478" height="288" alt="DeckelZu" src="https://github.com/user-attachments/assets/04c6b168-0814-4453-be96-437103d4bc7c" />
 
 ### Zugeklappt benutzen
 
