@@ -79,9 +79,9 @@ Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Ma
 
 ### Tastatur und Maus
 
-Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht ist es so, dass du tippen kannst wie auf dem Mac:
+Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus an den Laptop. Gedacht ist es so, dass du tippen kannst wie auf dem Mac:
 
-| Auf dem Mac | Wirkung in Windows |
+| Auf dem Mac im LaptopScreen | Wirkung in Windows |
 |---|---|
 | <kbd>cmd</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … | <kbd>ctrl</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … |
 | <kbd>opt</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Wort zurück / vor |
