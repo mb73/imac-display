@@ -2,7 +2,7 @@
 
 Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
-Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit Ctrl+←/→ wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
+Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>⌃</kbd> +<kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15).
 
@@ -27,8 +27,8 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
-1. **Das Programm „Terminal“ öffnen,** etwa ⌘+Leertaste dann „terminal“ tippen.
-2. **Diese Zeile kopieren, ins Terminal einfügen und Return drücken:**
+1. **Das Programm „Terminal“ öffnen,** etwa <kbd>⌘</kbd>+Leertaste dann „terminal“ tippen und <kbd>↵</kbd> drücken.
+2. **Folge Zeile kopieren (Knopf rechts), ins Terminal einfügen (<kbd>⌘</kbd> + <kbd>V</kbd>) und <kbd>↵</kbd> drücken:**
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
    ```
@@ -54,7 +54,7 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 
 Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
-1. Win+R drücken, `powercfg.cpl` eingeben und Enter drücken. Die „Energieoptionen“ öffnen sich.
+1. Win+R drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
 2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
 3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
 
@@ -78,20 +78,20 @@ Solange LaptopScreen vorne ist, gehen Tastatur und Maus an den Laptop. Gedacht i
 
 | Auf dem Mac | Wirkung in Windows |
 |---|---|
-| ⌘ + C, V, X, Z, S, A, F … | Strg+C, V, X, Z, S, A, F … |
-| ⌥ + ← / → | Wort zurück / vor |
-| ⌘ + ← / → | Zeilenanfang / Zeilenende |
-| ⌘ + ↑ / ↓ | Dokumentanfang / Dokumentende |
-| ⌥ + Backspace | Wort löschen |
-| ⌃ + Taste | Windows-Taste+Taste, z. B. ⌃+E für den Explorer |
-| ⌃ + ⇧ + ← / → | aktives Fenster auf den anderen Bildschirm schieben |
-| ⌃ + Klick | Rechtsklick |
-| ⌘ + Scrollen | Zoomen (Strg+Mausrad) |
-| Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie der Mac sie tippt |
-| **⌃ + ← / →** oder Wischgeste | zwischen macOS und Laptop wechseln |
-| ⌘ + Tab | zu einem anderen Mac-Programm wechseln |
-| ⌃ + ⌘ + F | Vollbild ein/aus |
-| ⌘ + Q | LaptopScreen beenden |
+| <kbd>⌘</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … | <kbd>⌃</kbd> + <kbd>C</kbd>, <kbd>V</kbd>, <kbd>X</kbd>, <kbd>Z</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>F</kbd> … |
+| <kbd>⌥</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Wort zurück / vor |
+| <kbd>⌘</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
+| <kbd>⌘</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
+| <kbd>⌥</kbd> + <kbd>Backspace</kbd> | Wort löschen |
+| <kbd>⌃</kbd> + Taste | <kbd>⊞</kbd>+Taste, z. B. ⌃+E für den Explorer |
+| <kbd>⌃</kbd> + <kbd>⇧</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
+| <kbd>⌃</kbd> + Klick | Rechtsklick |
+| <kbd>⌘</kbd> + Scrollen | Zoomen (<kbd>⌃</kbd> + Mausrad) |
+| Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie sie am Mac getippt werden |
+| <kbd>⌃</kbd> +<kbd>←</kbd> / <kbd>→</kbd> oder Wischgeste | **zwischen macOS und Laptop wechseln** |
+| <kbd>⌘</kbd> + <kbd>↹</kbd> | zu einem anderen Mac-Programm wechseln |
+| <kbd>⌃</kbd> + <kbd>⌘</kbd> + <kbd>F</kbd> | Vollbild ein/aus |
+| <kbd>⌘</kbd> + <kbd>Q</kbd> | LaptopScreen beenden |
 
 Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
 
@@ -165,7 +165,6 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
 - **Updates für den Mac** kommen nur vom gekoppelten Laptop, sind mit dem Kopplungscode signiert und werden erst nach deiner Zustimmung auf dem Mac gebaut.
 - **Nach neuen Versionen** fragt der Laptop bei GitHub: Er lädt dafür beim Start und alle sechs Stunden die kleine Datei `VERSION`, ohne Angaben über dich. Die neue Version selbst lädt er nur auf deinen Klick.
-- Technisch ist das eine Fernsteuerung des Firmen-Laptops vom Mac aus, und die geteilte Zwischenablage trägt Text vom Firmen-Laptop auf deinen Mac. Stimme bitte mit der IT ab, ob das für dich in Ordnung ist.
 
 ## Für Entwickler
 
