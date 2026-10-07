@@ -103,6 +103,21 @@ namespace ImacDisplay
             return b.Length == 4 && b[0] == 169 && b[1] == 254;
         }
 
+        /* " über WLAN" or " über LAN-Kabel" by the laptop's adapter that owns a local address, "" if neither */
+        public static string Via(IPAddress local, out bool wifi)
+        {
+            wifi = false;
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+                foreach (var unicast in nic.GetIPProperties().UnicastAddresses)
+                {
+                    if (!unicast.Address.Equals(local)) continue;
+                    wifi = nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+                    if (wifi) return " über WLAN";
+                    return nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet ? " über LAN-Kabel" : "";
+                }
+            return "";
+        }
+
         static List<IPAddress> LocalAddresses()
         {
             var list = new List<IPAddress>();

@@ -24,6 +24,10 @@ final class InputCapture {
     }
 
     private var monitor: Any?
+    private var poller: Timer?
+    /* uptime of the last mouse event that reached LaptopScreen, and where the pointer was at the last poll */
+    private var lastEventAt: TimeInterval = 0
+    private var lastPolled = NSPoint.zero
     private var pressedSpecial: [UInt16: (vk: Int, mods: Int, extended: Bool)] = [:]
     private var pressedChar: [UInt16: UInt32] = [:]
     private var lastMods = -1
@@ -48,6 +52,38 @@ final class InputCapture {
         monitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
             guard let self = self else { return event }
             return self.handle(event)
+        }
+        lastPolled = NSEvent.mouseLocation
+        poller = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { [weak self] (_: Timer) in
+            self?.poll()
+        }
+    }
+
+    /*
+     Sometimes the mouse moves over the picture, but its events no longer reach LaptopScreen: after the Mac
+     wakes up and is unlocked, or when a notification shows up at the top right. The pointer then froze until
+     a click. Now the polled position goes to the laptop instead, and LaptopScreen takes the focus back from
+     the login window or the notifications, though not from apps the user chose (Spotlight, Mission Control).
+     */
+    private func poll() {
+        let location = NSEvent.mouseLocation
+        let moved = location != lastPolled
+        lastPolled = location
+        guard moved, isEnabled, !away, let view = view, let window = view.window, window.isVisible,
+              window.isOnActiveSpace, window.attachedSheet == nil, window.frame.contains(location),
+              ProcessInfo.processInfo.systemUptime - lastEventAt > 0.1 else { return }
+        let point = view.convert(window.convertPoint(fromScreen: location), from: nil)
+        let rect = videoRect(in: view.bounds)
+        let nx = max(0, min(1, (point.x - rect.minX) / rect.width))
+        let ny = max(0, min(1, (rect.maxY - point.y) / rect.height))
+        send?("M \(Int(nx * 65535)) \(Int(ny * 65535))")
+        if !NSApp.isActive {
+            let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
+            if front == "com.apple.loginwindow" || front == "com.apple.notificationcenterui" {
+                NSApp.activate(ignoringOtherApps: true)
+            }
+        } else if !window.isKeyWindow {
+            window.makeKey()
         }
     }
 
@@ -166,6 +202,7 @@ final class InputCapture {
     // MARK: - Mouse
 
     private func mouse(_ event: NSEvent, in view: NSView) {
+        lastEventAt = ProcessInfo.processInfo.systemUptime
         let rect = videoRect(in: view.bounds)
         let mods = InputCapture.mods(event.modifierFlags)
         /*

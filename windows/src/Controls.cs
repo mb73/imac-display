@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace ImacDisplay
 {
     /* Connection states as the window's status light and the taskbar badge show them */
-    internal enum Light { Off, Busy, Paused, On, Problem }
+    internal enum Light { Off, Busy, Paused, On, OnWifi, Problem }
 
     /* Draws the status lights; the taskbar badges are the same drawing with a white ring */
     internal static class Badges
@@ -20,7 +20,8 @@ namespace ImacDisplay
         {
             switch (light)
             {
-                case Light.On: return dark ? Color.FromArgb(0x2E, 0xA0, 0x43) : Color.FromArgb(0x10, 0x7C, 0x10);
+                case Light.On:
+                case Light.OnWifi: return dark ? Color.FromArgb(0x2E, 0xA0, 0x43) : Color.FromArgb(0x10, 0x7C, 0x10);
                 case Light.Busy:
                 case Light.Paused: return dark ? Color.FromArgb(0xE3, 0x9A, 0x1B) : Color.FromArgb(0xE0, 0x8A, 0x00);
                 case Light.Problem: return dark ? Color.FromArgb(0xE5, 0x53, 0x4B) : Color.FromArgb(0xD9, 0x2D, 0x2D);
@@ -30,7 +31,8 @@ namespace ImacDisplay
 
         /*
          A round light with a white mark: a check for On (proportions as in one-click-vpn's taskbar badge),
-         two bars for Paused, an exclamation mark for Problem. As a taskbar badge it gets a white ring.
+         the Wi-Fi symbol for OnWifi, two bars for Paused, an exclamation mark for Problem. As a taskbar
+         badge it gets a white ring.
          */
         public static void Draw(Graphics g, RectangleF r, Light light, bool dark, bool ring)
         {
@@ -53,6 +55,19 @@ namespace ImacDisplay
                         new PointF(r.X + w * 0.776f, r.Y + h * 0.328f)
                     });
                 }
+            }
+            else if (light == Light.OnWifi)
+            {
+                /* a dot and two arcs above it */
+                float cx = r.X + w * 0.5f, cy = r.Y + h * 0.69f;
+                using (var arc = new Pen(Color.White, w * 0.105f))
+                {
+                    arc.StartCap = LineCap.Round;
+                    arc.EndCap = LineCap.Round;
+                    foreach (float radius in new[] { 0.20f, 0.36f })
+                        g.DrawArc(arc, cx - w * radius, cy - h * radius, w * radius * 2, h * radius * 2, 225, 90);
+                }
+                g.FillEllipse(Brushes.White, cx - w * 0.075f, cy - h * 0.075f, w * 0.15f, h * 0.15f);
             }
             else if (light == Light.Paused)
             {

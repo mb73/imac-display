@@ -18,6 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var updateStatus: String?
     private var updateOfferVisible = false
     private var declinedVersion: String?
+    /* the laptop announced its switch to the cable: say so instead of flashing the waiting screen */
+    private var switchingSince: Date?
+    /* when a running video stopped: a mere restart (lid, display change) keeps the last picture for a moment */
+    private var videoStoppedAt: Date?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
@@ -54,8 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                name: NSWindow.didChangeScreenNotification, object: window)
         NotificationCenter.default.addObserver(self, selector: #selector(screenChanged),
                                                name: NSApplication.didChangeScreenParametersNotification, object: nil)
-        NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(willSleep),
-                                                          name: NSWorkspace.willSleepNotification, object: nil)
+        let workspace = NSWorkspace.shared.notificationCenter
+        workspace.addObserver(self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
+        workspace.addObserver(self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
+        workspace.addObserver(self, selector: #selector(screensSlept), name: NSWorkspace.screensDidSleepNotification, object: nil)
+        workspace.addObserver(self, selector: #selector(screensWoke), name: NSWorkspace.screensDidWakeNotification, object: nil)
         screenChanged()
         refresh()
         receiver.start()
@@ -91,10 +98,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if agentConnected { clipboard.becameActive() }
     }
 
-    /* the laptop hangs up while the Mac is still awake: see ControlServer.goingToSleep */
+    /* the laptop hangs up while the Mac is still awake and finds LaptopScreen again only once the display is on: */
+    /* see ControlServer.goingToSleep and setAdvertised */
     @objc private func willSleep() {
         input.releaseAll()
+        control.setAdvertised(false)
         control.goingToSleep()
+    }
+
+    /* a safety net in case the display's wake notification does not come; a dark wake keeps the display asleep */
+    @objc private func didWake() {
+        if CGDisplayIsAsleep(CGMainDisplayID()) == 0 { control.setAdvertised(true) }
+    }
+
+    @objc private func screensSlept() {
+        control.setAdvertised(false)
+    }
+
+    @objc private func screensWoke() {
+        control.setAdvertised(true)
     }
 
     @objc private func renewPairingCode() {
@@ -106,7 +128,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func videoChanged(_ state: VideoReceiver.State) {
         switch state {
         case .receiving: videoRunning = true
-        case .waiting: videoRunning = false
+        case .waiting:
+            if videoRunning {
+                videoStoppedAt = Date()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.refresh() }
+            }
+            videoRunning = false
         case .failed(let message): failure = message
         }
         refresh()
@@ -135,6 +162,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .pointerHome(let x, let y):
             input.pointerHome(x: x, y: y)
             return
+        case .switchingToCable:
+            switchingSince = Date()
+            /* visible for at least a second, and at most ten if the laptop does not come back */
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.refresh() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.refresh() }
         case .agentVersion(let version):
             offerUpdate(version)
         case .clipboardEnabled(let enabled):
@@ -194,7 +226,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refresh() {
-        let showing = agentConnected && videoRunning && !laptopLocked && !dummyMissing
+        let restarting = agentConnected && !videoRunning
+            && (videoStoppedAt.map { Date().timeIntervalSince($0) < 1.5 } ?? false)
+        let showing = agentConnected && (videoRunning || restarting) && !laptopLocked && !dummyMissing
         let controlling = showing && !updateOfferVisible
         input.isEnabled = controlling
         container.controlling = controlling
@@ -202,6 +236,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             container.overlay.isHidden = false
             container.overlay.text = status
             return
+        }
+        if let since = switchingSince {
+            let elapsed = Date().timeIntervalSince(since)
+            if elapsed < 10 && (elapsed < 1 || !showing) {
+                container.overlay.isHidden = false
+                container.overlay.text = "Wechsle vom WLAN aufs Kabel …\n\nDas Bild ist gleich wieder da."
+                return
+            }
+            switchingSince = nil
         }
         if showing {
             container.overlay.isHidden = true

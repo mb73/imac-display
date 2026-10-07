@@ -329,6 +329,10 @@ namespace ImacDisplay
         static volatile MacEndpoint cableFound;
         /* set by a session that ended to go over to the cable */
         static MacEndpoint switchTo;
+        /* the session runs over the laptop's Wi-Fi: the light shows the Wi-Fi symbol instead of the check */
+        static bool onWifi;
+        /* a session in this run went over the cable: on Wi-Fi the window says the cable is coming */
+        static bool cableSeen;
         static Mutex instance;
         static Thread agent;
         static MainWindow window;
@@ -713,6 +717,8 @@ namespace ImacDisplay
             DateTime lastCableCheck = DateTime.UtcNow;
             cableFound = null;
             switchTo = null;
+            mac += Discovery.Via(control.LocalAddress, out onWifi);
+            if (viaCable) cableSeen = true;
             bool sharing = shareClipboard;
             clipboard.Enabled = sharing;
             DateTime started = DateTime.UtcNow;
@@ -833,6 +839,10 @@ namespace ImacDisplay
                     {
                         switchTo = cableFound;
                         Log("Der Mac ist jetzt auch übers Kabel erreichbar: Ich wechsle vom WLAN aufs Kabel.");
+                        /* LaptopScreen 1.7.5 and newer says so instead of flashing its waiting screen; */
+                        /* the line has to arrive before the video connection closes */
+                        control.Send("SWITCH cable");
+                        Thread.Sleep(100);
                         break;
                     }
                     if (locked) continue;
@@ -864,6 +874,7 @@ namespace ImacDisplay
                         chosenFor = macScreen;
                         ChooseMode(o, current);
                         lastReconfigure = DateTime.UtcNow;
+                        window.ShowTip(SharpnessKey, SharpnessTip());
                     }
                     /* long after any lid change, a change the program did not make is the user's choice in Windows' settings */
                     bool settled = (DateTime.UtcNow - lastReconfigure).TotalSeconds >= 10;
@@ -907,6 +918,7 @@ namespace ImacDisplay
                 /* video first: before the Mac sleeps, LaptopScreen waits only for the control connection to close */
                 StopVideo();
                 control.Dispose();
+                window.ShowTip(SharpnessKey, null);
             }
         }
 
@@ -916,9 +928,27 @@ namespace ImacDisplay
                 window.ShowStatus(new AgentStatus(Light.Paused, "Verbunden mit " + mac,
                     "Windows ist gesperrt. Die Übertragung ruht, bis du den Laptop entsperrst.", ThinBar.None));
             else
-                window.ShowStatus(new AgentStatus(Light.On, "Verbunden mit " + mac, lidOpen
-                    ? "Der Mac ist dein zweiter Bildschirm. Auf dem Mac LaptopScreen nach vorne holen."
-                    : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
+                window.ShowStatus(new AgentStatus(onWifi ? Light.OnWifi : Light.On, "Verbunden mit " + mac,
+                    onWifi && cableSeen
+                        ? "Das Kabel ist gerade nicht bereit, nach dem Aufwachen des Mac dauert das etwa eine Minute. "
+                            + "Bis dahin läuft die Verbindung übers WLAN, danach wechselt sie von selbst aufs Kabel."
+                        : lidOpen
+                            ? "Der Mac ist dein zweiter Bildschirm. Auf dem Mac LaptopScreen nach vorne holen."
+                            : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
+            window.ShowTip(SharpnessKey, SharpnessTip());
+        }
+
+        const string SharpnessKey = "tip.sharpness";
+
+        /* The Mac draws LaptopScreen with fewer pixels than the laptop sends ("looks like 1600 x 900" on a 5K iMac): a setting */
+        /* with more space makes the picture sharper, and Windows keeps its size there, since LaptopScreen fills the screen */
+        static string SharpnessTip()
+        {
+            if (!macScreen.HasValue || macScreen.Value.Width >= mode.Width) return null;
+            return "Tipp für ein schärferes Bild: Wähle auf dem Mac unter Systemeinstellungen → Displays eine Auflösung "
+                + "mit mehr Platz, etwa „Standard“. Windows bleibt dabei alles gleich groß, nur die Elemente der Mac-Oberfläche werden kleiner. "
+                + "Gerade zeichnet der Mac mit " + macScreen.Value.Width + " × " + macScreen.Value.Height
+                + " Pixeln, der Laptop schickt " + mode.Width + " × " + mode.Height + ".";
         }
 
         static void ShowAsleep()
@@ -940,7 +970,7 @@ namespace ImacDisplay
                 try
                 {
                     foreach (MacEndpoint endpoint in Discovery.Find(1500))
-                        if (Discovery.IsLinkLocal(endpoint.Address))
+                        if (Discovery.IsLinkLocal(endpoint.Address) && Accepts(endpoint))
                         {
                             cableFound = endpoint;
                             break;
@@ -950,6 +980,22 @@ namespace ImacDisplay
                 finally { cableChecking = false; }
             });
             return false;
+        }
+
+        /* Right after the Mac wakes up, its cable answers the search before LaptopScreen accepts connections there */
+        static bool Accepts(MacEndpoint endpoint)
+        {
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                try
+                {
+                    IAsyncResult pending = socket.BeginConnect(endpoint.Address, endpoint.Port, null, null);
+                    if (!pending.AsyncWaitHandle.WaitOne(1000)) return false;
+                    socket.EndConnect(pending);
+                    return true;
+                }
+                catch (SocketException) { return false; }
+            }
         }
 
         /* Lines from the Mac that are not input events. Returns true if the line was handled here. */
@@ -1015,7 +1061,8 @@ namespace ImacDisplay
             Size screen = ParseSize(size.Replace(' ', 'x'));
             if (screen.Width < 320 || screen.Height < 200 || macScreen == screen) return;
             macScreen = screen;
-            Log("Der Mac-Bildschirm hat " + screen.Width + "x" + screen.Height + " Pixel.");
+            Log("LaptopScreen hat auf dem Mac " + screen.Width + "x" + screen.Height
+                + " Pixel zur Verfügung (je nach Skalierung unter Systemeinstellungen > Displays).");
         }
 
         /* LaptopScreen 1.6.0 and newer report their screen together with the greeting; older ones never do */

@@ -44,6 +44,10 @@ namespace ImacDisplay
         readonly StatusLight light = new StatusLight();
         readonly Label headline = new Label(), detail = new Label();
         readonly ThinBar progress = new ThinBar();
+        /* a tip under the status, which "Nicht mehr zeigen" hides for good (remembered under its key) */
+        readonly Label tip = new Label();
+        readonly LinkLabel tipHide = new LinkLabel();
+        string tipKey;
         readonly TableLayoutPanel banner = new TableLayoutPanel();
         readonly Label bannerText = new Label();
         readonly Button bannerButton = new Button();
@@ -89,12 +93,22 @@ namespace ImacDisplay
             detail.Margin = Padding.Empty;
             progress.Size = new Size(TextWidth, 4);
             progress.Margin = new Padding(0, 8, 0, 0);
+            tip.AutoSize = true;
+            tip.Tag = "muted";
+            tip.MaximumSize = new Size(TextWidth, 0);
+            tip.Margin = new Padding(0, 4, 0, 0);
+            tip.Visible = false;
+            tipHide.AutoSize = true;
+            tipHide.Text = "Nicht mehr zeigen";
+            tipHide.Margin = new Padding(0, 2, 0, 0);
+            tipHide.Visible = false;
+            tipHide.LinkClicked += delegate { HideTip(); };
             var texts = new FlowLayoutPanel();
             texts.FlowDirection = FlowDirection.TopDown;
             texts.WrapContents = false;
             texts.AutoSize = true;
             texts.Margin = Padding.Empty;
-            texts.Controls.AddRange(new Control[] { headline, detail, progress });
+            texts.Controls.AddRange(new Control[] { headline, detail, progress, tip, tipHide });
             var top = new TableLayoutPanel();
             top.ColumnCount = 2;
             top.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -291,6 +305,28 @@ namespace ImacDisplay
             progress.Value = next.Progress;
             connect.Text = Program.Paused ? "Verbinden" : "Trennen und beenden";
             UpdateTaskbar();
+        }
+
+        /* A tip under the status, or none (text null); not after "Nicht mehr zeigen" for this key */
+        public void ShowTip(string key, string text)
+        {
+            if (IsHandleCreated && InvokeRequired)
+            {
+                Post(delegate { ShowTip(key, text); });
+                return;
+            }
+            tipKey = key;
+            bool show = text != null && Settings.Get(key) != "off";
+            tip.Text = show ? text : "";
+            tip.Visible = show;
+            tipHide.Visible = show;
+        }
+
+        void HideTip()
+        {
+            if (tipKey != null) Settings.Save(tipKey, "off");
+            tip.Visible = false;
+            tipHide.Visible = false;
         }
 
         /* A question with accept or "Abbrechen"; false if cancelled or the window is closing */

@@ -46,6 +46,7 @@ final class ControlServer {
         case noDisplay
         case pointerAway
         case pointerHome(x: Int, y: Int)
+        case switchingToCable
         case agentVersion(String)
         case clipboardEnabled(Bool)
         case clipboard(String)
@@ -92,7 +93,30 @@ final class ControlServer {
         self.videoPort = videoPort
     }
 
+    /*
+     LaptopScreen can be found only while the display is on. In a dark wake for maintenance the Mac would
+     otherwise answer the agent's search, and the agent's connection attempts kept waking it all night.
+     Running sessions are not affected: connections outlive the listener. The search alone does not wake
+     a sleeping Mac (measured).
+     */
+    func setAdvertised(_ on: Bool) {
+        queue.async { [weak self] () -> Void in
+            guard let self = self, on != (self.listener != nil) else { return }
+            if on {
+                self.startListener()
+            } else {
+                self.listener?.cancel()
+                self.listener = nil
+            }
+        }
+    }
+
     func start() {
+        setAdvertised(true)
+        startTimer()
+    }
+
+    private func startListener() {
         do {
             let parameters = NWParameters.tcp
             if let tcp = parameters.defaultProtocolStack.transportProtocol as? NWProtocolTCP.Options {
@@ -113,7 +137,9 @@ final class ControlServer {
         } catch {
             emit(.failed("Steuer-Port \(port) lässt sich nicht öffnen: \(error)"))
         }
+    }
 
+    private func startTimer() {
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now() + 2, repeating: 2)
         timer.setEventHandler { [weak self] in self?.tick() }
@@ -288,6 +314,9 @@ final class ControlServer {
             } else if fields.count == 3, fields[0] == "home", let x = Int(fields[1]), let y = Int(fields[2]) {
                 emit(.pointerHome(x: x, y: y))
             }
+        case "SWITCH":
+            /* the agent hangs up and comes back over the cable right away */
+            if argument == "cable" { emit(.switchingToCable) }
         case "VERSION":
             if !argument.isEmpty { emit(.agentVersion(argument)) }
         case "CLIPBOARD":

@@ -71,6 +71,12 @@ namespace ImacDisplay
         public IPAddress Address { get; private set; }
         public int VideoPort { get; private set; }
 
+        /* The laptop's own address of this connection: tells over which adapter it runs */
+        public IPAddress LocalAddress
+        {
+            get { return ((IPEndPoint)socket.LocalEndPoint).Address; }
+        }
+
         ControlClient(Socket socket, IPAddress address, string code)
         {
             this.socket = socket;
