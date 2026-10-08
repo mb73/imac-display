@@ -127,6 +127,8 @@ Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 �
 
 Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine starke Skalierung ausgewählt hat (z. B. auf einem 5k-iMac den Regler ganz nach links bzw. wie „1600 × 900“), so wird in etwas geringer Auflösung übertragen. Darauf weißt die App iMac-Display hin. In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rechts bewegen müssen (wie „2048 × 1152“). „Standard“ (wie „2560 × 1440“) ginge ebenfalls.
 
+<img width="470" height="366" alt="SchärferesBild2" src="https://github.com/user-attachments/assets/269ec441-0676-41af-a225-74fb1aa90e75" />
+
 ### Trennen und beenden
 
 „Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirkt ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
