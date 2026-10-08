@@ -31,7 +31,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 1. HDMI-Dummy-Stecker und LAN-Kabel besorgen (siehe oben).
 2. HDMI-Dummy-Stecker in den Laptop stecken. Enden des LAN-Kabels in Laptop und Mac stecken. Die Reihenfolge ist egal.
-3. Software auf dem Laptop und auf dem Mac einrichten und starten. Die Reihenfolge ist egal.
+3. Diese Software auf dem Laptop und auf dem Mac einrichten und starten. Die Reihenfolge ist egal.
 
 ## Einrichtung auf dem Mac (einmalig)
 
