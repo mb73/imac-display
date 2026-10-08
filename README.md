@@ -29,6 +29,8 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
+Es gibt zwei Methoden, die sich jeweils nur in den ersten drei Schritten unterscheiden. Falls es mit der ersten hapert, einfach die zweite probieren …
+
 **entweder Methode „Terminal“ (schnell):**
 1. Folge Zeile kopieren (rechten Knopf klicken):
    ```sh
