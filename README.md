@@ -29,8 +29,8 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
-**entweder Methode „Terminal“:**
-1. Folge Zeile kopieren (Knopf rechts):
+**entweder Methode „Terminal“ (schnell):**
+1. Folge Zeile kopieren (rechten Knopf klicken):
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
    ```
@@ -40,7 +40,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
 6. Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
-**oder Methode „Klickerei“:**
+**oder Methode „Klickerei“ (fummelig):**
 1. Dieses Projekt mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip herunterladen (Safari entpackt es meist von selbst in den Ordner „Downloads“).
 2. Im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken. Beim ersten Mal blockiert macOS das, weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat. Bitte auf „Fertig“ klicken.
 3. In Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal, und es geht weiter.
