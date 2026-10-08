@@ -27,6 +27,12 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
 | Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [ein Cat6](https://www.amazon.de/dp/B00N2VIALK/?th=1), ca. 4 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
 
+## Vorgehensweise
+
+1. Stecker und Kabel besorgen (siehe oben).
+2. Stecker in den Laptop. Kabel in den Laptop und in den Mac. Die Reihenfolge ist egal.
+3. Software auf dem Laptop und auf dem Mac installieren und starten. Die Reihenfolge ist egal.
+
 ## Einrichtung auf dem Mac (einmalig)
 
 Es gibt zwei Methoden, die sich jeweils nur in den ersten drei Schritten unterscheiden. Falls es mit der ersten hapert, einfach die zweite probieren …
