@@ -121,13 +121,15 @@ Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (
 
 ### Skalierung
 
-Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das wie gewohnt: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` übernimmt deinen Wert und merkt ihn sich.
+Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das wie gewohnt in Windows: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` übernimmt deinen Wert und merkt ihn sich.
 
 Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 × 2160 für einen iMac, 2560 × 1600 für ein MacBook. Stellst du an derselben Stelle eine andere Auflösung ein, merkt es sich die für diesen Mac.
 
+Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine starke Skalierung ausgewählt hat (z. B. auf einem 5k-iMac den Regler ganz nach links bzw. wie „1600 × 900“), so wird in etwas geringer Auflösung übertragen. Darauf weißt die App iMac-Display hin. In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rechts bewegen müssen (wie „2048 × 1152“). „Standard“ (wie „2560 × 1440“) ginge ebenfalls.
+
 ### Trennen und beenden
 
-„Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirken ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“ und Alt+F4 im Fenster. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
+„Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirkt ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
 
 ## Aktualisieren
 
