@@ -183,7 +183,7 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 
 ## Sicherheit
 
-- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb das direkte Kabel oder dein Heimnetz, **kein fremdes WLAN**.
+- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb dein Heimnetz, **kein fremdes WLAN**.
 - Auf dem Laptop läuft alles **ohne Adminrechte**. Geändert werden nur deine eigenen Anzeige-Einstellungen; installiert wird nichts außer einem Startmenü-Eintrag für dich.
 - Der Laptop baut **nur ausgehende Verbindungen** zum Mac auf (TCP 47100 für das Bild, 47101 für die Steuerung). Auf dem Laptop öffnet sich kein Port.
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
