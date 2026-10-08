@@ -14,7 +14,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 - **Ein HDMI-Dummy-Stecker** im Laptop gibt sich als 4K-Monitor aus. Ohne Adminrechte darf Windows keinen virtuellen Bildschirm anlegen – ein Stecker für rund 6 € löst das.
 - **`imac-display.exe`** auf dem Laptop nimmt diesen Bildschirm auf, kodiert ihn mit der Intel-Grafik als H.264 und schickt ihn per LAN-Kabel oder WLAN an den Mac. Umgekehrt setzt es die Eingaben vom Mac um.
-- **LaptopScreen** auf dem Mac zeigt das Bild ohne Zwischenpuffer an (Verzögerung etwa 50–100 ms) und schickt Tastatur und Maus zurück.
+- **LaptopScreen** auf dem Mac zeigt das Bild ohne Zwischenpuffer an (Verzögerung etwa 50–100 ms) und schickt Tastatur und Maus zurück (egal die am Bluetooth oder am Kabel hängen).
 - Beide finden sich von selbst und koppeln sich über einen **Kopplungscode**, den der Mac anzeigt. Alles bleibt in deinem Netz, es gibt keinen Cloud-Dienst und kein Konto.
 - **Updates** holst du nur auf den Laptop; den Mac bringt der Laptop dann selbst auf den neuen Stand.
 
@@ -79,7 +79,7 @@ Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Ma
 
 ### Tastatur und Maus
 
-Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus an den Laptop. Gedacht ist es so, dass du tippen kannst wie auf dem Mac:
+Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth oder verkabelte) an den Laptop. Gedacht ist es so, dass du tippen kannst wie auf dem Mac:
 
 | Auf dem Mac im LaptopScreen | Wirkung in Windows |
 |---|---|
