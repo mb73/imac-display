@@ -133,7 +133,7 @@ Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine sta
 
 „Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirkt ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
 
-## Aktualisieren
+## Aktualisierung
 
 **Laptop:** Automatisch. iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
 
