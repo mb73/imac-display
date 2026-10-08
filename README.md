@@ -55,7 +55,7 @@ Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste 
 
 <img width="478" height="288" alt="DeckelZu" src="https://github.com/user-attachments/assets/04c6b168-0814-4453-be96-437103d4bc7c" />
 
-### Zugeklappt benutzen
+### Vorbereitung fürs zugeklappte Benutzen
 
 Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
