@@ -4,7 +4,7 @@
 
 Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
-Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Dort läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
+Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Also nicht nur eine Kopie des Laptop-Screens, sondern zusätzliche Fläche für Inhalte (es sei denn der Laptop-Deckel ist zu). Auf dem Mac läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15). In dem Fall werden die 4K sauber auf 5K hochskaliert.
 
