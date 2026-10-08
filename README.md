@@ -135,9 +135,9 @@ Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine sta
 
 ## Aktualisieren
 
-**Laptop:** Nichts zu suchen: iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
+**Laptop:** Automatisch. iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
 
-**Mac:** Nichts zu tun. Bringt der Laptop eine neuere Version mit, fragt LaptopScreen beim Verbinden, ob es sich aktualisieren soll. Es baut die neue Version dann selbst (etwa eine Minute) und startet neu. Gut möglich, dass macOS danach noch einmal nach eingehenden Verbindungen und dem lokalen Netzwerk fragt: wieder beides erlauben.
+**Mac:** Automatisch. Bringt der Laptop eine neuere Version mit, fragt LaptopScreen beim Verbinden, ob es sich aktualisieren soll. Es baut die neue Version dann selbst (etwa eine Minute) und startet neu. Gut möglich, dass macOS danach noch einmal nach eingehenden Verbindungen und dem lokalen Netzwerk fragt: wieder beides erlauben.
 
 ## Grenzen
 
