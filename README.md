@@ -103,7 +103,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>cmd</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
 | <kbd>cmd</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
 | <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
-| <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. ctrl+E für den Explorer |
+| <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. <kbd>ctrl</kbd> + <kbd>E</kbd> für den Explorer |
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
