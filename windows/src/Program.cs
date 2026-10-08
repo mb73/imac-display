@@ -978,7 +978,7 @@ namespace ImacDisplay
         {
             if (!macScreen.HasValue || macScreen.Value.Width >= mode.Width) return null;
             return "Tipp für ein schärferes Bild: Wähle auf dem Mac unter Systemeinstellungen → Displays eine Auflösung "
-                + "mit mehr Platz, etwa „Standard“. Windows bleibt dabei alles gleich groß, nur die Elemente der Mac-Oberfläche werden kleiner. "
+                + "mit mehr Platz, etwa „Standard“. In Windows bleibt dabei alles gleich groß, nur die Elemente der Mac-Oberfläche werden kleiner. "
                 + "Gerade zeichnet der Mac mit " + macScreen.Value.Width + " × " + macScreen.Value.Height
                 + " Pixeln, der Laptop schickt " + mode.Width + " × " + mode.Height + ".";
         }

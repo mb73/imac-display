@@ -28,7 +28,7 @@ Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 - **Kein Aufblitzen mehr beim Zu- und Aufklappen.** Startet nur das Video neu, bleibt auf dem Mac bis zu anderthalb Sekunden das letzte Bild stehen, statt dass kurz „Laptop verbunden – das Bild kommt gleich …“ erscheint.
 - **Das Fenster zeigt, wie der Laptop verbunden ist:** „Verbunden mit iMac über LAN-Kabel“ oder „… über WLAN“. Im WLAN trägt der grüne Punkt, auch am Taskleisten-Symbol, das WLAN-Zeichen statt des Häkchens. War der Laptop vorher schon übers Kabel verbunden, steht dabei, dass das Kabel nach dem Aufwachen des Mac etwa eine Minute braucht und die Verbindung bis dahin übers WLAN läuft.
 - **Das Log nennt die Pixel, die LaptopScreen auf dem Mac zur Verfügung hat,** statt missverständlich „Der Mac-Bildschirm hat …“. Mit einer Skalierung wie „1600 × 900“ zeichnet macOS mit 3200 × 1800 Pixeln, auch wenn der Bildschirm selbst 5120 × 2880 hat.
-- **Tipp für ein schärferes Bild.** Zeichnet der Mac mit weniger Pixeln, als der Laptop schickt, schlägt das Fenster vor, auf dem Mac unter Systemeinstellungen → Displays eine Auflösung mit mehr Platz zu wählen, etwa „Standard“. Windows bleibt dabei gleich groß, nur die Mac-Oberfläche wird kleiner. Der Tipp lässt sich mit „Nicht mehr zeigen“ ausblenden.
+- **Tipp für ein schärferes Bild.** Zeichnet der Mac mit weniger Pixeln, als der Laptop schickt, schlägt das Fenster vor, auf dem Mac unter Systemeinstellungen → Displays eine Auflösung mit mehr Platz zu wählen, etwa „Standard“. In Windows bleibt dabei alles gleich groß, nur die Mac-Oberfläche wird kleiner. Der Tipp lässt sich mit „Nicht mehr zeigen“ ausblenden.
 
 ## [1.7.0] – 2026-10-06
 
