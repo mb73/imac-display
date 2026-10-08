@@ -13,7 +13,8 @@ namespace ImacDisplay
      Colors for the program's windows. Light mode uses the system colors, so high contrast keeps
      working. Dark mode follows Windows' app mode (Settings > Personalization > Colors), which WinForms
      does not know by itself: the title bar comes from DWM, scroll bars from the "DarkMode_Explorer"
-     theme, buttons are drawn flat in these colors, and check boxes and progress bars draw themselves.
+     theme, buttons are drawn flat in these colors, combo boxes take the dark theme of the file dialogs,
+     and check boxes and progress bars draw themselves.
      */
     internal sealed class Theme
     {
@@ -148,6 +149,22 @@ namespace ImacDisplay
             box.ForeColor = Text;
             /* dark scroll bars; "Explorer" gives the light ones of current Windows */
             if (box.IsHandleCreated) Native.SetWindowTheme(box.Handle, Dark ? "DarkMode_Explorer" : "Explorer", null);
+        }
+
+        /* dark: the closed box from the dark theme of the file dialogs, its list in the field color */
+        public void Style(ComboBox combo)
+        {
+            if (Dark)
+            {
+                combo.BackColor = Field;
+                combo.ForeColor = Text;
+            }
+            else
+            {
+                combo.ResetBackColor();
+                combo.ResetForeColor();
+            }
+            if (combo.IsHandleCreated) Native.SetWindowTheme(combo.Handle, Dark ? "DarkMode_CFD" : null, null);
         }
     }
 
@@ -360,9 +377,11 @@ namespace ImacDisplay
                 var button = control as Button;
                 var link = control as LinkLabel;
                 var box = control as TextBox;
+                var combo = control as ComboBox;
                 if (button != null) t.Style(button);
                 else if (link != null) t.Style(link);
                 else if (box != null) t.Style(box);
+                else if (combo != null) t.Style(combo);
                 string role = control.Tag as string;
                 if (role == "bar") control.BackColor = t.Bar;
                 else if (role == "banner") control.BackColor = t.Banner;

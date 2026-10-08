@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.8.0] – 2026-10-08
+
+### Hinzugefügt
+
+- **Skalierung direkt im Fenster.** Wie groß Windows auf dem Mac erscheint, stellst du jetzt im Fenster von iMac-Display unter „Skalierung“ ein, ohne Umweg über die Windows-Einstellungen. Jede Stufe nennt die Arbeitsfläche, die dabei herauskommt, etwa „150 % (wie 2560 × 1440)“, und angeboten werden nur die Stufen, die Windows bei der gewählten Auflösung erlaubt. Die Wahl gilt sofort und bleibt für das nächste Mal gemerkt. Bedienbar ist die Auswahl, solange die Verbindung zum Mac steht. Änderst du die Skalierung weiterhin in den Windows-Einstellungen, zeigt das Fenster den neuen Wert. Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.7.7] – 2026-10-07
 
 ### Hinzugefügt

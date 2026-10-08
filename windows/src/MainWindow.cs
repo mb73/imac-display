@@ -25,12 +25,31 @@ namespace ImacDisplay
         }
     }
 
+    /* An entry of the scaling list, with the space Windows leaves: "200 % (wie 1920 × 1080)" at 3840 x 2160 */
+    internal sealed class ScaleChoice
+    {
+        public readonly int Percent;
+        readonly Size area;
+
+        public ScaleChoice(int percent, Size area)
+        {
+            Percent = percent;
+            this.area = area;
+        }
+
+        public override string ToString()
+        {
+            if (area.IsEmpty) return Percent + " %";
+            return Percent + " % (wie " + (area.Width * 100 + Percent / 2) / Percent + " × " + (area.Height * 100 + Percent / 2) / Percent + ")";
+        }
+    }
+
     /*
      The program window: what the agent is doing, "Trennen und beenden" (or "Verbinden" after the agent
-     paused itself), the clipboard switch, links to the guide and the log, and the offer of a newer
+     paused itself), the scaling of the Mac display, the clipboard switch, links to the guide and the log, and the offer of a newer
      version when there is one. The taskbar button shows the state as a badge and downloads and display
-     switches as progress. The agent runs on its own thread; ShowStatus, Ask, AskCode, Warn and
-     CheckForUpdatesSoon may be called from there.
+     switches as progress. The agent runs on its own thread; ShowStatus, ShowScale, ShowTip, Ask, AskCode,
+     Warn and CheckForUpdatesSoon may be called from there.
      */
     internal sealed class MainWindow : ThemedForm
     {
@@ -52,6 +71,8 @@ namespace ImacDisplay
         readonly Label bannerText = new Label();
         readonly Button bannerButton = new Button();
         readonly ThinBar bannerProgress = new ThinBar();
+        /* the Mac display's scaling, chosen here instead of in Windows' settings; only while a session runs */
+        readonly ComboBox scaling = new ComboBox();
         readonly ThemedCheckBox clipboard = new ThemedCheckBox();
         readonly Button connect = new Button();
         readonly LinkLabel guide = new LinkLabel(), license = new LinkLabel(), log = new LinkLabel();
@@ -152,6 +173,29 @@ namespace ImacDisplay
             clipboard.Margin = new Padding(42, 2, 20, 16);
             clipboard.CheckedChanged += delegate { Program.ShareClipboard = clipboard.Checked; };
 
+            var scalingLabel = new Label();
+            scalingLabel.Text = "Skalierung";
+            scalingLabel.AutoSize = true;
+            scalingLabel.Anchor = AnchorStyles.Left;
+            scalingLabel.Margin = new Padding(0, 0, 10, 0);
+            scaling.DropDownStyle = ComboBoxStyle.DropDownList;
+            scaling.Width = 180;
+            scaling.MaxDropDownItems = Displays.ScaleSteps.Length;
+            scaling.Margin = Padding.Empty;
+            scaling.Items.Add(new ScaleChoice(Program.Scale, Size.Empty));
+            scaling.SelectedIndex = 0;
+            scaling.Enabled = false;
+            scaling.SelectionChangeCommitted += delegate
+            {
+                var choice = scaling.SelectedItem as ScaleChoice;
+                if (choice != null) Program.Scale = choice.Percent;
+            };
+            var scalingRow = new FlowLayoutPanel();
+            scalingRow.AutoSize = true;
+            scalingRow.WrapContents = false;
+            scalingRow.Margin = new Padding(42, 2, 20, 10);
+            scalingRow.Controls.AddRange(new Control[] { scalingLabel, scaling });
+
             /* button bar */
             connect.Text = "Trennen und beenden";
             connect.AutoSize = true;
@@ -201,9 +245,12 @@ namespace ImacDisplay
             root.Margin = Padding.Empty;
             root.Controls.Add(top, 0, 0);
             root.Controls.Add(banner, 0, 1);
-            root.Controls.Add(clipboard, 0, 2);
-            root.Controls.Add(bar, 0, 3);
+            root.Controls.Add(scalingRow, 0, 2);
+            root.Controls.Add(clipboard, 0, 3);
+            root.Controls.Add(bar, 0, 4);
             Controls.Add(root);
+            /* not the scaling: an arrow key there would switch the Mac display right away */
+            ActiveControl = clipboard;
             ShowStatus(status);
             EndLayout();
         }
@@ -309,6 +356,32 @@ namespace ImacDisplay
             progress.Value = next.Progress;
             connect.Text = Program.Paused ? "Verbinden" : "Trennen und beenden";
             UpdateTaskbar();
+        }
+
+        /*
+         The Mac display's scaling while a session runs: Windows' steps up to the largest it allows in the display's
+         mode, each with the space it leaves; null when the session ends, which keeps the list but disables it
+         */
+        public void ShowScale(DisplayInfo display)
+        {
+            if (IsHandleCreated && InvokeRequired)
+            {
+                Post(delegate { ShowScale(display); });
+                return;
+            }
+            scaling.Enabled = display != null;
+            if (display == null) return;
+            int percent = display.ScalePercent > 0 ? display.ScalePercent : Program.Scale;
+            var area = new Size(display.Width, display.Height);
+            scaling.BeginUpdate();
+            scaling.Items.Clear();
+            foreach (int step in Displays.ScaleSteps)
+            {
+                if (step != percent && step > display.MaxScalePercent) continue;
+                scaling.Items.Add(new ScaleChoice(step, area));
+                if (step == percent) scaling.SelectedIndex = scaling.Items.Count - 1;
+            }
+            scaling.EndUpdate();
         }
 
         /* A tip under the status, or none (text null); not after "Nicht mehr zeigen" for this key */

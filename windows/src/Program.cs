@@ -328,6 +328,8 @@ namespace ImacDisplay
         static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession, macAsleep, cableChecking;
         /* the Mac on the direct cable, found in the background while a session runs over Wi-Fi */
         static volatile MacEndpoint cableFound;
+        /* the Mac display's scaling, chosen in the window or adopted from Windows' settings */
+        static volatile int scale;
         /* set by a session that ended to go over to the cable */
         static MacEndpoint switchTo;
         /* the session runs over the laptop's Wi-Fi: the light shows the Wi-Fi symbol instead of the check */
@@ -377,6 +379,7 @@ namespace ImacDisplay
                 return 2;
             }
             shareClipboard = options.ShareClipboard;
+            scale = options.Scale;
             if (options.Test)
             {
                 if (OutputRedirected())
@@ -469,6 +472,17 @@ namespace ImacDisplay
             {
                 shareClipboard = value;
                 Settings.Save("clipboard", value ? 1 : 0);
+            }
+        }
+
+        /* The window's choice of scaling; a running session applies it right away */
+        public static int Scale
+        {
+            get { return scale; }
+            set
+            {
+                scale = value;
+                Settings.Save("scale", value);
             }
         }
 
@@ -740,6 +754,7 @@ namespace ImacDisplay
                 Log(lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Deckel ist zu: Mac-Bildschirm wird der einzige Bildschirm …");
                 window.ShowStatus(new AgentStatus(Light.Busy, "Verbunden mit " + mac,
                     lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Der Deckel ist zu: Der Mac wird der einzige Bildschirm …", ThinBar.Unknown));
+                o.Scale = scale;  // chosen in the window just as the last session ended
                 DisplayInfo external = Configure(o, lidOpen);
                 if (external == null)
                 {
@@ -750,6 +765,7 @@ namespace ImacDisplay
                     return;
                 }
                 Log("Mac-Bildschirm: " + external);
+                window.ShowScale(external);
                 injector.SetArea(external);
                 int output = Displays.DxgiOutputIndex(external.GdiName);
                 if (output < 0)
@@ -848,6 +864,19 @@ namespace ImacDisplay
                     }
                     if (locked) continue;
 
+                    if (scale != o.Scale)
+                    {
+                        /* chosen in the window; the layout check below sees the change as the program's own */
+                        o.Scale = scale;
+                        Log("Skalierung " + o.Scale + " % im Fenster gewählt.");
+                        DisplayInfo scaled = Displays.External();
+                        if (scaled != null)
+                        {
+                            try { window.ShowScale(Displays.EnsureMode(scaled, mode.Width, mode.Height, o.Refresh, o.Scale) ?? scaled); }
+                            catch (InvalidOperationException ex) { Log(ex.Message); }
+                        }
+                    }
+
                     bool open = LidIsOpen();
                     bool lidChanged = open != lidOpen;
                     if (lidChanged)
@@ -899,6 +928,7 @@ namespace ImacDisplay
                     }
                     external = current;
                     injector.SetArea(external);
+                    window.ShowScale(external);
                     int index = Displays.DxgiOutputIndex(external.GdiName);
                     if (index >= 0 && index != output)
                     {
@@ -920,6 +950,7 @@ namespace ImacDisplay
                 StopVideo();
                 control.Dispose();
                 window.ShowTip(SharpnessKey, null);
+                window.ShowScale(null);
             }
         }
 
@@ -1193,6 +1224,7 @@ namespace ImacDisplay
         static void AdoptScale(Options o, int percent)
         {
             o.Scale = percent;
+            scale = percent;
             Settings.Save("scale", percent);
             Log("Skalierung " + percent + " % übernommen und für das nächste Mal gemerkt.");
         }

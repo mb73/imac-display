@@ -121,7 +121,7 @@ Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (
 
 ### Skalierung
 
-Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das wie gewohnt in Windows: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` übernimmt deinen Wert und merkt ihn sich.
+Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1080), und die Schrift ist auf einem 27-Zoll-iMac angenehm groß und scharf. Wer mehr Platz braucht, nimmt 175 % oder 150 % (wie 2560 × 1440) – dann wird Windows-Schrift allerdings kleiner als die von macOS. Ändern kannst du das direkt im Fenster von iMac-Display unter „Skalierung“, solange die Verbindung steht. Jede Stufe nennt die Arbeitsfläche, die dabei herauskommt, und die Wahl gilt sofort. Wie gewohnt in Windows geht es auch: Einstellungen → System → Anzeige → den großen Bildschirm auswählen → Skalierung. `imac-display.exe` merkt sich deinen Wert in beiden Fällen.
 
 Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 × 2160 für einen iMac, 2560 × 1600 für ein MacBook. Stellst du an derselben Stelle eine andere Auflösung ein, merkt es sich die für diesen Mac.
 

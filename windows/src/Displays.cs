@@ -10,7 +10,8 @@ namespace ImacDisplay
     {
         public string GdiName;
         public bool Internal;
-        public int X, Y, Width, Height, Refresh, ScalePercent;
+        /* MaxScalePercent: the largest scaling Windows allows in the display's current mode */
+        public int X, Y, Width, Height, Refresh, ScalePercent, MaxScalePercent;
         public Native.LUID Adapter;
         public uint SourceId;
 
@@ -35,6 +36,11 @@ namespace ImacDisplay
 
         /* Windows' DPI scaling steps; the undocumented DPI API works with indices relative to the recommended step */
         static readonly int[] Scales = { 100, 125, 150, 175, 200, 225, 250, 300, 350, 400, 450, 500 };
+
+        public static int[] ScaleSteps
+        {
+            get { return (int[])Scales.Clone(); }
+        }
 
         public static List<DisplayInfo> Active()
         {
@@ -71,7 +77,7 @@ namespace ImacDisplay
                     display.Height = mode.dmPelsHeight;
                     display.Refresh = mode.dmDisplayFrequency;
                 }
-                display.ScalePercent = GetScale(display);
+                ReadScale(display);
                 result.Add(display);
             }
             return result;
@@ -308,16 +314,20 @@ namespace ImacDisplay
             return mode;
         }
 
-        static int GetScale(DisplayInfo display)
+        /* The current scaling, and the largest one Windows allows in the display's mode; -1 where unknown */
+        static void ReadScale(DisplayInfo display)
         {
+            display.ScalePercent = display.MaxScalePercent = -1;
             var request = new Native.DPI_GET();
             request.header.type = -3;  // undocumented: get DPI scale
             request.header.size = (uint)Marshal.SizeOf(typeof(Native.DPI_GET));
             request.header.adapterId = display.Adapter;
             request.header.id = display.SourceId;
-            if (Native.DisplayConfigGetDeviceInfo(ref request) != 0) return -1;
+            if (Native.DisplayConfigGetDeviceInfo(ref request) != 0) return;
             int index = -request.minScaleRel + request.curScaleRel;
-            return index >= 0 && index < Scales.Length ? Scales[index] : -1;
+            if (index >= 0 && index < Scales.Length) display.ScalePercent = Scales[index];
+            int largest = request.maxScaleRel - request.minScaleRel;
+            if (largest >= 0) display.MaxScalePercent = Scales[Math.Min(largest, Scales.Length - 1)];
         }
 
         static void SetScale(DisplayInfo display, int percent)
