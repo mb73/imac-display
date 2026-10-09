@@ -68,21 +68,32 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
 
-<img width="478" height="288" alt="DeckelZu" src="https://github.com/user-attachments/assets/04c6b168-0814-4453-be96-437103d4bc7c" />
+<img width="629" height="461" alt="anheften" src="https://github.com/user-attachments/assets/b1393eb9-366f-429f-8de7-163ceb3aa468" />
 
 ### Vorbereitung fürs zugeklappte Benutzen
 
 Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
+<img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
+
+**entweder Methode „old school“:**
 1. <kbd>win</kbd> + <kbd>R</kbd> drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
 2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
 3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
 
-Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen. Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
+Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen.
 
-In neueren Versionen von Windows 11 geht es auch über Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: „Wenn ich den Deckel schließe, wird mein PC“ in der Spalte „Eingesteckt“ auf „Keine Aktion ausführen“ stellen.
+<img style="margin-bottom:30" width="507" height="39" alt="nichts2" src="https://github.com/user-attachments/assets/27a375ee-b7f6-4fda-88a6-a00d6112102a" />
+
+Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
+
+**oder Methode „aktuelles Windows 11“:**
+
+Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: „Wenn ich den Deckel schließe, wird mein PC“ in der Spalte „Eingesteckt“ auf „Keine Aktion ausführen“ stellen.
 
 Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: Solange das Bild zum Mac läuft, hält `imac-display.exe` den Laptop wach, auch wenn du gerade nur am Mac arbeitest. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows.
+
+<img width="520" height="399" alt="keineAktion2" src="https://github.com/user-attachments/assets/77c93c6b-6e56-43c7-85b0-b595b7ec4efc" />
 
 ## Benutzung
 
