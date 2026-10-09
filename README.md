@@ -25,7 +25,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
 | Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. [von FUERAN](https://www.amazon.de/dp/B0FMG2CPL6/?th=1), ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
-| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [ein Cat6](https://www.amazon.de/dp/B00N2VIALK/?th=1), ca. 4 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
+| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [von deleyCON](https://www.amazon.de/dp/B07WMPM1KW/?th=1), ca. 6 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
 
 ## Vorgehensweise
 
