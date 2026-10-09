@@ -44,16 +44,34 @@ namespace ImacDisplay
         }
     }
 
+    /* An entry of a list "Beim Zuklappen": what Windows does when the lid closes */
+    internal sealed class LidChoice
+    {
+        public readonly int Action;
+
+        public LidChoice(int action)
+        {
+            Action = action;
+        }
+
+        public override string ToString()
+        {
+            return LidAction.Name(Action);
+        }
+    }
+
     /*
      The program window: what the agent is doing, "Trennen und beenden" (or "Verbinden" after the agent
-     paused itself), the scaling of the Mac display, the clipboard switch, links to the guide and the log, and the offer of a newer
-     version when there is one. The taskbar button shows the state as a badge and downloads and display
-     switches as progress. The agent runs on its own thread; ShowStatus, ShowScale, ShowTip, Ask, AskCode,
-     Warn and CheckForUpdatesSoon may be called from there.
+     paused itself), the scaling of the Mac display, where it lies next to the laptop, what closing the lid does,
+     the clipboard switch, links to the guide and the log, and the offer of a newer version when there is one.
+     The taskbar button shows the state as a badge and downloads and display switches as progress. The agent
+     runs on its own thread; ShowStatus, ShowScale, ShowArrangement, ShowTip, Ask, AskCode, Warn and
+     CheckForUpdatesSoon may be called from there.
      */
     internal sealed class MainWindow : ThemedForm
     {
         const int TextWidth = 380;
+        const string NoArrangement = "Sobald die Verbindung zum Mac steht, ziehst du hier den Mac-Bildschirm an die Seite des Laptops, an der er steht.";
         /* the Downloads folder every few seconds, GitHub at the start and then every few hours */
         const int CheckInterval = 5000;
         static readonly TimeSpan OnlineInterval = TimeSpan.FromHours(6);
@@ -71,8 +89,11 @@ namespace ImacDisplay
         readonly Label bannerText = new Label();
         readonly Button bannerButton = new Button();
         readonly ThinBar bannerProgress = new ThinBar();
-        /* the Mac display's scaling, chosen here instead of in Windows' settings; only while a session runs */
+        /* the Mac display's scaling and place, chosen here instead of in Windows' settings; only while a session runs */
         readonly ComboBox scaling = new ComboBox();
+        readonly ArrangementView arrangement = new ArrangementView();
+        /* what closing the lid does, plugged in and on battery, as under Settings > System > Power & battery */
+        readonly ComboBox lidPlugged = new ComboBox(), lidBattery = new ComboBox();
         readonly ThemedCheckBox clipboard = new ThemedCheckBox();
         readonly Button connect = new Button();
         readonly LinkLabel guide = new LinkLabel(), license = new LinkLabel(), log = new LinkLabel();
@@ -173,15 +194,11 @@ namespace ImacDisplay
             clipboard.Margin = new Padding(42, 2, 20, 16);
             clipboard.CheckedChanged += delegate { Program.ShareClipboard = clipboard.Checked; };
 
-            var scalingLabel = new Label();
-            scalingLabel.Text = "Skalierung";
-            scalingLabel.AutoSize = true;
-            scalingLabel.Anchor = AnchorStyles.Left;
-            scalingLabel.Margin = new Padding(0, 0, 10, 0);
+            /* settings, each with its name in front */
             scaling.DropDownStyle = ComboBoxStyle.DropDownList;
             scaling.Width = 180;
             scaling.MaxDropDownItems = Displays.ScaleSteps.Length;
-            scaling.Margin = Padding.Empty;
+            scaling.Margin = new Padding(0, 0, 0, 8);
             scaling.Items.Add(new ScaleChoice(Program.Scale, Size.Empty));
             scaling.SelectedIndex = 0;
             scaling.Enabled = false;
@@ -190,11 +207,19 @@ namespace ImacDisplay
                 var choice = scaling.SelectedItem as ScaleChoice;
                 if (choice != null) Program.Scale = choice.Percent;
             };
-            var scalingRow = new FlowLayoutPanel();
-            scalingRow.AutoSize = true;
-            scalingRow.WrapContents = false;
-            scalingRow.Margin = new Padding(42, 2, 20, 10);
-            scalingRow.Controls.AddRange(new Control[] { scalingLabel, scaling });
+            arrangement.Size = new Size(270, 160);
+            arrangement.Margin = new Padding(0, 0, 0, 10);
+            arrangement.ShowNote(NoArrangement);
+            arrangement.Placed += delegate (Point offset) { Program.RequestPlacement(offset); };
+            var settings = new TableLayoutPanel();
+            settings.ColumnCount = 2;
+            settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            settings.AutoSize = true;
+            settings.Margin = new Padding(42, 2, 20, 6);
+            AddSetting(settings, "Skalierung", scaling, false);
+            AddSetting(settings, "Anordnung", arrangement, true);
+            if (LidAction.LidPresent) AddSetting(settings, "Beim Zuklappen", LidChoices(), true);
 
             /* button bar */
             connect.Text = "Trennen und beenden";
@@ -245,7 +270,7 @@ namespace ImacDisplay
             root.Margin = Padding.Empty;
             root.Controls.Add(top, 0, 0);
             root.Controls.Add(banner, 0, 1);
-            root.Controls.Add(scalingRow, 0, 2);
+            root.Controls.Add(settings, 0, 2);
             root.Controls.Add(clipboard, 0, 3);
             root.Controls.Add(bar, 0, 4);
             Controls.Add(root);
@@ -268,6 +293,106 @@ namespace ImacDisplay
             if (font.Name == "Segoe UI Semibold") return font;
             font.Dispose();
             return new Font(basis.FontFamily, basis.Size * factor, FontStyle.Bold, basis.Unit);
+        }
+
+        /* A row of the settings: the name, then the control; top: the name stands at the control's top instead of its middle */
+        static void AddSetting(TableLayoutPanel table, string name, Control control, bool top)
+        {
+            var label = new Label();
+            label.Text = name;
+            label.AutoSize = true;
+            label.Anchor = top ? AnchorStyles.Left | AnchorStyles.Top : AnchorStyles.Left;
+            label.Margin = new Padding(0, top ? 4 : 0, 12, top ? 0 : 8);
+            int row = table.RowCount;
+            table.RowCount = row + 1;
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.Controls.Add(label, 0, row);
+            table.Controls.Add(control, 1, row);
+        }
+
+        /* "Eingesteckt" and "Akku" with what Windows does when the lid closes, and why it matters here */
+        Control LidChoices()
+        {
+            var table = new TableLayoutPanel();
+            table.ColumnCount = 2;
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            table.AutoSize = true;
+            table.Margin = new Padding(0, 0, 0, 8);
+            AddLidChoice(table, "Eingesteckt", lidPlugged, false);
+            if (LidAction.BatteryPresent) AddLidChoice(table, "Akku", lidBattery, true);
+            var hint = new Label();
+            hint.Text = "Mit „" + LidAction.Name(LidAction.Nothing) + "“ läuft das Bild auf dem Mac weiter, wenn du den Laptop zuklappst.";
+            hint.Tag = "muted";
+            hint.AutoSize = true;
+            hint.MaximumSize = new Size(270, 0);
+            hint.Margin = new Padding(0, 2, 0, 0);
+            int row = table.RowCount;
+            table.RowCount = row + 1;
+            table.Controls.Add(hint, 0, row);
+            table.SetColumnSpan(hint, 2);
+            return table;
+        }
+
+        void AddLidChoice(TableLayoutPanel table, string name, ComboBox combo, bool battery)
+        {
+            var label = new Label();
+            label.Text = name;
+            label.AutoSize = true;
+            label.Anchor = AnchorStyles.Left;
+            label.Margin = new Padding(0, 0, 10, 6);
+            combo.DropDownStyle = ComboBoxStyle.DropDownList;
+            combo.Width = 180;
+            combo.Margin = new Padding(0, 0, 0, 6);
+            combo.AccessibleName = "Beim Zuklappen, " + name;
+            combo.SelectionChangeCommitted += delegate
+            {
+                var choice = combo.SelectedItem as LidChoice;
+                if (choice == null) return;
+                string error = LidAction.Write(battery, choice.Action);
+                if (error == null) Program.Log("Beim Zuklappen (" + name + "): " + LidAction.Name(choice.Action) + ".");
+                else
+                {
+                    Program.Log("Die Einstellung fürs Zuklappen (" + name + ") ließ sich nicht ändern: " + error);
+                    MessageDialog.Show(this, "Windows hat die Einstellung nicht geändert:\r\n\r\n" + error, MessageKind.Warning);
+                }
+                ShowLidAction(combo, battery);
+            };
+            ShowLidAction(combo, battery);
+            int row = table.RowCount;
+            table.RowCount = row + 1;
+            table.Controls.Add(label, 0, row);
+            table.Controls.Add(combo, 1, row);
+        }
+
+        /* What Windows does now; "Ruhezustand" only where hibernation is on, as in Windows' settings */
+        static void ShowLidAction(ComboBox combo, bool battery)
+        {
+            int current = LidAction.Read(battery);
+            bool hibernate = LidAction.HibernateAvailable;
+            combo.BeginUpdate();
+            combo.Items.Clear();
+            foreach (int action in new[] { LidAction.Nothing, LidAction.Sleep, LidAction.Hibernate, LidAction.ShutDown })
+            {
+                if (action == LidAction.Hibernate && !hibernate && current != action) continue;
+                combo.Items.Add(new LidChoice(action));
+                if (action == current) combo.SelectedIndex = combo.Items.Count - 1;
+            }
+            if (current > LidAction.ShutDown)
+            {
+                combo.Items.Add(new LidChoice(current));
+                combo.SelectedIndex = combo.Items.Count - 1;
+            }
+            combo.EndUpdate();
+            combo.Enabled = current >= 0;
+        }
+
+        /* someone may have changed it in Windows' settings meanwhile */
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (lidPlugged.Parent != null && !lidPlugged.DroppedDown) ShowLidAction(lidPlugged, false);
+            if (lidBattery.Parent != null && !lidBattery.DroppedDown) ShowLidAction(lidBattery, true);
         }
 
         protected override void OnShown(EventArgs e)
@@ -382,6 +507,23 @@ namespace ImacDisplay
                 if (step == percent) scaling.SelectedIndex = scaling.Items.Count - 1;
             }
             scaling.EndUpdate();
+        }
+
+        /*
+         Where the Mac display lies next to the laptop panel, while a session runs with the lid open; with the lid closed
+         (no panel) or without a session (no Mac display) a note says why there is nothing to arrange
+         */
+        public void ShowArrangement(DisplayInfo panel, DisplayInfo external)
+        {
+            if (IsHandleCreated && InvokeRequired)
+            {
+                Post(delegate { ShowArrangement(panel, external); });
+                return;
+            }
+            if (external == null) arrangement.ShowNote(NoArrangement);
+            else if (panel == null) arrangement.ShowNote("Der Deckel ist zu: Der Mac ist gerade der einzige Bildschirm.");
+            else arrangement.ShowDisplays(new Size(panel.Width, panel.Height), new Size(external.Width, external.Height),
+                new Point(external.X - panel.X, external.Y - panel.Y));
         }
 
         /* A tip under the status, or none (text null); not after "Nicht mehr zeigen" for this key */

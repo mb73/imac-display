@@ -330,6 +330,9 @@ namespace ImacDisplay
         static volatile MacEndpoint cableFound;
         /* the Mac display's scaling, chosen in the window or adopted from Windows' settings */
         static volatile int scale;
+        /* the Mac display's place next to the laptop panel, chosen in the window: offset of its top-left corner from the panel's */
+        static readonly object placementLock = new object();
+        static Point? placement;
         /* set by a session that ended to go over to the cable */
         static MacEndpoint switchTo;
         /* the session runs over the laptop's Wi-Fi: the light shows the Wi-Fi symbol instead of the check */
@@ -483,6 +486,27 @@ namespace ImacDisplay
             {
                 scale = value;
                 Settings.Save("scale", value);
+            }
+        }
+
+        /* The window's arrangement: the Mac display's top-left corner relative to the panel's; a running session applies it right away */
+        public static void RequestPlacement(Point offset)
+        {
+            lock (placementLock) placement = offset;
+        }
+
+        static bool PlacementRequested
+        {
+            get { lock (placementLock) return placement.HasValue; }
+        }
+
+        static Point? TakePlacement()
+        {
+            lock (placementLock)
+            {
+                Point? requested = placement;
+                placement = null;
+                return requested;
             }
         }
 
@@ -746,6 +770,8 @@ namespace ImacDisplay
             {
                 control.Send("VERSION " + Updater.Version);
                 control.Send(sharing ? "CLIPBOARD on" : "CLIPBOARD off");
+                /* LaptopScreen 1.9.0 and newer mark the Dock icon like the taskbar button and show the way the laptop came */
+                control.Send(onWifi ? "VIA wifi" : "VIA cable");
                 if (!WaitForDummy(control, clipboard) || !Active) return;
                 AwaitScreen(control, clipboard);
                 Size? chosenFor = macScreen;
@@ -766,6 +792,7 @@ namespace ImacDisplay
                 }
                 Log("Mac-Bildschirm: " + external);
                 window.ShowScale(external);
+                window.ShowArrangement(Displays.Internal(), external);
                 injector.SetArea(external);
                 int output = Displays.DxgiOutputIndex(external.GdiName);
                 if (output < 0)
@@ -831,8 +858,10 @@ namespace ImacDisplay
                         List<string> lines = clipboard.Poll();
                         if (lines != null) foreach (string part in lines) control.Send(part);
                     }
-                    if ((now - lastCheck).TotalMilliseconds < 1000) continue;
+                    /* a place chosen in the window goes ahead right away, everything else once a second */
+                    if (!PlacementRequested && (now - lastCheck).TotalMilliseconds < 1000) continue;
                     lastCheck = now;
+                    Point? place = TakePlacement();
 
                     if (macVersion == null && !warnedOldMac && (now - started).TotalSeconds > 3)
                     {
@@ -863,6 +892,7 @@ namespace ImacDisplay
                         break;
                     }
                     if (locked) continue;
+                    if (place.HasValue && lidOpen) PlaceMacDisplay(place.Value);
 
                     if (scale != o.Scale)
                     {
@@ -929,6 +959,7 @@ namespace ImacDisplay
                     external = current;
                     injector.SetArea(external);
                     window.ShowScale(external);
+                    window.ShowArrangement(Displays.Internal(), external);
                     int index = Displays.DxgiOutputIndex(external.GdiName);
                     if (index >= 0 && index != output)
                     {
@@ -951,7 +982,22 @@ namespace ImacDisplay
                 control.Dispose();
                 window.ShowTip(SharpnessKey, null);
                 window.ShowScale(null);
+                window.ShowArrangement(null, null);
             }
+        }
+
+        /* The window's arrangement; the layout check that follows sees the change like any other and passes it on */
+        static void PlaceMacDisplay(Point offset)
+        {
+            DisplayInfo panel = Displays.Internal(), external = Displays.External();
+            if (panel == null || external == null) return;
+            try
+            {
+                Displays.Place(panel, external, offset);
+                Log("Anordnung im Fenster gewählt: Mac-Bildschirm "
+                    + ArrangementView.Side(new Size(panel.Width, panel.Height), new Size(external.Width, external.Height), offset) + ".");
+            }
+            catch (InvalidOperationException ex) { Log(ex.Message); }
         }
 
         static void ShowSession(string mac, bool lidOpen, bool locked)

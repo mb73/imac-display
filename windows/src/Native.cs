@@ -252,6 +252,33 @@ namespace ImacDisplay
         [DllImport("kernel32.dll")]
         public static extern bool CloseHandle(IntPtr handle);
 
+        /* ---- power plans: what closing the lid does (the plans' security descriptor lets users read and write them) ---- */
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerGetActiveScheme(IntPtr rootPowerKey, out IntPtr activePolicyGuid);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerSetActiveScheme(IntPtr rootPowerKey, ref Guid scheme);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerReadACValueIndex(IntPtr rootPowerKey, ref Guid scheme, ref Guid subGroup, ref Guid setting, out uint value);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerReadDCValueIndex(IntPtr rootPowerKey, ref Guid scheme, ref Guid subGroup, ref Guid setting, out uint value);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerWriteACValueIndex(IntPtr rootPowerKey, ref Guid scheme, ref Guid subGroup, ref Guid setting, uint value);
+
+        [DllImport("powrprof.dll")]
+        public static extern uint PowerWriteDCValueIndex(IntPtr rootPowerKey, ref Guid scheme, ref Guid subGroup, ref Guid setting, uint value);
+
+        /* SYSTEM_POWER_CAPABILITIES (76 bytes) as raw bytes: 2 LidPresent, 6 SystemS4, 8 HiberFilePresent, 30 SystemBatteriesPresent */
+        [DllImport("powrprof.dll")]
+        public static extern bool GetPwrCapabilities([Out] byte[] capabilities);
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr LocalFree(IntPtr memory);
+
         /* ---- windows: another instance, DPI, dark title bars, themed scroll bars, the close button ---- */
 
         public const int SW_RESTORE = 9;

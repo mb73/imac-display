@@ -205,6 +205,8 @@ final class InputCapture {
 
     private func mouse(_ event: NSEvent, in view: NSView) {
         lastEventAt = ProcessInfo.processInfo.systemUptime
+        /* the cursor rect alone does not hide the Mac pointer again once something else showed it (ContainerView.hidePointer) */
+        NSCursor.invisible.set()
         let rect = videoRect(in: view.bounds)
         let mods = InputCapture.mods(event.modifierFlags)
         /*

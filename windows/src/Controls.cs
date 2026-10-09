@@ -270,6 +270,285 @@ namespace ImacDisplay
         }
     }
 
+    /*
+     The laptop panel and the Mac display as rectangles in their real proportions, like Settings > System > Display.
+     The panel stays in the middle with room for the Mac display on every side, so nothing moves or rescales while
+     dragging. Dropped, the Mac display goes to the nearest edge of the panel, with at least a quarter of the shorter
+     side in contact, and lines up with the panel's edges or middle when close to them; a dashed outline shows that
+     place while dragging. The arrow keys put it on a side. Placed tells the new offset of its top-left corner from
+     the panel's. Without both displays the box shows a note.
+     */
+    internal sealed class ArrangementView : Control
+    {
+        Size panel, mac;
+        /* the Mac display's top-left corner relative to the panel's, in desktop pixels */
+        Point offset;
+        bool available;
+        string note = "";
+        /* while dragging: where the Mac display is, and where on it the mouse holds it (view pixels) */
+        bool dragging;
+        Point dragged;
+        Size grab;
+        /* view = origin + desktop * scale */
+        float scale = 1;
+        PointF origin;
+
+        public event Action<Point> Placed;
+
+        public ArrangementView()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw
+                | ControlStyles.UserPaint | ControlStyles.Selectable, true);
+            TabStop = true;
+            AccessibleRole = AccessibleRole.Diagram;
+            AccessibleName = "Anordnung der Bildschirme";
+        }
+
+        /* Both displays, the Mac display at offset from the panel */
+        public void ShowDisplays(Size panelSize, Size macSize, Point macOffset)
+        {
+            available = true;
+            panel = panelSize;
+            mac = macSize;
+            if (!dragging) offset = macOffset;
+            Fit();
+            AccessibleDescription = "Mac-Bildschirm " + Side(panel, mac, offset);
+            Cursor = Cursors.Default;
+            Invalidate();
+        }
+
+        public void ShowNote(string text)
+        {
+            available = false;
+            dragging = false;
+            note = text;
+            AccessibleDescription = text;
+            Cursor = Cursors.Default;
+            Invalidate();
+        }
+
+        /* "rechts neben dem Laptop", "über dem Laptop" …, for the log and screen readers */
+        public static string Side(Size panel, Size mac, Point offset)
+        {
+            if (offset.X >= panel.Width) return "rechts neben dem Laptop";
+            if (offset.X + mac.Width <= 0) return "links neben dem Laptop";
+            if (offset.Y + mac.Height <= 0) return "über dem Laptop";
+            if (offset.Y >= panel.Height) return "unter dem Laptop";
+            return "auf dem Laptop";  // duplicated, e.g. after Win+P
+        }
+
+        /*
+         The nearest place where the Mac display touches an edge of the panel, with at least a quarter of the shorter
+         side in contact; within tolerance of the panel's start, end or middle along that edge it lines up with it
+         */
+        public static Point Snap(Size panel, Size mac, Point at, int tolerance)
+        {
+            int overlapX = Math.Max(1, Math.Min(panel.Width, mac.Width) / 4);
+            int overlapY = Math.Max(1, Math.Min(panel.Height, mac.Height) / 4);
+            int alongX = Clamp(at.X, overlapX - mac.Width, panel.Width - overlapX);
+            int alongY = Clamp(at.Y, overlapY - mac.Height, panel.Height - overlapY);
+            /* right, left, below, above */
+            var sides = new[]
+            {
+                new Point(panel.Width, alongY), new Point(-mac.Width, alongY),
+                new Point(alongX, panel.Height), new Point(alongX, -mac.Height)
+            };
+            int best = 0;
+            long nearest = long.MaxValue;
+            for (int i = 0; i < sides.Length; i++)
+            {
+                long dx = sides[i].X - at.X, dy = sides[i].Y - at.Y;
+                if (dx * dx + dy * dy < nearest)
+                {
+                    nearest = dx * dx + dy * dy;
+                    best = i;
+                }
+            }
+            Point place = sides[best];
+            if (best < 2) place.Y = Align(place.Y, panel.Height, mac.Height, tolerance);
+            else place.X = Align(place.X, panel.Width, mac.Width, tolerance);
+            return place;
+        }
+
+        static int Align(int position, int panelLength, int macLength, int tolerance)
+        {
+            foreach (int target in new[] { 0, panelLength - macLength, (panelLength - macLength) / 2 })
+                if (Math.Abs(position - target) <= tolerance) return target;
+            return position;
+        }
+
+        static int Clamp(int value, int min, int max)
+        {
+            return Math.Max(min, Math.Min(max, value));
+        }
+
+        /* The panel in the middle, with room for the Mac display on every side of it */
+        void Fit()
+        {
+            float pad = LogicalToDeviceUnits(8);
+            float width = Math.Max(1, ClientSize.Width - 2 * pad), height = Math.Max(1, ClientSize.Height - 2 * pad);
+            scale = Math.Min(width / Math.Max(1, panel.Width + 2 * mac.Width), height / Math.Max(1, panel.Height + 2 * mac.Height));
+            origin = new PointF((ClientSize.Width - panel.Width * scale) / 2f, (ClientSize.Height - panel.Height * scale) / 2f);
+        }
+
+        /* close enough to the panel's edges or middle to line up with them: a few pixels on the screen */
+        int Tolerance
+        {
+            get { return (int)(LogicalToDeviceUnits(8) / scale); }
+        }
+
+        RectangleF ToView(Point at, Size size)
+        {
+            return new RectangleF(origin.X + at.X * scale, origin.Y + at.Y * scale, size.Width * scale, size.Height * scale);
+        }
+
+        void Place(Point to)
+        {
+            bool moved = to != offset;
+            offset = to;
+            AccessibleDescription = "Mac-Bildschirm " + Side(panel, mac, offset);
+            Invalidate();
+            if (moved && Placed != null) Placed(to);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (available) Fit();
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (!available || e.Button != MouseButtons.Left) return;
+            Focus();
+            RectangleF r = ToView(offset, mac);
+            if (!r.Contains(e.Location)) return;
+            dragging = true;
+            dragged = offset;
+            grab = new Size(e.X - (int)r.X, e.Y - (int)r.Y);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (!dragging)
+            {
+                Cursor = available && ToView(offset, mac).Contains(e.Location) ? Cursors.SizeAll : Cursors.Default;
+                return;
+            }
+            dragged = new Point((int)Math.Round((e.X - grab.Width - origin.X) / scale), (int)Math.Round((e.Y - grab.Height - origin.Y) / scale));
+            Invalidate();
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            if (!dragging || e.Button != MouseButtons.Left) return;
+            dragging = false;
+            Place(Snap(panel, mac, dragged, Tolerance));
+        }
+
+        /* the drag ends without a drop, e.g. when another window takes the mouse */
+        protected override void OnMouseCaptureChanged(EventArgs e)
+        {
+            base.OnMouseCaptureChanged(e);
+            if (!dragging) return;
+            dragging = false;
+            Invalidate();
+        }
+
+        protected override bool IsInputKey(Keys keyData)
+        {
+            Keys key = keyData & Keys.KeyCode;
+            if (key == Keys.Left || key == Keys.Right || key == Keys.Up || key == Keys.Down) return true;
+            return base.IsInputKey(keyData);
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (!available || dragging) return;
+            int middleX = (panel.Width - mac.Width) / 2, middleY = (panel.Height - mac.Height) / 2;
+            Point to;
+            if (e.KeyCode == Keys.Left) to = new Point(-mac.Width, middleY);
+            else if (e.KeyCode == Keys.Right) to = new Point(panel.Width, middleY);
+            else if (e.KeyCode == Keys.Up) to = new Point(middleX, -mac.Height);
+            else if (e.KeyCode == Keys.Down) to = new Point(middleX, panel.Height);
+            else return;
+            e.Handled = true;
+            Place(to);
+        }
+
+        protected override void OnGotFocus(EventArgs e)
+        {
+            base.OnGotFocus(e);
+            Invalidate();
+        }
+
+        protected override void OnLostFocus(EventArgs e)
+        {
+            base.OnLostFocus(e);
+            Invalidate();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Theme t = Theme.Current;
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.Clear(Parent != null ? Parent.BackColor : t.Back);
+            using (GraphicsPath box = Badges.Rounded(new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), LogicalToDeviceUnits(6)))
+            {
+                using (var fill = new SolidBrush(t.Field)) g.FillPath(fill, box);
+                using (var edge = new Pen(t.Edge)) g.DrawPath(edge, box);
+            }
+            if (!available)
+            {
+                int inset = LogicalToDeviceUnits(14);
+                TextRenderer.DrawText(g, note, Font, Rectangle.Inflate(ClientRectangle, -inset, -inset), t.Muted,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix);
+                return;
+            }
+            DrawDisplay(g, t, ToView(Point.Empty, panel), "Laptop", panel, false, 255);
+            if (dragging)
+            {
+                /* where it will go */
+                RectangleF target = ToView(Snap(panel, mac, dragged, Tolerance), mac);
+                target.Inflate(-1, -1);
+                using (GraphicsPath path = Badges.Rounded(target, LogicalToDeviceUnits(3)))
+                using (var pen = new Pen(t.Accent, LogicalToDeviceUnits(1)))
+                {
+                    pen.DashStyle = DashStyle.Dash;
+                    g.DrawPath(pen, path);
+                }
+            }
+            DrawDisplay(g, t, ToView(dragging ? dragged : offset, mac), "Mac", mac, true, dragging ? 200 : 255);
+            if (Focused && ShowFocusCues)
+                ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(ClientRectangle, -3, -3), t.Text, t.Field);
+        }
+
+        /* the Mac display in the accent color: it is the one to move */
+        void DrawDisplay(Graphics g, Theme t, RectangleF r, string name, Size size, bool movable, int alpha)
+        {
+            /* a hairline gap where the two touch, as in Windows */
+            r.Inflate(-1, -1);
+            if (r.Width <= 0 || r.Height <= 0) return;
+            using (GraphicsPath path = Badges.Rounded(r, LogicalToDeviceUnits(3)))
+            {
+                using (var fill = new SolidBrush(Color.FromArgb(alpha, movable ? t.Accent : t.Face))) g.FillPath(fill, path);
+                using (var edge = new Pen(Color.FromArgb(alpha, movable ? t.Accent : t.Edge))) g.DrawPath(edge, path);
+            }
+            const TextFormatFlags flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+                | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+            Rectangle area = Rectangle.Round(r);
+            string label = name + "\n" + size.Width + " × " + size.Height;
+            Size needed = TextRenderer.MeasureText(g, label, Font, new Size(area.Width, int.MaxValue), flags);
+            if (needed.Height > area.Height || needed.Width > area.Width) label = name;
+            TextRenderer.DrawText(g, label, Font, area, movable ? t.OnAccent : t.Text, flags);
+        }
+    }
+
     /* CheckBox that draws itself in dark mode; WinForms' own drawing knows only light check boxes */
     internal sealed class ThemedCheckBox : CheckBox
     {

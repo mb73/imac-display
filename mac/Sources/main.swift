@@ -18,13 +18,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var updateStatus: String?
     private var updateOfferVisible = false
     private var declinedVersion: String?
-    /* the laptop announced its switch to the cable: say so instead of flashing the waiting screen */
-    private var switchingSince: Date?
+    /* how the laptop is connected in this session, and in the last one where that was known */
+    private var transport: Transport?
+    private var lastTransport: Transport?
+    /* counts the sessions, so a late look at the way the laptop came belongs to its own session */
+    private var sessions = 0
+    /* the big symbol of a changed connection and since when it shows: instead of flashing the waiting screen */
+    private var symbol: Transport?
+    private var symbolSince: Date?
+    private static let symbolMinimum: TimeInterval = 1.5
+    private static let symbolMaximum: TimeInterval = 10
     /* when a running video stopped: a mere restart (lid, display change) keeps the last picture for a moment */
     private var videoStoppedAt: Date?
+    private let dockTile = DockTileView()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
+        dockTile.frame = NSRect(origin: .zero, size: NSApp.dockTile.size)
+        NSApp.dockTile.contentView = dockTile
+        NSApp.dockTile.display()
         let frame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1600, height: 900)
         window = NSWindow(contentRect: frame, styleMask: [.titled, .closable, .miniaturizable, .resizable],
                           backing: .buffered, defer: false)
@@ -93,9 +105,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         clipboard.resignedActive()
     }
 
-    /* the user switched to the laptop: a text copied on the Mac goes along */
+    /* the user switched to the laptop: a text copied on the Mac goes along, and the Mac pointer hides over the picture */
     @objc private func appBecameActive() {
         if agentConnected { clipboard.becameActive() }
+        container.hidePointer()
     }
 
     /* the laptop hangs up while the Mac is still awake and finds LaptopScreen again only once the display is on: */
@@ -158,14 +171,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func controlChanged(_ event: ControlServer.Event) {
         switch event {
-        case .connected:
+        case .connected(let guess):
             agentConnected = true
             laptopLocked = false
             dummyMissing = false
+            transport = nil
+            sessions += 1
+            /* an agent before 1.9.0 never says how it came: then the Mac's own view counts */
+            let session = sessions
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] () -> Void in
+                guard let self = self, self.sessions == session, self.agentConnected, self.transport == nil,
+                      let guess = guess else { return }
+                self.adoptTransport(guess)
+            }
+        case .via(let way):
+            adoptTransport(way)
+            return
         case .waiting:
             agentConnected = false
             laptopLocked = false
             dummyMissing = false
+            transport = nil
             clipboard.isEnabled = false
             if !updater.isRunning { updateStatus = nil }
         case .locked(let locked):
@@ -180,10 +206,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             input.pointerHome(x: x, y: y)
             return
         case .switchingToCable:
-            switchingSince = Date()
-            /* visible for at least a second, and at most ten if the laptop does not come back */
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.refresh() }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.refresh() }
+            showSymbol(.cable)
         case .agentVersion(let version):
             offerUpdate(version)
         case .clipboardEnabled(let enabled):
@@ -249,20 +272,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controlling = showing && !updateOfferVisible
         input.isEnabled = controlling
         container.controlling = controlling
+        dockTile.light = light(showing: showing)
         if let status = updateStatus {
+            container.symbol.hide()
             container.overlay.isHidden = false
             container.overlay.text = status
             return
         }
-        if let since = switchingSince {
+        if let shown = symbol, let since = symbolSince {
             let elapsed = Date().timeIntervalSince(since)
-            if elapsed < 10 && (elapsed < 1 || !showing) {
-                container.overlay.isHidden = false
-                container.overlay.text = "Wechsle vom WLAN aufs Kabel …\n\nDas Bild ist gleich wieder da."
+            /* at least a moment, and while the picture is still coming, but not for ever */
+            let coming = failure == nil && (!agentConnected || (!videoRunning && !laptopLocked && !dummyMissing))
+            if elapsed < AppDelegate.symbolMinimum || (coming && elapsed < AppDelegate.symbolMaximum) {
+                container.overlay.isHidden = true
+                container.symbol.show(shown)
+                if controlling { container.scheduleCursorHide() }
                 return
             }
-            switchingSince = nil
+            symbol = nil
+            symbolSince = nil
         }
+        container.symbol.hide()
         if showing {
             container.overlay.isHidden = true
             if controlling { container.scheduleCursorHide() }
@@ -288,6 +318,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             container.overlay.text = "Laptop verbunden – das Bild kommt gleich …"
         }
+    }
+
+    /* The way the laptop came in this session; a change since the last session shows its symbol for a moment */
+    private func adoptTransport(_ way: Transport) {
+        guard transport != way else { return }
+        transport = way
+        if let last = lastTransport, last != way {
+            showSymbol(way)
+        } else if let shown = symbol, shown != way {
+            /* the cable was announced, but the laptop came over Wi-Fi again */
+            showSymbol(way)
+        }
+        lastTransport = way
+        refresh()
+    }
+
+    private func showSymbol(_ way: Transport) {
+        if symbol != way { symbolSince = Date() }
+        symbol = way
+        /* look again when it may go: after the minimum, and at the latest */
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppDelegate.symbolMinimum) { [weak self] in self?.refresh() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + AppDelegate.symbolMaximum) { [weak self] in self?.refresh() }
+    }
+
+    /* The light of the laptop's taskbar button, for the Dock icon */
+    private func light(showing: Bool) -> Light {
+        if failure != nil || (agentConnected && dummyMissing) { return .problem }
+        if updateStatus != nil || !agentConnected { return .busy }
+        if laptopLocked { return .paused }
+        if showing { return transport == .wifi ? .onWifi : .on }
+        return .busy
     }
 
     private func buildMenu() {

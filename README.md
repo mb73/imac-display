@@ -71,13 +71,11 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 ### Vorbereitung fürs zugeklappte Benutzen
 
-Um den Mac auch als einzigen Bildschirm verwenden zu können, stell Windows einmal so ein, dass es den Laptop beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
+Um den Mac auch als einzigen Bildschirm verwenden zu können, darf Windows den Laptop beim Zuklappen nicht in den Standbymodus oder Ruhezustand schicken – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Stell dafür im Fenster von iMac-Display unter „Beim Zuklappen“ bei „Eingesteckt“ (und ggf. auch bei „Akku“) „Keine Aktion ausführen“ ein. Das gilt sofort und bleibt so. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellung nicht vorgibt.
+
+Dieselbe Einstellung gibt es auch in Windows: Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“ → „Wenn ich den Deckel schließe, wird mein PC“.
 
 <img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
-
-Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: 
-
-Unter „Eingesteckt“ (und ggf. auch unter „Akku“) „Wenn ich den Deckel schließe, wird mein PC“ auf „Keine Aktion ausführen“ stellen.
 
 <img width="520" height="399" alt="keineAktion2" src="https://github.com/user-attachments/assets/77c93c6b-6e56-43c7-85b0-b595b7ec4efc" />
 
@@ -86,8 +84,8 @@ Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: So
 ## Benutzung
 
 1. **Mac:** LaptopScreen starten. Es zeigt „Warte auf den Laptop …“ und den Kopplungscode.
-2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es nach dem Kopplungscode und merkt ihn sich. Das kleine Fenster zeigt, was gerade passiert; der Punkt davor und das Badge am Taskleisten-Symbol sind grün, wenn das Bild läuft, gelb beim Suchen oder bei gesperrtem Windows und rot bei einem Problem.
-3. Nach wenigen Sekunden erscheint auf dem Mac ein zweiter Windows-Bildschirm mit eigener Taskleiste. Hauptbildschirm bleibt das Laptop-Display, denn nur dort zeigt Windows nach einer Sperre die Anmeldung; bei zugeklapptem Deckel ist der Mac der einzige und damit der Hauptbildschirm. Wie die beiden Bildschirme zueinander liegen, stellst du in Windows ein (siehe [Anordnung](#anordnung)).
+2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es nach dem Kopplungscode und merkt ihn sich. Das kleine Fenster zeigt, was gerade passiert; der Punkt davor und das Badge am Taskleisten-Symbol sind grün, wenn das Bild läuft, gelb beim Suchen oder bei gesperrtem Windows und rot bei einem Problem. Dieselbe Markierung trägt auf dem Mac das Dock-Symbol von LaptopScreen.
+3. Nach wenigen Sekunden erscheint auf dem Mac ein zweiter Windows-Bildschirm mit eigener Taskleiste. Hauptbildschirm bleibt das Laptop-Display, denn nur dort zeigt Windows nach einer Sperre die Anmeldung; bei zugeklapptem Deckel ist der Mac der einzige und damit der Hauptbildschirm. Wie die beiden Bildschirme zueinander liegen, stellst du im Fenster von iMac-Display ein (siehe [Anordnung](#anordnung)).
 
 Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Mac da ist.
 
@@ -125,11 +123,11 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 
 ### Deckel zuklappen
 
-Ist Windows dafür eingestellt (siehe [Zugeklappt benutzen](#zugeklappt-benutzen)), kannst du den Laptop zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel geht das nur, wenn du die Einstellung auch für den Akku gesetzt hast; sonst schickt Windows den Laptop beim Zuklappen in den Energiesparmodus.
+Steht im Fenster unter „Beim Zuklappen“ „Keine Aktion ausführen“ (siehe [Vorbereitung fürs zugeklappte Benutzen](#vorbereitung-fürs-zugeklappte-benutzen)), kannst du den Laptop zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel geht das nur, wenn auch bei „Akku“ „Keine Aktion ausführen“ steht; sonst schickt Windows den Laptop beim Zuklappen in den Standbymodus.
 
 ### Anordnung
 
-Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh den großen Bildschirm unter Einstellungen → System → Anzeige über das Laptop-Display – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Stell es am besten so ein, wie die beiden wirklich stehen. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Mac-Bildschirm über das Laptop – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Er rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist, und wie gewohnt auch unter Einstellungen → System → Anzeige. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
 Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Warnung: Davon wird abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
@@ -183,7 +181,7 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 ## Sicherheit
 
 - Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb dein Heimnetz, **kein fremdes WLAN**.
-- Auf dem Laptop läuft alles **ohne Adminrechte**. Geändert werden nur deine eigenen Anzeige-Einstellungen; installiert wird nichts außer einem Startmenü-Eintrag für dich.
+- Auf dem Laptop läuft alles **ohne Adminrechte**. Geändert werden nur deine eigenen Anzeige-Einstellungen und, wenn du es im Fenster wählst, was Windows beim Zuklappen tut; installiert wird nichts außer einem Startmenü-Eintrag für dich.
 - Der Laptop baut **nur ausgehende Verbindungen** zum Mac auf (TCP 47100 für das Bild, 47101 für die Steuerung). Auf dem Laptop öffnet sich kein Port.
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
 - **Updates für den Mac** kommen nur vom gekoppelten Laptop, sind mit dem Kopplungscode signiert und werden erst nach deiner Zustimmung auf dem Mac gebaut.

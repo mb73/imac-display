@@ -302,6 +302,23 @@ namespace ImacDisplay
             Check(Native.ChangeDisplaySettingsEx(null, IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero), "Übernehmen");
         }
 
+        /*
+         Puts the external display at the given offset from the laptop panel's top-left corner, as chosen in the window.
+         The primary display stays at (0,0), so the other one moves; Windows remembers the arrangement for the extended
+         desktop like one made under Settings > System > Display.
+         */
+        public static void Place(DisplayInfo internalDisplay, DisplayInfo external, Point offset)
+        {
+            bool externalPrimary = external.X == 0 && external.Y == 0;
+            var position = NewDevMode();
+            position.dmFields = DM_POSITION;
+            position.dmPositionX = externalPrimary ? -offset.X : internalDisplay.X + offset.X;
+            position.dmPositionY = externalPrimary ? -offset.Y : internalDisplay.Y + offset.Y;
+            string secondary = externalPrimary ? internalDisplay.GdiName : external.GdiName;
+            Check(Native.ChangeDisplaySettingsEx(secondary, ref position, IntPtr.Zero, CDS_UPDATEREGISTRY | CDS_NORESET, IntPtr.Zero), "Anordnung");
+            Check(Native.ChangeDisplaySettingsEx(null, IntPtr.Zero, IntPtr.Zero, 0, IntPtr.Zero), "Übernehmen");
+        }
+
         static void Check(int rc, string step)
         {
             if (rc != 0) throw new InvalidOperationException("Anzeige-Einstellung (" + step + ") fehlgeschlagen: " + rc);

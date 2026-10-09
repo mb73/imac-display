@@ -2,6 +2,22 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.9.0] – 2026-10-09
+
+### Hinzugefügt
+
+- **Anordnung im Fenster.** Wo der Mac-Bildschirm neben dem Laptop steht, stellst du jetzt im Fenster von iMac-Display unter „Anordnung“ ein, ohne Umweg über die Windows-Einstellungen. Zieh den Mac-Bildschirm an die Seite des Laptops, an der er wirklich steht: Er rastet an der nächsten Kante ein, bündig mit den Ecken oder der Mitte, wenn er nah dran ist, und ein gestrichelter Rahmen zeigt beim Ziehen, wo. Mit den Pfeiltasten springt er auf eine Seite. Windows merkt sich die Anordnung wie eine aus seinen Einstellungen. Bedienbar ist das, solange die Verbindung steht und der Deckel offen ist.
+- **„Beim Zuklappen“ im Fenster.** Was Windows tut, wenn du den Laptop zuklappst, wählst du jetzt im Fenster, getrennt für „Eingesteckt“ und „Akku“. Mit „Keine Aktion ausführen“ läuft das Bild auf dem Mac weiter. Adminrechte braucht es dafür nicht; gibt die Firma die Einstellung vor, sagt das Fenster es.
+- **Markierung am Dock-Symbol.** Das Symbol von LaptopScreen im Dock trägt dieselbe Markierung wie das Taskleisten-Symbol auf dem Laptop: grün mit Häkchen, solange das Bild übers Kabel läuft, grün mit WLAN-Zeichen übers WLAN, gelb beim Warten, gelb mit zwei Strichen bei gesperrtem Windows und rot bei einem Problem. Beide Seiten brauchen dafür 1.9.0; der Mac aktualisiert sich wie gewohnt selbst.
+
+### Geändert
+
+- **Ein großes Symbol statt Text, wenn die Verbindung wechselt.** Statt „Wechsle vom WLAN aufs Kabel …“, das kaum lesbar aufblitzte, zeigt LaptopScreen beim Wechsel aufs Kabel ein großes LAN-Symbol und beim Wechsel aufs WLAN ein großes WLAN-Zeichen, jeweils mindestens anderthalb Sekunden lang und bis das Bild wieder läuft.
+
+### Behoben
+
+- **Kein zweiter Mauszeiger mehr.** Nach einer Mitteilung, der Anmeldung oder einem Dialog blieb auf dem Mac manchmal sein eigener Zeiger neben dem von Windows sichtbar und zog beim Bewegen eine Spur von Zeigern hinter sich her, bis du den Schreibtisch gewechselt hast. Jetzt blendet LaptopScreen ihn über dem Bild bei jeder Bewegung wieder aus.
+
 ## [1.8.0] – 2026-10-08
 
 ### Hinzugefügt

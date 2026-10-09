@@ -22,13 +22,20 @@ final class LineReader {
     }
 }
 
+/* How the laptop is connected: over a cable or over Wi-Fi */
+enum Transport {
+    case cable
+    case wifi
+}
+
 /*
  Control channel to the Windows agent. The listener is advertised via Bonjour so the laptop
  finds the Mac on cable or Wi-Fi without configuration. Handshake (all lines end with "\n"):
    Mac   -> "LAPTOPSCREEN 1 <nonceMac>"
    Agent -> "HELLO <nonceAgent> <hmac(code, "agent|<nonceMac>|<nonceAgent>")>"
    Mac   -> "WELCOME <hmac(code, "mac|<nonceAgent>|<nonceMac>")> <videoPort>"   or "DENIED"
- Right after it both sides announce "VERSION <x>", the agent also "CLIPBOARD on|off", the Mac also
+ Right after it both sides announce "VERSION <x>", the agent also "CLIPBOARD on|off" and (1.9.0 and newer)
+ "VIA wifi|cable" by its own network adapter, the Mac also
  "SCREEN <width> <height>" (pixels of its screen, again after every change; the agent picks its display mode by it).
  Afterwards the Mac sends input events and "P" pings; the agent answers with "P" and reports
  "STATE locked", "STATE unlocked" or "STATE nodisplay"; "POINTER away" when its cursor went over the
@@ -41,7 +48,9 @@ final class LineReader {
 final class ControlServer {
     enum Event {
         case waiting
-        case connected
+        /* with the way the connection came in on the Mac, if it can tell; the agent's "VIA" follows and counts more */
+        case connected(Transport?)
+        case via(Transport)
         case locked(Bool)
         case noDisplay
         case pointerAway
@@ -275,7 +284,15 @@ final class ControlServer {
                 break
             }
         }
-        emit(.connected)
+        var transport: Transport?
+        if let path = connection.currentPath {
+            if path.usesInterfaceType(.wifi) {
+                transport = .wifi
+            } else if path.usesInterfaceType(.wiredEthernet) {
+                transport = .cable
+            }
+        }
+        emit(.connected(transport))
         receiveAgent(connection, reader: reader)
     }
 
@@ -319,6 +336,13 @@ final class ControlServer {
             if argument == "cable" { emit(.switchingToCable) }
         case "VERSION":
             if !argument.isEmpty { emit(.agentVersion(argument)) }
+        case "VIA":
+            /* the agent's own adapter: the Windows window and taskbar show the same */
+            if argument == "wifi" {
+                emit(.via(.wifi))
+            } else if argument == "cable" {
+                emit(.via(.cable))
+            }
         case "CLIPBOARD":
             emit(.clipboardEnabled(argument == "on"))
         case "CLIP+", "CLIP":
