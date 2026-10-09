@@ -68,7 +68,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
 
-<img width="629" height="461" alt="anheften" src="https://github.com/user-attachments/assets/b1393eb9-366f-429f-8de7-163ceb3aa468" />
+<img width="322" height="172" alt="anheften3" src="https://github.com/user-attachments/assets/406ea4a6-1096-49ff-bf6b-bbcd0a38a448" />
 
 ### Vorbereitung fürs zugeklappte Benutzen
 
