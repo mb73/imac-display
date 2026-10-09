@@ -965,7 +965,7 @@ namespace ImacDisplay
                         ? "Das Kabel ist gerade nicht bereit, nach dem Aufwachen des Mac dauert das etwa eine Minute. "
                             + "Bis dahin läuft die Verbindung übers WLAN, danach wechselt sie von selbst aufs Kabel."
                         : lidOpen
-                            ? "Der Mac ist dein zweiter Bildschirm. Auf dem Mac LaptopScreen nach vorne holen."
+                            ? "Der Mac ist dein zweiter Bildschirm.\nAuf dem Mac LaptopScreen nach vorne holen."
                             : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
             window.ShowTip(SharpnessKey, SharpnessTip());
         }
