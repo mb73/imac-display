@@ -1,14 +1,14 @@
 # imac-display
 
-<img width="826" height="288" alt="LaptopScreen2" src="https://github.com/user-attachments/assets/c85ac203-7045-4db8-af25-b5c85fc06d1e" />
-
 Nutzt den Mac als zusätzlichen, großen Bildschirm für den Firmen-Laptop – ohne Adminrechte auf dem Laptop. Der Name „imac-display“ ist nicht mehr ganz passend, da mittlerweile auch MacBooks unterstützt werden.
 
-Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Also nicht nur eine Kopie des Laptop-Screens, sondern zusätzliche Fläche für Inhalte (es sei denn der Laptop-Deckel ist zu). Auf dem Mac läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
+Der Laptop bekommt einen zweiten Bildschirm in 4K, dessen Bild live auf den Mac übertragen wird. Das ist keine Kopie des Laptop-Screens, sondern zusätzliche Fläche für Inhalte (es sei denn der Laptop-Deckel ist zu). Auf dem Mac läuft es im Vollbild auf einem eigenen Schreibtisch: Mit <kbd>ctrl</kbd> + <kbd>←</kbd> / <kbd>→</kbd> wechselst du zwischen macOS und dem Laptop. Solange das Laptop-Bild vorne ist, steuern Tastatur und Maus des Macs den Laptop, und kopierter Text wandert mit. Der Mac bleibt also ganz normal benutzbar, der Laptop kann daneben stehen oder sogar zugeklappt sein.
+
+<img width="826" height="288" alt="LaptopScreen2" src="https://github.com/user-attachments/assets/c85ac203-7045-4db8-af25-b5c85fc06d1e" />
 
 Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Retina 5K (2020, macOS 15). In dem Fall werden die 4K sauber auf 5K hochskaliert.
 
-**Warnung:** Mitunter gehen Daten unverschlüsselt übers WLAN (z. B. solange das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
+⚠️ **Warnung:** Mitunter gehen Daten unverschlüsselt übers WLAN (z. B. solange das LAN-Kabel nach dem Aufwachen nicht sofort verfügbar ist). Deshalb zur Sicherheit nur im eigenen WLAN (also zuhause im Heimbüro) benutzen.
 
 ## So funktioniert es
 
@@ -35,7 +35,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Einrichtung auf dem Mac (einmalig)
 
-Es gibt zwei Methoden, die sich jeweils nur in den ersten drei Schritten unterscheiden. Falls es mit der ersten hapert, einfach die zweite probieren …
+Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterscheiden. Falls die erste Methode versagt, einfach die zweite probieren …
 
 **entweder Methode „Terminal“ (schnell):**
 1. Folge Zeile kopieren (rechten Knopf klicken):
@@ -103,7 +103,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>cmd</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | Zeilenanfang / Zeilenende |
 | <kbd>cmd</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
 | <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
-| <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. ctrl+E für den Explorer |
+| <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. <kbd>ctrl</kbd> + <kbd>E</kbd> für den Explorer |
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
@@ -183,7 +183,7 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 
 ## Sicherheit
 
-- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb das direkte Kabel oder dein Heimnetz, **kein fremdes WLAN**.
+- Das **Bild und die Zwischenablage sind nicht verschlüsselt.** Nutze deshalb dein Heimnetz, **kein fremdes WLAN**.
 - Auf dem Laptop läuft alles **ohne Adminrechte**. Geändert werden nur deine eigenen Anzeige-Einstellungen; installiert wird nichts außer einem Startmenü-Eintrag für dich.
 - Der Laptop baut **nur ausgehende Verbindungen** zum Mac auf (TCP 47100 für das Bild, 47101 für die Steuerung). Auf dem Laptop öffnet sich kein Port.
 - Beide Seiten weisen sich mit dem **Kopplungscode** aus (HMAC-SHA256). Ein fremdes Gerät im Netz kann weder Eingaben mitlesen noch ein Bild einschleusen; Video nimmt der Mac nur vom gekoppelten Laptop an.
