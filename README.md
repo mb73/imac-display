@@ -76,7 +76,7 @@ Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass 
 
 <img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
 
-### entweder Methode „old school“:
+#### entweder Methode „old school“:
 1. <kbd>win</kbd> + <kbd>R</kbd> drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
 2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
 3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
@@ -85,7 +85,7 @@ Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „A
 
 <img style="margin-bottom:30" width="507" height="39" alt="nichts2" src="https://github.com/user-attachments/assets/27a375ee-b7f6-4fda-88a6-a00d6112102a" />
 
-### oder Methode „aktuelles Windows 11“:
+#### oder Methode „aktuelles Windows 11“:
 
 Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: „Wenn ich den Deckel schließe, wird mein PC“ in der Spalte „Eingesteckt“ auf „Keine Aktion ausführen“ stellen.
 
