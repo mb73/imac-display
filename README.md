@@ -73,11 +73,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 Um den Mac auch als einzigen Bildschirm verwenden zu können, darf Windows den Laptop beim Zuklappen nicht in den Standbymodus oder Ruhezustand schicken – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Stell dafür im Fenster von iMac-Display unter „Beim Zuklappen“ bei „Eingesteckt“ (und ggf. auch bei „Akku“) „Keine Aktion ausführen“ ein. Das gilt sofort und bleibt so. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellung nicht vorgibt.
 
-Dieselbe Einstellung gibt es auch in Windows: Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“ → „Wenn ich den Deckel schließe, wird mein PC“.
-
-<img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
-
-<img width="520" height="399" alt="keineAktion2" src="https://github.com/user-attachments/assets/77c93c6b-6e56-43c7-85b0-b595b7ec4efc" />
+<img width="488" height="585" alt="keineAktion4" src="https://github.com/user-attachments/assets/86a3a39f-8588-4480-8dea-aec95c5f1665" />
 
 Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: Solange das Bild zum Mac läuft, hält `imac-display.exe` den Laptop wach, auch wenn du gerade nur am Mac arbeitest. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows.
 
@@ -127,9 +123,11 @@ Steht im Fenster unter „Beim Zuklappen“ „Keine Aktion ausführen“ (siehe
 
 ### Anordnung
 
-Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Mac-Bildschirm über das Laptop – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Er rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist, und wie gewohnt auch unter Einstellungen → System → Anzeige. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Mac-Bildschirm über das Laptop – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Er rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
-Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. Warnung: Davon wird abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
+<img width="485" height="584" alt="Anordnung2" src="https://github.com/user-attachments/assets/59ebc20c-1e2b-415e-8fa9-95e8a780c323" />
+
+Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. ⚠️ Davon wird jedoch abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
 ### Skalierung
 
@@ -137,9 +135,13 @@ Voreingestellt sind 200 %: Die Arbeitsfläche entspricht dann Full HD (1920 × 1
 
 Die Auflösung wählt `imac-display.exe` passend zum Bildschirm des Macs: 3840 × 2160 für einen iMac, 2560 × 1600 für ein MacBook. Stellst du an derselben Stelle eine andere Auflösung ein, merkt es sich die für diesen Mac.
 
-Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine starke Skalierung ausgewählt hat (z. B. auf einem 5k-iMac den Regler ganz nach links bzw. wie „1600 × 900“), so wird in etwas geringer Auflösung übertragen. Darauf weißt die App iMac-Display hin. In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rechts bewegen müssen (wie „2048 × 1152“). „Standard“ (wie „2560 × 1440“) ginge ebenfalls.
+Falls man bereits in den Mac-Systemeinstellungen (unter „Displays“) eine starke Skalierung ausgewählt hat (z. B. auf einem 5k-iMac den Regler ganz nach links bzw. wie „1600 × 900“), so wird in etwas geringer Auflösung übertragen. Darauf weißt die App iMac-Display hin. 
 
-<img width="470" height="366" alt="SchärferesBild2" src="https://github.com/user-attachments/assets/269ec441-0676-41af-a225-74fb1aa90e75" />
+<img width="326" height="166" alt="schärfer2" src="https://github.com/user-attachments/assets/ad771e4e-c3e2-4e52-b506-f9b9a7905ddf" />
+
+In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rechts bewegen müssen (wie „2048 × 1152“). „Standard“ (wie „2560 × 1440“) ginge ebenfalls.
+
+<img width="535" height="151" alt="2048" src="https://github.com/user-attachments/assets/1b02ffeb-4f07-461e-a879-66302c3db62c" />
 
 ### Trennen und beenden
 
