@@ -71,7 +71,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 ### Vorbereitung fürs zugeklappte Benutzen
 
-Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass es ihn beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
+Um den Mac auch als einzigen Bildschirm verwenden zu können, stell Windows einmal so ein, dass es den Laptop beim Zuklappen nicht in den Energiesparmodus oder Ruhezustand schickt – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellungen nicht gesperrt hat.
 
 <img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
 
