@@ -65,8 +65,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 3. **Entpacken,** z. B. nach `C:\Users\<dein Name>\imac-display`. Das Programm nicht direkt aus der Zip-Datei heraus starten.
 4. **Den Dummy-Stecker** in den HDMI-Anschluss des Laptops stecken.
 5. **`imac-display.exe` doppelklicken.** Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
-
-Tipp: Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
+6. Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
 
 <img width="322" height="172" alt="anheften3" src="https://github.com/user-attachments/assets/406ea4a6-1096-49ff-bf6b-bbcd0a38a448" />
 
