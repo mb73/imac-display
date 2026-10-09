@@ -42,7 +42,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
    ```
-2. Das Programm „Terminal“ öffnen, z. B. mit <kbd>cmd</kbd> + Leertaste dann `terminal` tippen dann <kbd>↵</kbd> drücken.
+2. Das Programm „Terminal“ öffnen, z. B. mit <kbd>cmd</kbd> + Leertaste dann `terminal` tippen und dann <kbd>↵</kbd> drücken.
 3. Dort (im Terminal) den Befehl einfügen, z. B. mit <kbd>cmd</kbd> + <kbd>V</kbd> und dann <kbd>↵</kbd> drücken. Obiger Befehl lädt dann dieses Projekt von GitHub und baut daraus LaptopScreen; was er genau tut, steht in [mac/install.sh](mac/install.sh).
 4. Fehlen die Command Line Tools, erscheint ein Fenster von Apple: „Installieren“ wählen und warten, das dauert einige Minuten. Danach macht die Einrichtung von selbst weiter.
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
