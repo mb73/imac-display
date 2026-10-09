@@ -37,7 +37,7 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterscheiden. Falls die erste Methode versagt, einfach die zweite probieren …
 
-**entweder Methode „Terminal“ (schnell):**
+### entweder Methode „Terminal“ (schnell):
 1. Folge Zeile kopieren (rechten Knopf klicken):
    ```sh
    curl -fsSL https://raw.githubusercontent.com/mb73/imac-display/main/mac/install.sh | sh
@@ -48,7 +48,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 5. LaptopScreen landet im Programme-Ordner und startet. macOS fragt, ob es **eingehende Verbindungen** annehmen und das **lokale Netzwerk** nutzen darf: beides erlauben.
 6. Rechtsklick auf das LaptopScreen-Symbol im Dock → Optionen → „Im Dock behalten“.
 
-**oder Methode „Klickerei“ (fummelig):**
+### oder Methode „Klickerei“ (fummelig):
 1. Dieses Projekt mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip herunterladen (Safari entpackt es meist von selbst in den Ordner „Downloads“).
 2. Im Ordner `imac-display-main/mac` die Datei `install.command` doppelklicken. Beim ersten Mal blockiert macOS das, weil die Datei aus dem Internet kommt und Apple sie nicht geprüft hat. Bitte auf „Fertig“ klicken.
 3. In Systemeinstellungen → Datenschutz & Sicherheit öffnen, ganz nach unten scrollen und bei „install.command“ auf „Dennoch öffnen“ klicken. Nach der Bestätigung öffnet sich das Terminal, und es geht weiter.
@@ -76,18 +76,16 @@ Soll der Laptop auch zugeklappt weiterlaufen, stell Windows einmal so ein, dass 
 
 <img width="490" height="277" alt="DeckelZu2" src="https://github.com/user-attachments/assets/0b534eba-ec76-495a-9ce4-88fd1ed4e79d" />
 
-**entweder Methode „old school“:**
+### entweder Methode „old school“:
 1. <kbd>win</kbd> + <kbd>R</kbd> drücken, `powercfg.cpl` eingeben und <kbd>↵</kbd> drücken. Die „Energieoptionen“ öffnen sich.
 2. Links auf „Auswählen, was beim Zuklappen des Computers geschehen soll“ klicken.
 3. „Beim Zuklappen:“ in der Spalte „Netzbetrieb“ auf „Nichts unternehmen“ stellen und „Änderungen speichern“ klicken.
 
-Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen.
+Soll er auch ohne Ladekabel zugeklappt laufen, in Schritt 3 auch die Spalte „Akku“ auf „Nichts unternehmen“ stellen. Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
 
 <img style="margin-bottom:30" width="507" height="39" alt="nichts2" src="https://github.com/user-attachments/assets/27a375ee-b7f6-4fda-88a6-a00d6112102a" />
 
-Dann läuft er allerdings auch in der Tasche weiter, wenn du ihn nur zuklappst – vor dem Einpacken also über Start → Ein/Aus „Energie sparen“ oder „Herunterfahren“ wählen.
-
-**oder Methode „aktuelles Windows 11“:**
+### oder Methode „aktuelles Windows 11“:
 
 Einstellungen → System → Strom und Akku → „Deckel, Ein/Aus und Standbymodus“: „Wenn ich den Deckel schließe, wird mein PC“ in der Spalte „Eingesteckt“ auf „Keine Aktion ausführen“ stellen.
 
