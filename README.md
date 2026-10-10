@@ -73,7 +73,7 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 Um den Mac auch als einzigen Bildschirm verwenden zu können, darf Windows den Laptop beim Zuklappen nicht in den Standbymodus oder Ruhezustand schicken – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Stell dafür im Fenster von iMac-Display unter „Beim Zuklappen“ bei „Eingesteckt“ (und ggf. auch bei „Akku“) „Keine Aktion ausführen“ ein. Das gilt sofort und bleibt so. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellung nicht vorgibt.
 
-<img width="488" height="585" alt="keineAktion4" src="https://github.com/user-attachments/assets/86a3a39f-8588-4480-8dea-aec95c5f1665" />
+<img width="484" height="582" alt="DeckelZu" src="https://github.com/user-attachments/assets/89e0df93-658b-4718-a698-72e5e24bafce" />
 
 Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: Solange das Bild zum Mac läuft, hält `imac-display.exe` den Laptop wach, auch wenn du gerade nur am Mac arbeitest. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows.
 
@@ -126,7 +126,7 @@ Steht im Fenster unter „Beim Zuklappen“ „Keine Aktion ausführen“ (siehe
 
 Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Laptop unter den Mac-Bildschirm – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Der Mac-Bildschirm steht dort fest in der Mitte. Der Laptop rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Ein kleiner Mauszeiger wandert im Kasten zwischen den beiden hin und her, über die Stelle, an der auch die echte Maus wechselt. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
-<img width="485" height="584" alt="Anordnung2" src="https://github.com/user-attachments/assets/59ebc20c-1e2b-415e-8fa9-95e8a780c323" />
+<img width="485" height="583" alt="Anordnung" src="https://github.com/user-attachments/assets/28740830-6eb5-4729-bbfe-a6b0ed26b6ec" />
 
 Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. ⚠️ Davon wird jedoch abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
