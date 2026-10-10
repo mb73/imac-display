@@ -521,7 +521,7 @@ namespace ImacDisplay
                 return;
             }
             if (external == null) arrangement.ShowNote(NoArrangement);
-            else if (panel == null) arrangement.ShowNote("Der Deckel ist zu: Der Mac ist gerade der einzige Bildschirm.");
+            else if (panel == null) arrangement.ShowNote("Der Deckel ist zu: Der Mac ist gerade dein einziger Bildschirm.");
             else arrangement.ShowDisplays(new Size(panel.Width, panel.Height), new Size(external.Width, external.Height),
                 new Point(external.X - panel.X, external.Y - panel.Y));
         }

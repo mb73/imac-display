@@ -272,11 +272,12 @@ namespace ImacDisplay
 
     /*
      The laptop panel and the Mac display as rectangles in their real proportions, like Settings > System > Display.
-     The panel stays in the middle with room for the Mac display on every side, so nothing moves or rescales while
-     dragging. Dropped, the Mac display goes to the nearest edge of the panel, with at least a quarter of the shorter
-     side in contact, and lines up with the panel's edges or middle when close to them; a dashed outline shows that
-     place while dragging. The arrow keys put it on a side. Placed tells the new offset of its top-left corner from
-     the panel's. Without both displays the box shows a note.
+     The Mac display stays in the middle (a Mac usually stands still, the laptop moves around it), with room for the
+     laptop on every side, so nothing moves or rescales while dragging. Dropped, the laptop goes to the nearest edge
+     of the Mac display, with at least a quarter of the shorter side in contact, and lines up with its edges or middle
+     when close to them; a dashed outline shows that place while dragging. The arrow keys put it on a side. Placed
+     tells the Mac display's new offset from the panel, its top-left corner relative to the panel's, as Windows needs
+     it. Without both displays the box shows a note.
      */
     internal sealed class ArrangementView : Control
     {
@@ -285,13 +286,25 @@ namespace ImacDisplay
         Point offset;
         bool available;
         string note = "";
-        /* while dragging: where the Mac display is, and where on it the mouse holds it (view pixels) */
+        /* while dragging: where the laptop is, relative to the Mac display, and where on it the mouse holds it (view pixels) */
         bool dragging;
         Point dragged;
         Size grab;
-        /* view = origin + desktop * scale */
+        /* view = origin + desktop * scale, desktop relative to the Mac display's top-left corner */
         float scale = 1;
         PointF origin;
+        /* a little pointer shows where the mouse goes over: it rests on the laptop, wanders to the Mac display, rests there and comes back */
+        const int RestMs = 3000, MoveMs = 600;
+        readonly Timer animation = new Timer();
+        /* 0 resting on the laptop, 1 on its way to the Mac display, 2 resting there, 3 on its way back */
+        int phase, phaseStart;
+
+        /* an arrow like the mouse pointer of Windows, tip at the top left, in fractions of its width and height */
+        static readonly PointF[] Arrow =
+        {
+            new PointF(0f, 0f), new PointF(0f, 0.889f), new PointF(0.364f, 0.667f), new PointF(0.636f, 1f),
+            new PointF(0.818f, 0.944f), new PointF(0.545f, 0.611f), new PointF(1f, 0.611f)
+        };
 
         public event Action<Point> Placed;
 
@@ -302,18 +315,21 @@ namespace ImacDisplay
             TabStop = true;
             AccessibleRole = AccessibleRole.Diagram;
             AccessibleName = "Anordnung der Bildschirme";
+            animation.Tick += delegate { Animate(); };
         }
 
         /* Both displays, the Mac display at offset from the panel */
         public void ShowDisplays(Size panelSize, Size macSize, Point macOffset)
         {
+            bool changed = !available || panel != panelSize || mac != macSize || (!dragging && offset != macOffset);
             available = true;
             panel = panelSize;
             mac = macSize;
             if (!dragging) offset = macOffset;
             Fit();
-            AccessibleDescription = "Mac-Bildschirm " + Side(panel, mac, offset);
+            AccessibleDescription = Side(panel, mac, offset);
             Cursor = Cursors.Default;
+            if (changed && !dragging) RestartPointer();
             Invalidate();
         }
 
@@ -321,37 +337,39 @@ namespace ImacDisplay
         {
             available = false;
             dragging = false;
+            animation.Enabled = false;
             note = text;
             AccessibleDescription = text;
             Cursor = Cursors.Default;
             Invalidate();
         }
 
-        /* "rechts neben dem Laptop", "über dem Laptop" …, for the log and screen readers */
+        /* "Laptop links neben dem Mac", "Laptop unter dem Mac" …, for the log and screen readers */
         public static string Side(Size panel, Size mac, Point offset)
         {
-            if (offset.X >= panel.Width) return "rechts neben dem Laptop";
-            if (offset.X + mac.Width <= 0) return "links neben dem Laptop";
-            if (offset.Y + mac.Height <= 0) return "über dem Laptop";
-            if (offset.Y >= panel.Height) return "unter dem Laptop";
-            return "auf dem Laptop";  // duplicated, e.g. after Win+P
+            if (offset.X >= panel.Width) return "Laptop links neben dem Mac";
+            if (offset.X + mac.Width <= 0) return "Laptop rechts neben dem Mac";
+            if (offset.Y + mac.Height <= 0) return "Laptop unter dem Mac";
+            if (offset.Y >= panel.Height) return "Laptop über dem Mac";
+            return "Laptop auf dem Mac";  // duplicated, e.g. after Win+P
         }
 
         /*
-         The nearest place where the Mac display touches an edge of the panel, with at least a quarter of the shorter
-         side in contact; within tolerance of the panel's start, end or middle along that edge it lines up with it
+         The nearest place where one display (moving) touches an edge of another (anchor), relative to the anchor's
+         top-left corner, with at least a quarter of the shorter side in contact; within tolerance of the anchor's
+         start, end or middle along that edge it lines up with it
          */
-        public static Point Snap(Size panel, Size mac, Point at, int tolerance)
+        public static Point Snap(Size anchor, Size moving, Point at, int tolerance)
         {
-            int overlapX = Math.Max(1, Math.Min(panel.Width, mac.Width) / 4);
-            int overlapY = Math.Max(1, Math.Min(panel.Height, mac.Height) / 4);
-            int alongX = Clamp(at.X, overlapX - mac.Width, panel.Width - overlapX);
-            int alongY = Clamp(at.Y, overlapY - mac.Height, panel.Height - overlapY);
+            int overlapX = Math.Max(1, Math.Min(anchor.Width, moving.Width) / 4);
+            int overlapY = Math.Max(1, Math.Min(anchor.Height, moving.Height) / 4);
+            int alongX = Clamp(at.X, overlapX - moving.Width, anchor.Width - overlapX);
+            int alongY = Clamp(at.Y, overlapY - moving.Height, anchor.Height - overlapY);
             /* right, left, below, above */
             var sides = new[]
             {
-                new Point(panel.Width, alongY), new Point(-mac.Width, alongY),
-                new Point(alongX, panel.Height), new Point(alongX, -mac.Height)
+                new Point(anchor.Width, alongY), new Point(-moving.Width, alongY),
+                new Point(alongX, anchor.Height), new Point(alongX, -moving.Height)
             };
             int best = 0;
             long nearest = long.MaxValue;
@@ -365,14 +383,14 @@ namespace ImacDisplay
                 }
             }
             Point place = sides[best];
-            if (best < 2) place.Y = Align(place.Y, panel.Height, mac.Height, tolerance);
-            else place.X = Align(place.X, panel.Width, mac.Width, tolerance);
+            if (best < 2) place.Y = Align(place.Y, anchor.Height, moving.Height, tolerance);
+            else place.X = Align(place.X, anchor.Width, moving.Width, tolerance);
             return place;
         }
 
-        static int Align(int position, int panelLength, int macLength, int tolerance)
+        static int Align(int position, int anchorLength, int movingLength, int tolerance)
         {
-            foreach (int target in new[] { 0, panelLength - macLength, (panelLength - macLength) / 2 })
+            foreach (int target in new[] { 0, anchorLength - movingLength, (anchorLength - movingLength) / 2 })
                 if (Math.Abs(position - target) <= tolerance) return target;
             return position;
         }
@@ -382,19 +400,25 @@ namespace ImacDisplay
             return Math.Max(min, Math.Min(max, value));
         }
 
-        /* The panel in the middle, with room for the Mac display on every side of it */
+        /* The Mac display in the middle, with room for the laptop on every side of it */
         void Fit()
         {
             float pad = LogicalToDeviceUnits(8);
             float width = Math.Max(1, ClientSize.Width - 2 * pad), height = Math.Max(1, ClientSize.Height - 2 * pad);
-            scale = Math.Min(width / Math.Max(1, panel.Width + 2 * mac.Width), height / Math.Max(1, panel.Height + 2 * mac.Height));
-            origin = new PointF((ClientSize.Width - panel.Width * scale) / 2f, (ClientSize.Height - panel.Height * scale) / 2f);
+            scale = Math.Min(width / Math.Max(1, mac.Width + 2 * panel.Width), height / Math.Max(1, mac.Height + 2 * panel.Height));
+            origin = new PointF((ClientSize.Width - mac.Width * scale) / 2f, (ClientSize.Height - mac.Height * scale) / 2f);
         }
 
-        /* close enough to the panel's edges or middle to line up with them: a few pixels on the screen */
+        /* close enough to the Mac display's edges or middle to line up with them: a few pixels on the screen */
         int Tolerance
         {
             get { return (int)(LogicalToDeviceUnits(8) / scale); }
+        }
+
+        /* where the laptop is, relative to the Mac display */
+        Point LaptopAt
+        {
+            get { return dragging ? dragged : new Point(-offset.X, -offset.Y); }
         }
 
         RectangleF ToView(Point at, Size size)
@@ -406,7 +430,8 @@ namespace ImacDisplay
         {
             bool moved = to != offset;
             offset = to;
-            AccessibleDescription = "Mac-Bildschirm " + Side(panel, mac, offset);
+            AccessibleDescription = Side(panel, mac, offset);
+            RestartPointer();
             Invalidate();
             if (moved && Placed != null) Placed(to);
         }
@@ -422,11 +447,14 @@ namespace ImacDisplay
             base.OnMouseDown(e);
             if (!available || e.Button != MouseButtons.Left) return;
             Focus();
-            RectangleF r = ToView(offset, mac);
+            RectangleF r = ToView(LaptopAt, panel);
             if (!r.Contains(e.Location)) return;
+            dragged = LaptopAt;
             dragging = true;
-            dragged = offset;
             grab = new Size(e.X - (int)r.X, e.Y - (int)r.Y);
+            /* no second pointer next to the one that drags */
+            animation.Enabled = false;
+            Invalidate();
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -434,7 +462,7 @@ namespace ImacDisplay
             base.OnMouseMove(e);
             if (!dragging)
             {
-                Cursor = available && ToView(offset, mac).Contains(e.Location) ? Cursors.SizeAll : Cursors.Default;
+                Cursor = available && ToView(LaptopAt, panel).Contains(e.Location) ? Cursors.SizeAll : Cursors.Default;
                 return;
             }
             dragged = new Point((int)Math.Round((e.X - grab.Width - origin.X) / scale), (int)Math.Round((e.Y - grab.Height - origin.Y) / scale));
@@ -446,7 +474,8 @@ namespace ImacDisplay
             base.OnMouseUp(e);
             if (!dragging || e.Button != MouseButtons.Left) return;
             dragging = false;
-            Place(Snap(panel, mac, dragged, Tolerance));
+            Point snapped = Snap(mac, panel, dragged, Tolerance);
+            Place(new Point(-snapped.X, -snapped.Y));
         }
 
         /* the drag ends without a drop, e.g. when another window takes the mouse */
@@ -455,6 +484,7 @@ namespace ImacDisplay
             base.OnMouseCaptureChanged(e);
             if (!dragging) return;
             dragging = false;
+            RestartPointer();
             Invalidate();
         }
 
@@ -469,12 +499,13 @@ namespace ImacDisplay
         {
             base.OnKeyDown(e);
             if (!available || dragging) return;
+            /* the laptop goes to that side of the Mac display, so the Mac display lies on the other side of it */
             int middleX = (panel.Width - mac.Width) / 2, middleY = (panel.Height - mac.Height) / 2;
             Point to;
-            if (e.KeyCode == Keys.Left) to = new Point(-mac.Width, middleY);
-            else if (e.KeyCode == Keys.Right) to = new Point(panel.Width, middleY);
-            else if (e.KeyCode == Keys.Up) to = new Point(middleX, -mac.Height);
-            else if (e.KeyCode == Keys.Down) to = new Point(middleX, panel.Height);
+            if (e.KeyCode == Keys.Left) to = new Point(panel.Width, middleY);
+            else if (e.KeyCode == Keys.Right) to = new Point(-mac.Width, middleY);
+            else if (e.KeyCode == Keys.Up) to = new Point(middleX, panel.Height);
+            else if (e.KeyCode == Keys.Down) to = new Point(middleX, -mac.Height);
             else return;
             e.Handled = true;
             Place(to);
@@ -510,11 +541,18 @@ namespace ImacDisplay
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix);
                 return;
             }
-            DrawDisplay(g, t, ToView(Point.Empty, panel), "Laptop", panel, false, 255);
+            RectangleF laptop = ToView(LaptopAt, panel), macDisplay = ToView(Point.Empty, mac);
+            /* a hairline gap where the two touch, as in Windows */
+            laptop.Inflate(-1, -1);
+            macDisplay.Inflate(-1, -1);
+            RectangleF laptopName, macName;
+            string laptopLabel = Label(g, laptop, "Laptop", panel, out laptopName);
+            string macLabel = Label(g, macDisplay, "Mac", mac, out macName);
+            DrawDisplay(g, t, macDisplay, macLabel, false, 255);
             if (dragging)
             {
                 /* where it will go */
-                RectangleF target = ToView(Snap(panel, mac, dragged, Tolerance), mac);
+                RectangleF target = ToView(Snap(mac, panel, dragged, Tolerance), panel);
                 target.Inflate(-1, -1);
                 using (GraphicsPath path = Badges.Rounded(target, LogicalToDeviceUnits(3)))
                 using (var pen = new Pen(t.Accent, LogicalToDeviceUnits(1)))
@@ -523,29 +561,164 @@ namespace ImacDisplay
                     g.DrawPath(pen, path);
                 }
             }
-            DrawDisplay(g, t, ToView(dragging ? dragged : offset, mac), "Mac", mac, true, dragging ? 200 : 255);
+            DrawDisplay(g, t, laptop, laptopLabel, true, dragging ? 200 : 255);
+            int shared = animation.Enabled && !dragging ? SharedEdge() : -1;
+            if (shared >= 0) DrawPointer(g, PointerTip(shared, laptop, laptopName, macDisplay, macName));
             if (Focused && ShowFocusCues)
                 ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(ClientRectangle, -3, -3), t.Text, t.Field);
         }
 
-        /* the Mac display in the accent color: it is the one to move */
-        void DrawDisplay(Graphics g, Theme t, RectangleF r, string name, Size size, bool movable, int alpha)
+        /* The pointer starts over on the laptop; it shows only where the displays share an edge, and not while dragging */
+        void RestartPointer()
         {
-            /* a hairline gap where the two touch, as in Windows */
-            r.Inflate(-1, -1);
+            phase = 0;
+            phaseStart = Environment.TickCount;
+            animation.Interval = RestMs;
+            animation.Enabled = available && !dragging && SharedEdge() >= 0;
+        }
+
+        void Animate()
+        {
+            int length = phase % 2 == 0 ? RestMs : MoveMs;
+            int elapsed = unchecked(Environment.TickCount - phaseStart);
+            if (elapsed >= length)
+            {
+                phase = (phase + 1) % 4;
+                phaseStart = Environment.TickCount;
+                elapsed = 0;
+                length = phase % 2 == 0 ? RestMs : MoveMs;
+            }
+            animation.Interval = phase % 2 == 0 ? Math.Max(15, length - elapsed) : 15;
+            Invalidate();
+        }
+
+        /* The panel's edge the Mac display touches: 0 right, 1 left, 2 top, 3 bottom; -1 if they touch nowhere */
+        int SharedEdge()
+        {
+            bool besideY = offset.Y < panel.Height && offset.Y + mac.Height > 0;
+            bool besideX = offset.X < panel.Width && offset.X + mac.Width > 0;
+            if (besideY && offset.X == panel.Width) return 0;
+            if (besideY && offset.X + mac.Width == 0) return 1;
+            if (besideX && offset.Y + mac.Height == 0) return 2;
+            if (besideX && offset.Y == panel.Height) return 3;
+            return -1;
+        }
+
+        float PointerHeight
+        {
+            get { return LogicalToDeviceUnits(9); }
+        }
+
+        float PointerWidth
+        {
+            get { return PointerHeight * 0.61f; }
+        }
+
+        float PointerGap
+        {
+            get { return LogicalToDeviceUnits(2); }
+        }
+
+        /*
+         Where the pointer rests in r: at the far side (0 right, 1 left, 2 top, 3 bottom), level with the middle of the
+         shared edge. Where it would touch the name there, it goes beside the name along that side, toward the middle of
+         the shared edge; only if there is no room either, it stays at the far side.
+         */
+        PointF Rest(RectangleF r, RectangleF name, int side, PointF middle)
+        {
+            float w = PointerWidth, h = PointerHeight, gap = PointerGap;
+            float x = Math.Max(r.Left + gap, Math.Min(r.Right - gap - w, middle.X - w / 2));
+            float y = Math.Max(r.Top + gap, Math.Min(r.Bottom - gap - h, middle.Y - h / 2));
+            if (side == 0) x = r.Right - gap - w;
+            else if (side == 1) x = r.Left + gap;
+            else if (side == 2) y = r.Top + gap;
+            else y = r.Bottom - gap - h;
+            if (!new RectangleF(x, y, w, h).IntersectsWith(name)) return new PointF(x, y);
+            if (side <= 1)
+            {
+                float above = name.Top - gap - h, below = name.Bottom + gap;
+                bool fitsAbove = above >= r.Top + gap, fitsBelow = below + h <= r.Bottom - gap;
+                if (fitsAbove && (!fitsBelow || middle.Y < name.Top + name.Height / 2)) return new PointF(x, above);
+                if (fitsBelow) return new PointF(x, below);
+            }
+            else
+            {
+                float left = name.Left - gap - w, right = name.Right + gap;
+                bool fitsLeft = left >= r.Left + gap, fitsRight = right + w <= r.Right - gap;
+                if (fitsLeft && (!fitsRight || middle.X < name.Left + name.Width / 2)) return new PointF(left, y);
+                if (fitsRight) return new PointF(right, y);
+            }
+            return new PointF(x, y);
+        }
+
+        /*
+         The pointer's tip now. It rests at the far side of each display, beside the names, and on its way crosses
+         the shared edge in the middle of the part where the two touch, where the real mouse goes over.
+         */
+        PointF PointerTip(int edge, RectangleF laptop, RectangleF laptopName, RectangleF macDisplay, RectangleF macName)
+        {
+            PointF middle = edge <= 1
+                ? new PointF(edge == 0 ? laptop.Right : laptop.Left,
+                    (Math.Max(laptop.Top, macDisplay.Top) + Math.Min(laptop.Bottom, macDisplay.Bottom)) / 2)
+                : new PointF((Math.Max(laptop.Left, macDisplay.Left) + Math.Min(laptop.Right, macDisplay.Right)) / 2,
+                    edge == 2 ? laptop.Top : laptop.Bottom);
+            PointF onLaptop = Rest(laptop, laptopName, edge ^ 1, middle), onMac = Rest(macDisplay, macName, edge, middle);
+            if (phase == 0) return onLaptop;
+            if (phase == 2) return onMac;
+            float progress = Math.Min(1f, unchecked(Environment.TickCount - phaseStart) / (float)MoveMs);
+            progress = progress * progress * (3 - 2 * progress);
+            PointF from = phase == 1 ? onLaptop : onMac, to = phase == 1 ? onMac : onLaptop;
+            return new PointF(from.X + (to.X - from.X) * progress, from.Y + (to.Y - from.Y) * progress);
+        }
+
+        /* white with a black edge, like the real one, in light and dark mode alike */
+        void DrawPointer(Graphics g, PointF tip)
+        {
+            float w = PointerWidth, h = PointerHeight;
+            var outline = new PointF[Arrow.Length];
+            for (int i = 0; i < Arrow.Length; i++) outline[i] = new PointF(tip.X + Arrow[i].X * w, tip.Y + Arrow[i].Y * h);
+            g.FillPolygon(Brushes.White, outline);
+            using (var pen = new Pen(Color.Black, Math.Max(1f, h / 10f)))
+            {
+                pen.LineJoin = LineJoin.Round;
+                g.DrawPolygon(pen, outline);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) animation.Dispose();
+            base.Dispose(disposing);
+        }
+
+        const TextFormatFlags LabelFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+            | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+
+        /* The display's name, with its size below where both fit, and the box the text takes in the middle of r */
+        string Label(Graphics g, RectangleF r, string name, Size size, out RectangleF box)
+        {
+            var room = new Size(Math.Max(1, (int)r.Width), int.MaxValue);
+            string label = name + "\n" + size.Width + " × " + size.Height;
+            Size needed = TextRenderer.MeasureText(g, label, Font, room, LabelFlags);
+            if (needed.Height > r.Height || needed.Width > r.Width)
+            {
+                label = name;
+                needed = TextRenderer.MeasureText(g, label, Font, room, LabelFlags);
+            }
+            box = new RectangleF(r.X + (r.Width - needed.Width) / 2f, r.Y + (r.Height - needed.Height) / 2f, needed.Width, needed.Height);
+            return label;
+        }
+
+        /* the laptop in the accent color: it is the one to move */
+        void DrawDisplay(Graphics g, Theme t, RectangleF r, string label, bool movable, int alpha)
+        {
             if (r.Width <= 0 || r.Height <= 0) return;
             using (GraphicsPath path = Badges.Rounded(r, LogicalToDeviceUnits(3)))
             {
                 using (var fill = new SolidBrush(Color.FromArgb(alpha, movable ? t.Accent : t.Face))) g.FillPath(fill, path);
                 using (var edge = new Pen(Color.FromArgb(alpha, movable ? t.Accent : t.Edge))) g.DrawPath(edge, path);
             }
-            const TextFormatFlags flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
-                | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
-            Rectangle area = Rectangle.Round(r);
-            string label = name + "\n" + size.Width + " × " + size.Height;
-            Size needed = TextRenderer.MeasureText(g, label, Font, new Size(area.Width, int.MaxValue), flags);
-            if (needed.Height > area.Height || needed.Width > area.Width) label = name;
-            TextRenderer.DrawText(g, label, Font, area, movable ? t.OnAccent : t.Text, flags);
+            TextRenderer.DrawText(g, label, Font, Rectangle.Round(r), movable ? t.OnAccent : t.Text, LabelFlags);
         }
     }
 

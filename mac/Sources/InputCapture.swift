@@ -29,7 +29,7 @@ final class InputCapture {
     private var lastEventAt: TimeInterval = 0
     private var lastPolled = NSPoint.zero
     private var pressedSpecial: [UInt16: (vk: Int, mods: Int, extended: Bool)] = [:]
-    private var pressedChar: [UInt16: UInt32] = [:]
+    private var pressedChar: [UInt16: (codepoint: UInt32, mods: Int)] = [:]
     private var lastMods = -1
     private var rightClickViaControl = false
     private var scrollRemainderX = 0.0
@@ -176,8 +176,13 @@ final class InputCapture {
             /* shortcut: send the unmodified character of the key, the agent maps it to a Windows key */
             let base = event.characters(byApplyingModifiers: []) ?? event.charactersIgnoringModifiers ?? ""
             guard let scalar = base.lowercased().unicodeScalars.first, scalar.value >= 0x20 else { return nil }
-            pressedChar[event.keyCode] = scalar.value
-            send?("C \(scalar.value) 1 \(mods)")
+            var keyMods = mods
+            /* Ctrl+Space stays Ctrl+Space, code completion in VS Code on both systems; Win+Space would switch the input language */
+            if scalar.value == 0x20 && mods & KeyMap.win != 0 && mods & KeyMap.ctrl == 0 {
+                keyMods = (mods & ~KeyMap.win) | KeyMap.ctrl
+            }
+            pressedChar[event.keyCode] = (scalar.value, keyMods)
+            send?("C \(scalar.value) 1 \(keyMods)")
             return nil
         }
         if let text = event.characters, !text.isEmpty, text.unicodeScalars.allSatisfy({ InputCapture.isPrintable($0) }) {
@@ -189,8 +194,8 @@ final class InputCapture {
     private func keyUp(_ event: NSEvent) {
         if let pressed = pressedSpecial.removeValue(forKey: event.keyCode) {
             send?("K \(pressed.vk) 0 \(pressed.mods) \(pressed.extended ? 1 : 0)")
-        } else if let codepoint = pressedChar.removeValue(forKey: event.keyCode) {
-            send?("C \(codepoint) 0 \(InputCapture.mods(event.modifierFlags))")
+        } else if let pressed = pressedChar.removeValue(forKey: event.keyCode) {
+            send?("C \(pressed.codepoint) 0 \(pressed.mods)")
         }
     }
 

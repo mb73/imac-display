@@ -819,7 +819,7 @@ namespace ImacDisplay
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
                 DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow;
-                bool crossed = false;
+                bool crossed = false, spaceSeen = false;
                 while (Active)
                 {
                     string line = control.ReadLine(250);
@@ -827,6 +827,12 @@ namespace ImacDisplay
                     if (line != null)
                     {
                         lastHeard = now;
+                        if (!spaceSeen && line.StartsWith("C 32 1 ", StringComparison.Ordinal))
+                        {
+                            /* shows whether ctrl+space from the Mac comes as Ctrl (2) or still as Win (8) */
+                            spaceSeen = true;
+                            Log("Vom Mac kam ein Kürzel mit der Leertaste: " + line + " (Modifier 2 = Strg, 8 = Win).");
+                        }
                         string reply = (HandleControl(control, line, clipboard) || locked) ? null : injector.Handle(line);
                         if (macAsleep)
                         {
@@ -994,7 +1000,7 @@ namespace ImacDisplay
             try
             {
                 Displays.Place(panel, external, offset);
-                Log("Anordnung im Fenster gewählt: Mac-Bildschirm "
+                Log("Anordnung im Fenster gewählt: "
                     + ArrangementView.Side(new Size(panel.Width, panel.Height), new Size(external.Width, external.Height), offset) + ".");
             }
             catch (InvalidOperationException ex) { Log(ex.Message); }
@@ -1010,9 +1016,9 @@ namespace ImacDisplay
                     onWifi && cableSeen
                         ? "Das Kabel ist gerade nicht bereit, nach dem Aufwachen des Mac dauert das etwa eine Minute. "
                             + "Bis dahin läuft die Verbindung übers WLAN, danach wechselt sie von selbst aufs Kabel."
-                        : lidOpen
-                            ? "Der Mac ist dein zweiter Bildschirm.\nAuf dem Mac LaptopScreen nach vorne holen."
-                            : "Der Deckel ist zu: Der Mac ist dein einziger Bildschirm.", ThinBar.None));
+                        /* lid closed: the arrangement's box says so already */
+                        : lidOpen ? "Der Mac ist dein zweiter Bildschirm.\nAuf dem Mac LaptopScreen nach vorne holen." : "",
+                    ThinBar.None));
             window.ShowTip(SharpnessKey, SharpnessTip());
         }
 

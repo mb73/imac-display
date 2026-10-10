@@ -2,6 +2,18 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.9.2] – 2026-10-10
+
+### Geändert
+
+- **In der Anordnung steht der Mac fest in der Mitte.** Meist steht der Mac, und der Laptop wandert um ihn herum. Deshalb ziehst du jetzt den Laptop an die Seite des Mac-Bildschirms, an der er steht. Die Rechtecke sind dabei größer als vorher, der Kasten ist gleich groß geblieben.
+- **Die Anordnung zeigt, wo die Maus hinüberkommt.** Im Kasten „Anordnung“ wandert ein kleiner Mauszeiger vom Laptop zum Mac-Bildschirm und zurück, über die Stelle, an der auch die echte Maus wechselt, und verweilt jeweils drei Sekunden neben den Namen der Bildschirme, ohne sie zu verdecken. Während du ziehst, ist er ausgeblendet.
+- **Kein doppelter Hinweis bei zugeklapptem Deckel.** Dass der Mac dann der einzige Bildschirm ist, steht nur noch im Kasten „Anordnung“, nicht mehr zusätzlich unter „Verbunden mit …“.
+
+### Behoben
+
+- **ctrl + Leertaste wirkt in Windows als Ctrl + Leertaste,** etwa für die Vorschläge in VS Code, statt als Windows-Taste + Leertaste, die die Eingabesprache wechselt. Andere Kürzel mit ctrl werden wie bisher zu Windows-Taste + …. Dafür braucht der Mac LaptopScreen 1.9.2; er aktualisiert sich wie gewohnt selbst.
+
 ## [1.9.0] – 2026-10-09
 
 ### Hinzugefügt

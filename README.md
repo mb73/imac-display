@@ -97,6 +97,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>cmd</kbd> + <kbd>↑</kbd> / <kbd>↓</kbd> | Dokumentanfang / Dokumentende |
 | <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
 | <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. <kbd>ctrl</kbd> + <kbd>E</kbd> für den Explorer |
+| <kbd>ctrl</kbd> + Leertaste | <kbd>ctrl</kbd> + Leertaste, etwa für Vorschläge in VS Code (nicht <kbd>win</kbd> + Leertaste) |
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
@@ -123,7 +124,7 @@ Steht im Fenster unter „Beim Zuklappen“ „Keine Aktion ausführen“ (siehe
 
 ### Anordnung
 
-Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Mac-Bildschirm über das Laptop – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Er rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Laptop unter den Mac-Bildschirm – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Der Mac-Bildschirm steht dort fest in der Mitte. Der Laptop rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Ein kleiner Mauszeiger wandert im Kasten zwischen den beiden hin und her, über die Stelle, an der auch die echte Maus wechselt. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
 <img width="485" height="584" alt="Anordnung2" src="https://github.com/user-attachments/assets/59ebc20c-1e2b-415e-8fa9-95e8a780c323" />
 
