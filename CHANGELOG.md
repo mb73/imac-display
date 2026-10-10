@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.9.3] – 2026-10-10
+
+### Behoben
+
+- **Streifen über der Taskleiste.** Nach einer Änderung der Anzeige zeichnete Windows die Taskleiste auf dem Mac-Bildschirm manchmal nur im unteren Teil, darüber schien in einem Streifen der Desktop-Hintergrund durch. iMac-Display erkennt das jetzt und lässt Windows die Taskleiste neu aufbauen, ohne den Windows-Explorer neu zu starten. Was geholfen hat, steht im Log.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.9.2] – 2026-10-10
 
 ### Geändert

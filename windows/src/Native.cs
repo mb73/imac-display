@@ -317,6 +317,37 @@ namespace ImacDisplay
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int RegisterWindowMessage(string name);
 
+        /* ---- the taskbars: find them, see what lies where, give them a nudge ---- */
+
+        public const int WM_DISPLAYCHANGE = 0x007E;
+        public const uint GA_ROOT = 2, SMTO_ABORTIFHUNG = 0x2;
+
+        public delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
+
+        [DllImport("user32.dll")]
+        public static extern bool EnumWindows(EnumWindowsProc callback, IntPtr param);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetClassName(IntPtr hwnd, StringBuilder name, int size);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr FindWindow(string className, string windowName);
+
+        [DllImport("user32.dll")]
+        public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(POINT point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr SendMessageTimeout(IntPtr hwnd, int message, IntPtr wParam, string lParam, uint flags, uint timeout, out IntPtr result);
+
+        [DllImport("user32.dll")]
+        public static extern bool PostMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
+
         /* 20 = DWMWA_USE_IMMERSIVE_DARK_MODE (19 before Windows 10 20H1) */
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);

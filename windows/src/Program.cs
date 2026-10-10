@@ -818,7 +818,8 @@ namespace ImacDisplay
 
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
-                DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow;
+                DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow,
+                    lastTrayCheck = DateTime.UtcNow;
                 bool crossed = false, spaceSeen = false;
                 while (Active)
                 {
@@ -899,6 +900,11 @@ namespace ImacDisplay
                     }
                     if (locked) continue;
                     if (place.HasValue && lidOpen) PlaceMacDisplay(place.Value);
+                    if ((now - lastTrayCheck).TotalSeconds >= 5)
+                    {
+                        lastTrayCheck = now;
+                        RepairTaskbars();
+                    }
 
                     if (scale != o.Scale)
                     {
@@ -989,6 +995,42 @@ namespace ImacDisplay
                 window.ShowTip(SharpnessKey, null);
                 window.ShowScale(null);
                 window.ShowArrangement(null, null);
+            }
+        }
+
+        /* 0 all taskbars whole, 1 settings notification sent, 2 display notification sent too, 3 neither helped */
+        static int trayRepair;
+
+        /*
+         A taskbar drawn only in its lower part (TrayRepair): one nudge per check, five seconds apart, and the log says
+         which one helped; after both it waits until the taskbar is whole again by other means
+         */
+        static void RepairTaskbars()
+        {
+            bool broken = TrayRepair.Broken().Count > 0;
+            if (!broken)
+            {
+                if (trayRepair == 1) Log("Die Taskleiste ist wieder ganz gezeichnet: Die Einstellungs-Nachricht an Explorer hat geholfen.");
+                else if (trayRepair == 2) Log("Die Taskleiste ist wieder ganz gezeichnet: Die Anzeige-Nachricht an Explorer hat geholfen.");
+                trayRepair = 0;
+                return;
+            }
+            if (trayRepair == 0)
+            {
+                Log("Eine Taskleiste ist nur unten gezeichnet, darüber scheint der Desktop durch. Ich schicke Explorer die Einstellungs-Nachricht.");
+                TrayRepair.NudgeSettings();
+                trayRepair = 1;
+            }
+            else if (trayRepair == 1)
+            {
+                Log("Die Taskleiste ist noch nicht ganz da. Ich schicke Explorer die Anzeige-Nachricht.");
+                TrayRepair.NudgeDisplay();
+                trayRepair = 2;
+            }
+            else if (trayRepair == 2)
+            {
+                Log("Beide Nachrichten haben nicht geholfen. Abhilfe: im Task-Manager den Windows-Explorer neu starten.");
+                trayRepair = 3;
             }
         }
 

@@ -1,8 +1,79 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ImacDisplay
 {
+    /*
+     Explorer sometimes draws a taskbar too low after a display change: its window keeps the right height, but its
+     content fills only the lower part, and the desktop shows above it (seen 2026-10-10 on the Mac display at 200 %,
+     with the panel at 125 %). A hit test finds it whatever the desktop shows, a color, a picture or a slideshow: near
+     the top edge the point belongs to the desktop's window, near the bottom edge to the taskbar. A notification makes Explorer lay its taskbars out again, in milliseconds, without
+     restarting: first the one Windows' settings send after a taskbar option changed, then the one after a display change.
+     */
+    internal static class TrayRepair
+    {
+        /* Taskbars whose upper part shows the desktop; hidden or covered ones do not count */
+        public static List<IntPtr> Broken()
+        {
+            var broken = new List<IntPtr>();
+            foreach (IntPtr tray in Taskbars())
+            {
+                Native.RECT r;
+                if (!Native.GetWindowRect(tray, out r) || r.Bottom - r.Top < 20) continue;
+                int x = r.Left + Math.Min(300, (r.Right - r.Left) / 4);
+                if (RootAt(x, r.Bottom - 6) != tray) continue;
+                string top = ClassOf(RootAt(x, r.Top + 6));
+                if (top == "Progman" || top == "WorkerW") broken.Add(tray);
+            }
+            return broken;
+        }
+
+        /* What Windows' settings send after a taskbar option changed */
+        public static void NudgeSettings()
+        {
+            IntPtr tray = Native.FindWindow("Shell_TrayWnd", null);
+            IntPtr result;
+            if (tray != IntPtr.Zero)
+                Native.SendMessageTimeout(tray, Native.WM_SETTINGCHANGE, IntPtr.Zero, "TraySettings", Native.SMTO_ABORTIFHUNG, 1000, out result);
+        }
+
+        /* What Windows sends after a display change; posted, since it carries no pointers */
+        public static void NudgeDisplay()
+        {
+            int width = Native.GetSystemMetrics(0), height = Native.GetSystemMetrics(1);  // SM_CXSCREEN, SM_CYSCREEN
+            var size = new IntPtr((height << 16) | (width & 0xFFFF));
+            foreach (IntPtr tray in Taskbars()) Native.PostMessage(tray, Native.WM_DISPLAYCHANGE, new IntPtr(32), size);
+        }
+
+        static List<IntPtr> Taskbars()
+        {
+            var found = new List<IntPtr>();
+            Native.EnumWindows(delegate (IntPtr hwnd, IntPtr param)
+            {
+                string name = ClassOf(hwnd);
+                if (name == "Shell_TrayWnd" || name == "Shell_SecondaryTrayWnd") found.Add(hwnd);
+                return true;
+            }, IntPtr.Zero);
+            return found;
+        }
+
+        static IntPtr RootAt(int x, int y)
+        {
+            var point = new Native.POINT();
+            point.X = x;
+            point.Y = y;
+            return Native.GetAncestor(Native.WindowFromPoint(point), Native.GA_ROOT);
+        }
+
+        static string ClassOf(IntPtr hwnd)
+        {
+            var name = new StringBuilder(256);
+            return Native.GetClassName(hwnd, name, name.Capacity) > 0 ? name.ToString() : "";
+        }
+    }
+
     /*
      The program's taskbar button: a badge (overlay icon) for the connection state and a progress bar.
      Windows creates the button some time after the window and announces it with the registered message
