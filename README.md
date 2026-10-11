@@ -120,7 +120,7 @@ In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rec
 
 Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Laptop unter den Mac-Bildschirm – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Der Mac-Bildschirm steht dort fest in der Mitte. Der Laptop rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Ein kleiner Mauszeiger wandert im Kasten zwischen den beiden hin und her, über die Stelle, an der auch die echte Maus wechselt. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und das Laptop-Display an ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
 
-<img width="485" height="583" alt="Anordnung" src="https://github.com/user-attachments/assets/28740830-6eb5-4729-bbfe-a6b0ed26b6ec" />
+<img width="481" height="608" alt="Anordnung2" src="https://github.com/user-attachments/assets/3437e778-712b-4db8-b5d6-1a30818353e1" />
 
 Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. ⚠️ Davon wird jedoch abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
@@ -131,6 +131,8 @@ Es ist wichtig zu wissen, dass bestimmte sicherheitskritische Aktionen nur direk
 Für den Fall dass man den Mac als einzigen Bildschirm verwenden möchte, gibt es zwei Methoden:
 1. Entweder das Häkchen „**Laptop-Display ausschalten**“. Dies ist die empfohlene Methode, da der Laptop-Deckel hierbei dauerhaft geöffnet bleiben kann und der Laptop sofort für sicherheitskritische Aktionen (siehe oben) zur Verfügung steht. In solch einem Fall wird das Display für die Aktion wieder eingeschaltet. Falls dies einmal nicht funktionieren sollte, kann man hierzu den Laptop zuklappen und wieder öffnen.
 2. Oder „**Beim Zuklappen**“ auf „**Keine Aktion ausführen**“ stellen und den Laptop dann zuklappen. Dies kann man einzeln einstellen für den Betrieb am Stromkabel („Eingesteckt“) und ohne Stromkabel („Akku“). Diese Methode hat den Nachteil, dass man den Laptop für sicherheitskritische Aktionen (siehe oben) aufklappen muss.
+
+<img width="481" height="607" alt="LaptopDisplayAus" src="https://github.com/user-attachments/assets/6ae15720-f33b-4703-a610-67f90d14095e" />
 
 ### Zwischenablage
 
