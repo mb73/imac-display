@@ -23,12 +23,13 @@ namespace ImacDisplay
     }
 
     /*
-     Switches between "laptop panel only" and an extended desktop on the external (dummy) display.
+     Switches between "laptop panel only", an extended desktop on the external (dummy) display and the dummy alone.
      Display settings are per user, so none of this needs admin rights.
      */
     internal static class Displays
     {
-        const uint SDC_TOPOLOGY_INTERNAL = 0x1, SDC_TOPOLOGY_EXTEND = 0x4, SDC_TOPOLOGY_EXTERNAL = 0x8, SDC_APPLY = 0x80;
+        const uint SDC_TOPOLOGY_INTERNAL = 0x1, SDC_TOPOLOGY_EXTEND = 0x4, SDC_TOPOLOGY_EXTERNAL = 0x8, SDC_USE_SUPPLIED_DISPLAY_CONFIG = 0x20,
+            SDC_APPLY = 0x80, SDC_ALLOW_CHANGES = 0x400;
         const uint QDC_ALL_PATHS = 0x1, QDC_ONLY_ACTIVE_PATHS = 0x2;
         const int OUTPUT_TECHNOLOGY_INTERNAL = unchecked((int)0x80000000);
         const int DM_POSITION = 0x20, DM_PELSWIDTH = 0x80000, DM_PELSHEIGHT = 0x100000, DM_DISPLAYFREQUENCY = 0x400000;
@@ -162,7 +163,89 @@ namespace ImacDisplay
             DisplayInfo external = External();
             if (external == null) return null;
             Size size = mode(external);
-            return EnsureMode(external, size.Width, size.Height, refresh, scale);
+            return EnsureMode(external, size.Width, size.Height, refresh, scale, true);
+        }
+
+        /*
+         Lid open, "Laptop-Display ausschalten" in the window: the external display alone, as primary. Unlike Win+P,
+         this is not saved (no SDC_SAVE_TO_DATABASE), and mode changes meanwhile are not either: for panel and dummy
+         together Windows keeps remembering the extended desktop with the panel as primary display, and restores it
+         by itself when the lid closes and opens again, even while Windows is locked. That is the way to the sign-in,
+         which Windows shows on the primary display only.
+         */
+        public static DisplayInfo PanelOff(Func<DisplayInfo, Size> mode, int refresh, int scale)
+        {
+            if (Internal() != null)
+            {
+                DetachInternal();
+                Thread.Sleep(1500);
+            }
+            DisplayInfo external = External();
+            if (external == null) return null;
+            Size size = mode(external);
+            return EnsureMode(external, size.Width, size.Height, refresh, scale, false);
+        }
+
+        /* Back from PanelOff: the extended desktop as Windows remembers it */
+        public static void PanelOn()
+        {
+            SetTopology(SDC_TOPOLOGY_EXTEND);
+            Thread.Sleep(1500);
+        }
+
+        static void DetachInternal()
+        {
+            Native.PATH_INFO[] paths;
+            Native.MODE_INFO[] modes;
+            WithoutInternal(out paths, out modes);
+            Apply(paths, modes, SDC_APPLY | SDC_USE_SUPPLIED_DISPLAY_CONFIG | SDC_ALLOW_CHANGES);
+        }
+
+        /* The active configuration without the panel's path; the external display's source moves to (0,0), which makes it primary */
+        static void WithoutInternal(out Native.PATH_INFO[] result, out Native.MODE_INFO[] resultModes)
+        {
+            uint numPaths, numModes;
+            if (Native.GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out numPaths, out numModes) != 0)
+                throw new InvalidOperationException("GetDisplayConfigBufferSizes fehlgeschlagen");
+            var paths = new Native.PATH_INFO[numPaths];
+            var modes = new Native.MODE_INFO[numModes];
+            if (Native.QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref numPaths, paths, ref numModes, modes, IntPtr.Zero) != 0)
+                throw new InvalidOperationException("QueryDisplayConfig fehlgeschlagen");
+            for (int i = 0; i < numPaths; i++)
+            {
+                Native.PATH_INFO path = paths[i];
+                if (path.targetInfo.outputTechnology == OUTPUT_TECHNOLOGY_INTERNAL) continue;
+                if (path.sourceInfo.modeInfoIdx >= numModes || path.targetInfo.modeInfoIdx >= numModes)
+                    throw new InvalidOperationException("Anzeige-Einstellung (Laptop-Display aus): Modus des Mac-Bildschirms unbekannt");
+                Native.MODE_INFO source = modes[path.sourceInfo.modeInfoIdx], target = modes[path.targetInfo.modeInfoIdx];
+                /* DISPLAYCONFIG_SOURCE_MODE: width, height and pixel format, then the position */
+                Array.Clear(source.data, 12, 8);
+                path.sourceInfo.modeInfoIdx = 0;
+                path.targetInfo.modeInfoIdx = 1;
+                result = new[] { path };
+                resultModes = new[] { source, target };
+                return;
+            }
+            throw new InvalidOperationException("Anzeige-Einstellung (Laptop-Display aus): Der Mac-Bildschirm ist nicht aktiv");
+        }
+
+        /* flags: SDC_APPLY, or SDC_VALIDATE to have Windows check the configuration without applying it */
+        static void Apply(Native.PATH_INFO[] paths, Native.MODE_INFO[] modes, uint flags)
+        {
+            int pathSize = Marshal.SizeOf(typeof(Native.PATH_INFO)), modeSize = Marshal.SizeOf(typeof(Native.MODE_INFO));
+            IntPtr pathBuffer = Marshal.AllocHGlobal(pathSize * paths.Length), modeBuffer = Marshal.AllocHGlobal(modeSize * modes.Length);
+            try
+            {
+                for (int i = 0; i < paths.Length; i++) Marshal.StructureToPtr(paths[i], pathBuffer + i * pathSize, false);
+                for (int i = 0; i < modes.Length; i++) Marshal.StructureToPtr(modes[i], modeBuffer + i * modeSize, false);
+                int rc = Native.SetDisplayConfig((uint)paths.Length, pathBuffer, (uint)modes.Length, modeBuffer, flags);
+                if (rc != 0) throw new InvalidOperationException("SetDisplayConfig fehlgeschlagen: " + rc);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pathBuffer);
+                Marshal.FreeHGlobal(modeBuffer);
+            }
         }
 
         /* The display's sizes at the given refresh rate that H.264 can carry (at most 4096 x 2304), largest first */
@@ -221,8 +304,11 @@ namespace ImacDisplay
             return mode.Width * factor * mode.Height * factor / ((double)screen.Width * screen.Height);
         }
 
-        /* Re-applies resolution and scaling if Windows changed them, e.g. after the lid was closed */
-        public static DisplayInfo EnsureMode(DisplayInfo external, int width, int height, int refresh, int scale)
+        /*
+         Re-applies resolution and scaling if Windows changed them, e.g. after the lid was closed. Without the panel,
+         persist false leaves Windows' saved configuration alone (PanelOff).
+         */
+        public static DisplayInfo EnsureMode(DisplayInfo external, int width, int height, int refresh, int scale, bool persist)
         {
             if (external.Width != width || external.Height != height)
             {
@@ -239,7 +325,7 @@ namespace ImacDisplay
                     mode.dmPelsWidth = width;
                     mode.dmPelsHeight = height;
                     mode.dmDisplayFrequency = refresh;
-                    Check(Native.ChangeDisplaySettingsEx(external.GdiName, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero), "Auflösung");
+                    Check(Native.ChangeDisplaySettingsEx(external.GdiName, ref mode, IntPtr.Zero, persist ? CDS_UPDATEREGISTRY : 0, IntPtr.Zero), "Auflösung");
                 }
                 Thread.Sleep(1000);
                 external = External();

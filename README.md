@@ -69,19 +69,11 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 <img width="322" height="172" alt="anheften3" src="https://github.com/user-attachments/assets/406ea4a6-1096-49ff-bf6b-bbcd0a38a448" />
 
-### Vorbereitung fürs zugeklappte Benutzen
-
-Um den Mac auch als einzigen Bildschirm verwenden zu können, darf Windows den Laptop beim Zuklappen nicht in den Standbymodus oder Ruhezustand schicken – sonst bekommt der Mac kein Bild mehr, bis du den Laptop wieder aufklappst. Stell dafür im Fenster von iMac-Display unter „Beim Zuklappen“ bei „Eingesteckt“ (und ggf. auch bei „Akku“) „Keine Aktion ausführen“ ein. Das gilt sofort und bleibt so. Adminrechte brauchst du dafür nicht, solange die Firma diese Einstellung nicht vorgibt.
-
-<img width="484" height="582" alt="DeckelZu" src="https://github.com/user-attachments/assets/89e0df93-658b-4718-a698-72e5e24bafce" />
-
-Den Energiesparmodus nach einer Weile ohne Eingabe musst du nicht abschalten: Solange das Bild zum Mac läuft, hält `imac-display.exe` den Laptop wach, auch wenn du gerade nur am Mac arbeitest. Ist Windows gesperrt oder die Verbindung getrennt, gelten wieder die Energiespareinstellungen von Windows.
-
 ## Benutzung
 
 1. **Mac:** LaptopScreen starten. Es zeigt „Warte auf den Laptop …“ und den Kopplungscode.
 2. **Laptop:** `imac-display.exe` starten. Beim ersten Mal fragt es nach dem Kopplungscode und merkt ihn sich. Das kleine Fenster zeigt, was gerade passiert; der Punkt davor und das Badge am Taskleisten-Symbol sind grün, wenn das Bild läuft, gelb beim Suchen oder bei gesperrtem Windows und rot bei einem Problem. Dieselbe Markierung trägt auf dem Mac das Dock-Symbol von LaptopScreen.
-3. Nach wenigen Sekunden erscheint auf dem Mac ein zweiter Windows-Bildschirm mit eigener Taskleiste. Hauptbildschirm bleibt das Laptop-Display, denn nur dort zeigt Windows nach einer Sperre die Anmeldung; bei zugeklapptem Deckel ist der Mac der einzige und damit der Hauptbildschirm. Wie die beiden Bildschirme zueinander liegen, stellst du im Fenster von iMac-Display ein (siehe [Anordnung](#anordnung)).
+3. Nach wenigen Sekunden erscheint auf dem Mac ein zweiter Windows-Bildschirm mit eigener Taskleiste. Hauptbildschirm bleibt das Laptop-Display, denn nur dort zeigt Windows nach einer Sperre die Anmeldung; bei zugeklapptem Deckel oder ausgeschaltetem Laptop-Display ist der Mac der einzige und damit der Hauptbildschirm. Wie die beiden Bildschirme zueinander liegen, stellst du im Fenster von iMac-Display ein (siehe [Anordnung](#anordnung)).
 
 Die Reihenfolge ist egal: Das Programm auf dem Laptop sucht so lange, bis der Mac da ist.
 
@@ -98,6 +90,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>opt</kbd> + <kbd>Backspace</kbd> | Wort löschen |
 | <kbd>ctrl</kbd> + Taste | <kbd>win</kbd> + Taste, z. B. <kbd>ctrl</kbd> + <kbd>E</kbd> für den Explorer |
 | <kbd>ctrl</kbd> + Leertaste | <kbd>ctrl</kbd> + Leertaste, etwa für Vorschläge in VS Code (nicht <kbd>win</kbd> + Leertaste) |
+| <kbd>ctrl</kbd> + <kbd>L</kbd> | Windows sperren, wie <kbd>win</kbd> + <kbd>L</kbd> |
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
@@ -108,27 +101,6 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>cmd</kbd> + <kbd>Q</kbd> | LaptopScreen beenden |
 
 Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
-
-### Zwischenablage
-
-Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
-
-- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit cmd+V einfügen.
-- **Vom Laptop zum Mac:** Text auf dem Laptop kopieren, zu einem Mac-Programm wechseln, einfügen.
-
-Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, nimmt im Fenster den Haken bei „Zwischenablage mit dem Mac teilen“ heraus; das gilt sofort und dauerhaft.
-
-### Deckel zuklappen
-
-Steht im Fenster unter „Beim Zuklappen“ „Keine Aktion ausführen“ (siehe [Vorbereitung fürs zugeklappte Benutzen](#vorbereitung-fürs-zugeklappte-benutzen)), kannst du den Laptop zuklappen: Dann ist der Mac sein einziger Bildschirm, weiterhin in 4K. Klappst du ihn wieder auf, kommt das Laptop-Display zurück. Ohne Ladekabel geht das nur, wenn auch bei „Akku“ „Keine Aktion ausführen“ steht; sonst schickt Windows den Laptop beim Zuklappen in den Standbymodus.
-
-### Anordnung
-
-Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Laptop unter den Mac-Bildschirm – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Der Mac-Bildschirm steht dort fest in der Mitte. Der Laptop rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Ein kleiner Mauszeiger wandert im Kasten zwischen den beiden hin und her, über die Stelle, an der auch die echte Maus wechselt. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und der Deckel offen ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
-
-<img width="485" height="583" alt="Anordnung" src="https://github.com/user-attachments/assets/28740830-6eb5-4729-bbfe-a6b0ed26b6ec" />
-
-Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. ⚠️ Davon wird jedoch abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
 
 ### Skalierung
 
@@ -144,6 +116,31 @@ In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rec
 
 <img width="535" height="151" alt="2048" src="https://github.com/user-attachments/assets/1b02ffeb-4f07-461e-a879-66302c3db62c" />
 
+### Anordnung
+
+Zunächst liegt das Laptop-Display links neben dem Mac-Bildschirm: Die Maus kommt am linken Rand des Mac-Bildschirms hinüber und am rechten Rand des Laptop-Displays zurück, mit der Maus vom Mac ebenso wie mit dem Touchpad des Laptops. Steht der Laptop zum Beispiel vor dem iMac, zieh im Fenster von iMac-Display unter „Anordnung“ den Laptop unter den Mac-Bildschirm – dann geht es am unteren Rand des Mac-Bildschirms hinüber. Der Mac-Bildschirm steht dort fest in der Mitte. Der Laptop rastet an der Kante ein, die ihm am nächsten liegt, und ein gestrichelter Rahmen zeigt beim Ziehen, wo; mit den Pfeiltasten springt er auf eine Seite. Ein kleiner Mauszeiger wandert im Kasten zwischen den beiden hin und her, über die Stelle, an der auch die echte Maus wechselt. Stell es am besten so ein, wie die beiden wirklich stehen. Das geht, solange die Verbindung steht und das Laptop-Display an ist. Windows merkt sich die Anordnung, und `imac-display.exe` behält sie bei, auch nach dem Zu- und Aufklappen und beim nächsten Verbinden.
+
+<img width="485" height="583" alt="Anordnung" src="https://github.com/user-attachments/assets/28740830-6eb5-4729-bbfe-a6b0ed26b6ec" />
+
+Wer auch bei aufgeklapten Laptop unbedingt den Mac als Hauptbildschirm braucht (mit Infobereich der Taskleiste und Benachrichtigungen dort), startet `imac-display.exe --mac-primary`. ⚠️ Davon wird jedoch abgeraten, weil die Anmeldung nach einer Sperre auf dem Mac-Bildschirm landet, wo man sie nicht sieht (siehe [Grenzen](#grenzen)). Wer den Laptop dann aufklappt sieht nur einen schwarzen Schirm bis er den Plug zieht. 
+
+### Der Mac als einziger Bildschirm
+
+Es ist wichtig zu wissen, dass bestimmte sicherheitskritische Aktionen nur direkt am Laptop durchgeführt werden können: z. B. den Laptop entsperren oder einen Sicherheitsschlüssel (z. B. YubiKey) am Laptop verwenden.
+
+Für den Fall dass man den Mac als einzigen Bildschirm verwenden möchte, gibt es zwei Methoden:
+1. Entweder das Häkchen „**Laptop-Display ausschalten**“. Dies ist die empfohlene Methode, da der Laptop-Deckel hierbei dauerhaft geöffnet bleiben kann und der Laptop sofort für sicherheitskritische Aktionen (siehe oben) zur Verfügung steht. In solch einem Fall wird das Display für die Aktion wieder eingeschaltet. Falls dies einmal nicht funktionieren sollte, kann man hierzu den Laptop zuklappen und wieder öffnen.
+2. Oder „**Beim Zuklappen**“ auf „**Keine Aktion ausführen**“ stellen und den Laptop dann zuklappen. Dies kann man einzeln einstellen für den Betrieb am Stromkabel („Eingesteckt“) und ohne Stromkabel („Akku“). Diese Methode hat den Nachteil, dass man den Laptop für sicherheitskritische Aktionen (siehe oben) aufklappen muss.
+
+### Zwischenablage
+
+Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
+
+- **Vom Mac zum Laptop:** Text in einem Mac-Programm kopieren, zu LaptopScreen wechseln, mit cmd+V einfügen.
+- **Vom Laptop zum Mac:** Text auf dem Laptop kopieren, zu einem Mac-Programm wechseln, einfügen.
+
+Übertragen wird nur Text, keine Bilder oder Dateien. Was du auf dem Laptop kopierst, während LaptopScreen nicht vorne ist, bleibt auf dem Laptop, und was Passwort-Manager als vertraulich markieren, bleibt immer, wo es ist. Wer die Zwischenablage nicht teilen möchte, nimmt im Fenster den Haken bei „Zwischenablage mit dem Mac teilen“ heraus; das gilt sofort und dauerhaft.
+
 ### Trennen und beenden
 
 „Trennen und beenden“ im Fenster schaltet den Mac-Bildschirm ab und beendet das Programm: Der 4K-Bildschirm verschwindet, und alle Fenster wandern zurück auf das Laptop-Display. Genauso wirkt ein Rechtsklick auf das Symbol in der Taskleiste → „Fenster schließen“. Ist der Deckel zu, fragt das Programm vorher nach, denn ohne den Mac hat der Laptop dann keinen Bildschirm, bis du ihn aufklappst. Für die nächste Verbindung startest du iMac-Display einfach wieder. Das X oben rechts legt das Fenster dagegen nur in die Taskleiste, die Verbindung bleibt bestehen.
@@ -156,9 +153,9 @@ In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rec
 
 ## Grenzen
 
-- **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
+- **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Ist das Laptop-Display ausgeschaltet, schaltet iMac-Display es bei einer Sperre von selbst ein; bleibt es doch schwarz, hilft kurzes Zu- und Aufklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
+- **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel oder PIN), erledigst du direkt am Laptop.
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
-- **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel, PIN oder Windows Hello), erledigst du direkt am Laptop.
 - **Ton** spielt weiterhin (nur) der Laptop.
 - **Die Zwischenablage** teilt nur Text. Keine Bilder oder Dateien.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
@@ -172,6 +169,7 @@ In meinem Fall habe ich für optimale Schärfe den Regler einen Schritt nach rec
 | „Kopplungscode abgelehnt“ | Den Code so eingeben, wie er auf dem Mac steht; Groß- und Kleinschreibung sowie Bindestriche sind egal. |
 | LaptopScreen meldet „kein HDMI-Dummy-Stecker“ | Den Stecker in den HDMI-Anschluss des Laptops stecken. Das Bild kommt dann von selbst. |
 | Bild steht still | Ist Windows gesperrt? Dann am Laptop entsperren. |
+| Laptop gesperrt, das Laptop-Display ist aus | Den Laptop kurz zu- und wieder aufklappen: Dann zeigt Windows die Anmeldung auf dem Laptop. Nach dem Entsperren geht das Display von selbst wieder aus. Bleibt es schwarz, hilft der nächste Punkt. |
 | Laptop gesperrt, Deckel war zu, beim Aufklappen bleibt das Display schwarz | Den HDMI-Dummy-Stecker kurz ziehen: Dann zeigt Windows die Anmeldung auf dem Laptop. Nach dem Entsperren wieder einstecken, das Bild auf dem Mac kommt von selbst. <kbd>win</kbd> + <kbd>P</kbd> geht auf dem Sperrbildschirm nicht. |
 | „Intel Quick Sync geht hier nicht“ | Der Laptop hat keine passende Intel-Grafik; dann kann `imac-display.exe` das Bild nicht übertragen. |
 | Aktualisierung auf dem Mac schlägt fehl | Die Meldung nennt den Grund. Fehlen die Command Line Tools: im Terminal `xcode-select --install`. LaptopScreen läuft so lange in der alten Version weiter. |

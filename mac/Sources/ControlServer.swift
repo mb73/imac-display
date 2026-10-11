@@ -39,7 +39,8 @@ enum Transport {
  "SCREEN <width> <height>" (pixels of its screen, again after every change; the agent picks its display mode by it).
  Afterwards the Mac sends input events and "P" pings; the agent answers with "P" and reports
  "STATE locked", "STATE unlocked" or "STATE nodisplay"; "POINTER away" when its cursor went over the
- edge onto another display, "POINTER home x y" when it is back. Clipboard text travels in both directions
+ edge onto another display, "POINTER home x y" when it is back; "SWITCH cable" before it comes back over the cable,
+ "SWITCH display" (1.10.3 and newer) when Windows' displays change and the picture pauses. Clipboard text travels in both directions
  as "CLIP+ <base64>" … "CLIP <base64>"; "FOCUS 1|0" from the Mac says whether LaptopScreen is in
  front, and only then does the agent send its clipboard. On "GETUPDATE" the agent sends the LaptopScreen sources
  it carries: "UPDATE <version> <bytes> <sha256> <proof>", "D <base64>" lines and "E", or "NOUPDATE";
@@ -56,6 +57,8 @@ final class ControlServer {
         case pointerAway
         case pointerHome(x: Int, y: Int)
         case switchingToCable
+        /* Windows changes its displays (lid, laptop display on or off): the video pauses for a few seconds */
+        case switchingDisplay
         case agentVersion(String)
         case clipboardEnabled(Bool)
         case clipboard(String)
@@ -332,8 +335,12 @@ final class ControlServer {
                 emit(.pointerHome(x: x, y: y))
             }
         case "SWITCH":
-            /* the agent hangs up and comes back over the cable right away */
-            if argument == "cable" { emit(.switchingToCable) }
+            /* the agent hangs up and comes back over the cable right away, or Windows changes its displays */
+            if argument == "cable" {
+                emit(.switchingToCable)
+            } else if argument == "display" {
+                emit(.switchingDisplay)
+            }
         case "VERSION":
             if !argument.isEmpty { emit(.agentVersion(argument)) }
         case "VIA":

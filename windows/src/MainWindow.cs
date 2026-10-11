@@ -62,7 +62,8 @@ namespace ImacDisplay
 
     /*
      The program window: what the agent is doing, "Trennen und beenden" (or "Verbinden" after the agent
-     paused itself), the scaling of the Mac display, where it lies next to the laptop, what closing the lid does,
+     paused itself), the scaling of the Mac display, where it lies next to the laptop or whether the laptop's own
+     display goes off, what closing the lid does,
      the clipboard switch, links to the guide and the log, and the offer of a newer version when there is one.
      The taskbar button shows the state as a badge and downloads and display switches as progress. The agent
      runs on its own thread; ShowStatus, ShowScale, ShowArrangement, ShowTip, Ask, AskCode, Warn and
@@ -71,7 +72,10 @@ namespace ImacDisplay
     internal sealed class MainWindow : ThemedForm
     {
         const int TextWidth = 380;
-        const string NoArrangement = "Sobald die Verbindung zum Mac steht, ziehst du hier den Mac-Bildschirm an die Seite des Laptops, an der er steht.";
+        const string NoArrangement = "Sobald die Verbindung zum Mac steht, ziehst du hier den Laptop an die Seite des Mac-Bildschirms, an der er steht.";
+        const string PanelOffNote = "Das Laptop-Display ist aus: Der Mac ist gerade dein einziger Bildschirm. "
+            + "Sperrt sich Windows, geht es von selbst an, damit du dich dort anmelden kannst. "
+            + "Bleibt es dabei schwarz: Laptop kurz zu- und wieder aufklappen.";
         /* the Downloads folder every few seconds, GitHub at the start and then every few hours */
         const int CheckInterval = 5000;
         static readonly TimeSpan OnlineInterval = TimeSpan.FromHours(6);
@@ -92,6 +96,8 @@ namespace ImacDisplay
         /* the Mac display's scaling and place, chosen here instead of in Windows' settings; only while a session runs */
         readonly ComboBox scaling = new ComboBox();
         readonly ArrangementView arrangement = new ArrangementView();
+        /* with the lid open, too, the Mac display can be the only one; remembered, like the clipboard switch */
+        readonly ThemedCheckBox panelOff = new ThemedCheckBox();
         /* what closing the lid does, plugged in and on battery, as under Settings > System > Power & battery */
         readonly ComboBox lidPlugged = new ComboBox(), lidBattery = new ComboBox();
         readonly ThemedCheckBox clipboard = new ThemedCheckBox();
@@ -208,9 +214,20 @@ namespace ImacDisplay
                 if (choice != null) Program.Scale = choice.Percent;
             };
             arrangement.Size = new Size(270, 160);
-            arrangement.Margin = new Padding(0, 0, 0, 10);
+            arrangement.Margin = new Padding(0, 0, 0, 6);
             arrangement.ShowNote(NoArrangement);
             arrangement.Placed += delegate (Point offset) { Program.RequestPlacement(offset); };
+            panelOff.Text = "Laptop-Display ausschalten";
+            panelOff.AutoSize = true;
+            panelOff.Checked = Program.MacOnly;
+            panelOff.Margin = new Padding(0, 0, 0, 10);
+            panelOff.CheckedChanged += delegate { Program.MacOnly = panelOff.Checked; };
+            var arranging = new FlowLayoutPanel();
+            arranging.FlowDirection = FlowDirection.TopDown;
+            arranging.WrapContents = false;
+            arranging.AutoSize = true;
+            arranging.Margin = Padding.Empty;
+            arranging.Controls.AddRange(new Control[] { arrangement, panelOff });
             var settings = new TableLayoutPanel();
             settings.ColumnCount = 2;
             settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -218,7 +235,7 @@ namespace ImacDisplay
             settings.AutoSize = true;
             settings.Margin = new Padding(42, 2, 20, 6);
             AddSetting(settings, "Skalierung", scaling, false);
-            AddSetting(settings, "Anordnung", arrangement, true);
+            AddSetting(settings, "Anordnung", arranging, true);
             if (LidAction.LidPresent) AddSetting(settings, "Beim Zuklappen", LidChoices(), true);
 
             /* button bar */
@@ -511,7 +528,7 @@ namespace ImacDisplay
 
         /*
          Where the Mac display lies next to the laptop panel, while a session runs with the lid open; with the lid closed
-         (no panel) or without a session (no Mac display) a note says why there is nothing to arrange
+         or the panel switched off (no panel) or without a session (no Mac display) a note says why there is nothing to arrange
          */
         public void ShowArrangement(DisplayInfo panel, DisplayInfo external)
         {
@@ -521,7 +538,8 @@ namespace ImacDisplay
                 return;
             }
             if (external == null) arrangement.ShowNote(NoArrangement);
-            else if (panel == null) arrangement.ShowNote("Der Deckel ist zu: Der Mac ist gerade dein einziger Bildschirm.");
+            else if (panel == null)
+                arrangement.ShowNote(Program.LidClosed ? "Der Deckel ist zu: Der Mac ist gerade dein einziger Bildschirm." : PanelOffNote);
             else arrangement.ShowDisplays(new Size(panel.Width, panel.Height), new Size(external.Width, external.Height),
                 new Point(external.X - panel.X, external.Y - panel.Y));
         }

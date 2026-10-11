@@ -29,6 +29,8 @@ namespace ImacDisplay
         public bool InternalPrimary = true;
         public bool SizeGiven, Repair, Test, Restore, Update;
         public bool ShareClipboard = true;
+        /* "Laptop-Display ausschalten" in the window: with the lid open, too, the Mac display is the only one */
+        public bool MacOnly;
         public string Code, UpdateZip;
         /* what a restart after an update passes on; code and clipboard choice are remembered anyway */
         public readonly List<string> Session = new List<string>();
@@ -134,7 +136,7 @@ namespace ImacDisplay
 
     /*
      Remembered preferences (%APPDATA%\imac-display\settings.txt, lines "key=value"); command-line options win.
-     "scale" and "clipboard" hold numbers, "size.<Mac screen>" the mode the user chose for that Mac, e.g.
+     "scale", "clipboard" and "maconly" hold numbers, "size.<Mac screen>" the mode the user chose for that Mac, e.g.
      "size.2880x1800=2560x1600".
      */
     internal static class Settings
@@ -152,6 +154,7 @@ namespace ImacDisplay
                 if (!int.TryParse(pair.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out value)) continue;
                 if (pair.Key == "scale") o.Scale = value;
                 else if (pair.Key == "clipboard") o.ShareClipboard = value != 0;
+                else if (pair.Key == "maconly") o.MacOnly = value != 0;
             }
         }
 
@@ -229,21 +232,92 @@ namespace ImacDisplay
         }
     }
 
-    /* The lock screen, UAC prompts and the screen saver run on another desktop than "Default" */
+    /*
+     Whether the agent can see and steer the laptop. The sign-in, UAC prompts and the screen saver run on another desktop than
+     "Default". After locking, though, Windows 11 shows its lock screen on "Default" for a while, until someone dismisses it;
+     only the session's own flag says it is locked then. In that phase programs may still switch displays.
+     */
     internal static class Session
     {
         public static bool IsLocked()
         {
+            return SessionLocked() || !InputDesktopIsDefault();
+        }
+
+        /* The session's lock flag (WTSINFOEX: Level, then 8-byte aligned SessionId, SessionState, SessionFlags 0 locked, 1 unlocked) */
+        public static bool SessionLocked()
+        {
+            IntPtr buffer;
+            int bytes;
+            if (!Native.WTSQuerySessionInformation(IntPtr.Zero, Native.WTS_CURRENT_SESSION, Native.WTSSessionInfoEx, out buffer, out bytes)) return false;
+            try
+            {
+                if (bytes < 20 || System.Runtime.InteropServices.Marshal.ReadInt32(buffer, 0) != 1) return false;
+                return System.Runtime.InteropServices.Marshal.ReadInt32(buffer, 16) == 0;
+            }
+            finally { Native.WTSFreeMemory(buffer); }
+        }
+
+        /* The input desktop is the user's own: programs reach it with input and may switch displays */
+        public static bool InputDesktopIsDefault()
+        {
             IntPtr desktop = Native.OpenInputDesktop(0, false, 0x0001);  // DESKTOP_READOBJECTS
-            if (desktop == IntPtr.Zero) return true;
+            if (desktop == IntPtr.Zero) return false;
             try
             {
                 var name = new StringBuilder(256);
                 int needed;
-                if (!Native.GetUserObjectInformation(desktop, 2, name, name.Capacity * 2, out needed)) return false;  // UOI_NAME
-                return !string.Equals(name.ToString(), "Default", StringComparison.OrdinalIgnoreCase);
+                if (!Native.GetUserObjectInformation(desktop, 2, name, name.Capacity * 2, out needed)) return true;  // UOI_NAME
+                return string.Equals(name.ToString(), "Default", StringComparison.OrdinalIgnoreCase);
             }
             finally { Native.CloseDesktop(desktop); }
+        }
+
+        /* Seconds since the last input, on the laptop or from the Mac (SendInput counts like a keyboard) */
+        public static int IdleSeconds()
+        {
+            var info = new Native.LASTINPUTINFO();
+            info.cbSize = 8;
+            if (!Native.GetLastInputInfo(ref info)) return 0;
+            return (int)(unchecked((uint)Environment.TickCount - info.dwTime) / 1000);
+        }
+
+        /*
+         After how many seconds without input Windows locks itself, 0 if never: the screen saver with sign-in on resume
+         (a company policy may set it; SystemParametersInfo reports the result) or the machine inactivity limit
+         */
+        public static int LockTimeout()
+        {
+            int seconds = 0, active = 0, secure = 0, timeout = 0;
+            if (Native.SystemParametersInfo(Native.SPI_GETSCREENSAVEACTIVE, 0, ref active, 0) && active != 0
+                && Native.SystemParametersInfo(Native.SPI_GETSCREENSAVESECURE, 0, ref secure, 0) && secure != 0
+                && Native.SystemParametersInfo(Native.SPI_GETSCREENSAVETIMEOUT, 0, ref timeout, 0) && timeout > 0
+                && ScreenSaverChosen())
+                seconds = timeout;
+            object limit = Read(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "InactivityTimeoutSecs");
+            if (limit is int && (int)limit > 0 && (seconds == 0 || (int)limit < seconds)) seconds = (int)limit;
+            return seconds;
+        }
+
+        /* "(Kein)" leaves the screen saver switched on, but without a program to run */
+        static bool ScreenSaverChosen()
+        {
+            return !string.IsNullOrEmpty(Read(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Control Panel\Desktop", "SCRNSAVE.EXE") as string)
+                || !string.IsNullOrEmpty(Read(@"HKEY_CURRENT_USER\Control Panel\Desktop", "SCRNSAVE.EXE") as string);
+        }
+
+        static object Read(string key, string name)
+        {
+            try { return Microsoft.Win32.Registry.GetValue(key, name, null); }
+            catch (System.Security.SecurityException) { return null; }
+            catch (IOException) { return null; }
+        }
+
+        /* A program keeps the display on, e.g. a video or a call: then the screen saver does not start */
+        public static bool DisplayHeld()
+        {
+            uint state;
+            return Native.CallNtPowerInformation(16, IntPtr.Zero, 0, out state, 4) == 0 && (state & 0x2) != 0;
         }
     }
 
@@ -326,6 +400,8 @@ namespace ImacDisplay
 
         /* keepDisplay: an update hands the Mac display over to the new version instead of switching it off */
         static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession, macAsleep, cableChecking;
+        /* the window's "Laptop-Display ausschalten", and whether the agent switched the panel off with the lid open (Displays.PanelOff) */
+        static volatile bool macOnly, panelSwitchedOff;
         /* the Mac on the direct cable, found in the background while a session runs over Wi-Fi */
         static volatile MacEndpoint cableFound;
         /* the Mac display's scaling, chosen in the window or adopted from Windows' settings */
@@ -382,6 +458,7 @@ namespace ImacDisplay
                 return 2;
             }
             shareClipboard = options.ShareClipboard;
+            macOnly = options.MacOnly;
             scale = options.Scale;
             if (options.Test)
             {
@@ -475,6 +552,17 @@ namespace ImacDisplay
             {
                 shareClipboard = value;
                 Settings.Save("clipboard", value ? 1 : 0);
+            }
+        }
+
+        /* The window's "Laptop-Display ausschalten": with the lid open, too, the Mac display is the only one; a running session follows right away */
+        public static bool MacOnly
+        {
+            get { return macOnly; }
+            set
+            {
+                macOnly = value;
+                Settings.Save("maconly", value ? 1 : 0);
             }
         }
 
@@ -647,6 +735,7 @@ namespace ImacDisplay
                 {
                     if (macAsleep)
                     {
+                        PanelBack();
                         ShowAsleep();
                         Wait(5000);
                         continue;
@@ -680,6 +769,7 @@ namespace ImacDisplay
                         if (!macAsleep) Log("Der Mac schläft. Sobald er aufwacht, verbinde ich mich wieder.");
                         macAsleep = true;
                         keepDisplayUntil = null;
+                        PanelBack();
                         ShowAsleep();
                         Wait(5000);
                     }
@@ -703,8 +793,9 @@ namespace ImacDisplay
                 if (!Active) continue;
                 if (macAsleep)
                 {
-                    /* waking the Mac is up to the user; the display stays as it is meanwhile */
+                    /* waking the Mac is up to the user; the display stays as it is meanwhile, only a switched-off panel comes back */
                     keepDisplayUntil = null;
+                    PanelBack();
                     ShowAsleep();
                     Wait(5000);
                     continue;
@@ -777,11 +868,14 @@ namespace ImacDisplay
                 Size? chosenFor = macScreen;
 
                 bool lidOpen = LidIsOpen();
-                Log(lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Deckel ist zu: Mac-Bildschirm wird der einzige Bildschirm …");
-                window.ShowStatus(new AgentStatus(Light.Busy, "Verbunden mit " + mac,
-                    lidOpen ? "Schalte den Mac-Bildschirm zu …" : "Der Deckel ist zu: Der Mac wird der einzige Bildschirm …", ThinBar.Unknown));
+                string switching = !lidOpen ? "Der Deckel ist zu: Der Mac wird der einzige Bildschirm …"
+                    : macOnly ? "Das Laptop-Display geht aus: Der Mac wird der einzige Bildschirm …" : "Schalte den Mac-Bildschirm zu …";
+                Log(switching);
+                window.ShowStatus(new AgentStatus(Light.Busy, "Verbunden mit " + mac, switching, ThinBar.Unknown));
                 o.Scale = scale;  // chosen in the window just as the last session ended
-                DisplayInfo external = Configure(o, lidOpen);
+                int lockTimeout = Session.LockTimeout();
+                if (macOnly) NoteLockTimeout(lockTimeout);
+                DisplayInfo external = Configure(o, lidOpen, macOnly && !LockSoon(lockTimeout));
                 if (external == null)
                 {
                     Log("Kein externer Bildschirm gefunden. Steckt der HDMI-Dummy-Stecker?");
@@ -819,7 +913,7 @@ namespace ImacDisplay
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
                 DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow,
-                    lastTrayCheck = DateTime.UtcNow;
+                    lastTrayCheck = DateTime.UtcNow, panelRetry = DateTime.MinValue;
                 bool crossed = false, spaceSeen = false;
                 while (Active)
                 {
@@ -833,6 +927,12 @@ namespace ImacDisplay
                             /* shows whether ctrl+space from the Mac comes as Ctrl (2) or still as Win (8) */
                             spaceSeen = true;
                             Log("Vom Mac kam ein Kürzel mit der Leertaste: " + line + " (Modifier 2 = Strg, 8 = Win).");
+                        }
+                        if (!locked && (line == LockDown || line == LockUp))
+                        {
+                            /* ctrl+L on the Mac, Win+L in Windows: synthetic input does not lock Windows, the agent does it itself */
+                            if (line == LockDown) LockFromMac(control, injector, o, lidOpen);
+                            continue;
                         }
                         string reply = (HandleControl(control, line, clipboard) || locked) ? null : injector.Handle(line);
                         if (macAsleep)
@@ -882,6 +982,7 @@ namespace ImacDisplay
                     {
                         locked = isLocked;
                         if (locked) injector.ReleaseAll();
+                        if (locked) lockPendingUntil = DateTime.MinValue;
                         control.Send(locked ? "STATE locked" : "STATE unlocked");
                         video.Pause(locked);
                         awake.Hold(!locked);
@@ -898,7 +999,31 @@ namespace ImacDisplay
                         Thread.Sleep(100);
                         break;
                     }
-                    if (locked) continue;
+                    if (locked)
+                    {
+                        /* Windows 11 shows its lock screen on "Default" for a while: until someone dismisses it, displays may */
+                        /* still be switched, and the panel goes on, so the lock screen and then the sign-in appear there */
+                        if (panelSwitchedOff && LidIsOpen() && now >= panelRetry && Session.InputDesktopIsDefault())
+                        {
+                            LogOnce("Windows ist gesperrt: Laptop-Display an, damit die Anmeldung dort erscheint.");
+                            DisplayInfo reconfigured = Configure(o, true, false);
+                            lastReconfigure = DateTime.UtcNow;
+                            panelRetry = panelSwitchedOff ? DateTime.UtcNow.AddSeconds(2) : DateTime.MinValue;
+                            if (reconfigured != null)
+                            {
+                                /* for the picture and the input after unlocking, before the session switches the panel off again */
+                                external = reconfigured;
+                                injector.SetArea(external);
+                                int capture = Displays.DxgiOutputIndex(external.GdiName);
+                                if (capture >= 0 && capture != output)
+                                {
+                                    output = capture;
+                                    video.SetArguments(FfmpegArguments(output, control.Address, control.VideoPort, o));
+                                }
+                            }
+                        }
+                        continue;
+                    }
                     if (place.HasValue && lidOpen) PlaceMacDisplay(place.Value);
                     if ((now - lastTrayCheck).TotalSeconds >= 5)
                     {
@@ -914,7 +1039,7 @@ namespace ImacDisplay
                         DisplayInfo scaled = Displays.External();
                         if (scaled != null)
                         {
-                            try { window.ShowScale(Displays.EnsureMode(scaled, mode.Width, mode.Height, o.Refresh, o.Scale) ?? scaled); }
+                            try { window.ShowScale(Displays.EnsureMode(scaled, mode.Width, mode.Height, o.Refresh, o.Scale, !panelSwitchedOff) ?? scaled); }
                             catch (InvalidOperationException ex) { Log(ex.Message); }
                         }
                     }
@@ -924,17 +1049,44 @@ namespace ImacDisplay
                     if (lidChanged)
                     {
                         lidOpen = open;
-                        Log(lidOpen ? "Deckel aufgeklappt: Laptop-Panel kommt wieder dazu." : "Deckel zugeklappt: nur noch der Mac-Bildschirm.");
+                        Log(!lidOpen ? "Deckel zugeklappt: nur noch der Mac-Bildschirm."
+                            : macOnly ? "Deckel aufgeklappt: Das Laptop-Display bleibt aus, wie im Fenster gewählt."
+                            : "Deckel aufgeklappt: Laptop-Panel kommt wieder dazu.");
+                        /* Windows switches by itself right now: LaptopScreen 1.10.3 and newer keep the last picture meanwhile */
+                        control.Send("SWITCH display");
                         ShowSession(mac, lidOpen, false);
                         Thread.Sleep(1500);  // let Windows finish its own reconfiguration first
-                        DisplayInfo reconfigured = Configure(o, lidOpen);
+                        DisplayInfo reconfigured = Configure(o, lidOpen, macOnly && !LockSoon(lockTimeout));
                         if (reconfigured != null) external = reconfigured;
                         lastReconfigure = DateTime.UtcNow;
                     }
 
+                    /*
+                     The window's "Laptop-Display ausschalten", and the panel off again after Windows brought it back by itself, e.g.
+                     when the lid closed and opened while Windows was locked: that is the way to the sign-in. Shortly before Windows
+                     locks itself for lack of input, the panel goes on, so the sign-in appears there; the next input switches it off.
+                     */
+                    bool switched = false;
+                    bool soon = macOnly && (LockSoon(lockTimeout) || now < lockPendingUntil), wantOff = macOnly && !soon;
+                    if (lidOpen && !lidChanged && now >= panelRetry && (wantOff ? Displays.Internal() != null : panelSwitchedOff))
+                    {
+                        switched = true;
+                        Log(wantOff ? "Laptop-Display aus: Der Mac ist jetzt der einzige Bildschirm."
+                            : soon ? "Windows sperrt sich gleich, weil es so lange keine Eingabe gab: Laptop-Display an, damit die Anmeldung dort erscheint."
+                            : "Laptop-Display wieder an.");
+                        control.Send("SWITCH display");
+                        ShowSession(mac, lidOpen, false);
+                        DisplayInfo reconfigured = Configure(o, true, wantOff);
+                        if (reconfigured != null) external = reconfigured;
+                        lastReconfigure = DateTime.UtcNow;
+                        /* failed (logged by Configure): try again a little later instead of every second */
+                        bool done = wantOff ? panelSwitchedOff : Displays.Internal() != null;
+                        panelRetry = done ? DateTime.MinValue : DateTime.UtcNow.AddSeconds(10);
+                    }
+
                     string layout = Displays.Describe();
                     bool screenChanged = !Nullable.Equals(macScreen, chosenFor);
-                    if (!lidChanged && !screenChanged && layout == lastLayout) continue;
+                    if (!lidChanged && !switched && !screenChanged && layout == lastLayout) continue;
                     if (layout != lastLayout) Log("Anzeige: " + layout);
                     lastLayout = layout;
 
@@ -965,7 +1117,7 @@ namespace ImacDisplay
                     else if (resized || current.ScalePercent != o.Scale)
                     {
                         Log("Stelle " + mode.Width + "x" + mode.Height + " bei " + o.Scale + " % wieder her.");
-                        try { current = Displays.EnsureMode(current, mode.Width, mode.Height, o.Refresh, o.Scale) ?? current; }
+                        try { current = Displays.EnsureMode(current, mode.Width, mode.Height, o.Refresh, o.Scale, !panelSwitchedOff) ?? current; }
                         catch (InvalidOperationException ex) { Log(ex.Message); }
                     }
                     external = current;
@@ -1058,8 +1210,8 @@ namespace ImacDisplay
                     onWifi && cableSeen
                         ? "Das Kabel ist gerade nicht bereit, nach dem Aufwachen des Mac dauert das etwa eine Minute. "
                             + "Bis dahin läuft die Verbindung übers WLAN, danach wechselt sie von selbst aufs Kabel."
-                        /* lid closed: the arrangement's box says so already */
-                        : lidOpen ? "Der Mac ist dein zweiter Bildschirm.\nAuf dem Mac LaptopScreen nach vorne holen." : "",
+                        /* lid closed or laptop display switched off: the arrangement's box says so already */
+                        : lidOpen && !macOnly ? "Der Mac ist dein zweiter Bildschirm.\nAuf dem Mac LaptopScreen nach vorne holen." : "",
                     ThinBar.None));
             window.ShowTip(SharpnessKey, SharpnessTip());
         }
@@ -1081,6 +1233,71 @@ namespace ImacDisplay
         {
             window.ShowStatus(new AgentStatus(Light.Paused, "Der Mac schläft",
                 "Sobald er aufwacht, verbindet sich iMac-Display von selbst wieder.", ThinBar.None));
+        }
+
+        /* ctrl+L on the Mac arrives as Win+L, pressed and released */
+        const string LockDown = "C 108 1 8", LockUp = "C 108 0 8";
+
+        /*
+         Windows locks itself within the next minute for lack of input (Session.LockTimeout); not while a program keeps the
+         display on, which holds off the screen saver
+         */
+        static bool LockSoon(int lockTimeout)
+        {
+            return lockTimeout > 0 && Session.IdleSeconds() >= Math.Max(lockTimeout / 2, lockTimeout - 60) && !Session.DisplayHeld();
+        }
+
+        static bool lockTimeoutNoted;
+        /* LockWorkStation returns before Windows is locked: until then (at most 10 s) the panel must not go off again */
+        static DateTime lockPendingUntil;
+
+        /* once per run, so the log says when the panel will go on by itself */
+        static void NoteLockTimeout(int lockTimeout)
+        {
+            if (lockTimeoutNoted) return;
+            lockTimeoutNoted = true;
+            if (lockTimeout <= 0) Log("Windows sperrt sich nicht von selbst, wenn es keine Eingabe gibt.");
+            else Log("Windows sperrt sich nach " + (lockTimeout % 60 == 0 ? lockTimeout / 60 + " min" : lockTimeout + " s")
+                + " ohne Eingabe. Kurz vorher schaltet iMac-Display das Laptop-Display ein, damit die Anmeldung dort erscheint.");
+        }
+
+        /*
+         ctrl+L on the Mac: lock Windows. With the panel switched off, it goes on first, so the sign-in appears where the
+         user can see it; once Windows is locked, it lets no program switch any more. After unlocking, the session switches
+         the panel off again.
+         */
+        static void LockFromMac(ControlClient control, Injector injector, Options o, bool lidOpen)
+        {
+            injector.ReleaseAll();
+            if (lidOpen && panelSwitchedOff)
+            {
+                Log("Sperre Windows (ctrl + L auf dem Mac). Das Laptop-Display geht vorher an, damit die Anmeldung dort erscheint.");
+                control.Send("SWITCH display");
+                Configure(o, true, false);
+            }
+            else Log("Sperre Windows (ctrl + L auf dem Mac).");
+            lockPendingUntil = DateTime.UtcNow.AddSeconds(10);
+            if (!Native.LockWorkStation()) Log("Windows ließ sich nicht sperren: " + new Win32Exception().Message);
+        }
+
+        /*
+         The Mac sleeps: with the panel switched off, the laptop would show nothing anywhere until the Mac wakes up.
+         Not once the sign-in has taken over the input (Windows lets no program switch then); the agent tries again a few seconds later.
+         */
+        static void PanelBack()
+        {
+            if (!panelSwitchedOff || !LidIsOpen() || !Session.InputDesktopIsDefault()) return;
+            try
+            {
+                /* back already, e.g. the lid closed and opened meanwhile */
+                if (Displays.Internal() == null)
+                {
+                    Displays.PanelOn();
+                    Log("Der Mac schläft: Das Laptop-Display ist wieder an, bis er aufwacht.");
+                }
+                panelSwitchedOff = false;
+            }
+            catch (InvalidOperationException ex) { LogOnce("Das Laptop-Display ließ sich nicht wieder einschalten: " + ex.Message); }
         }
 
         /* While a session runs over Wi-Fi, looks for the Mac on the direct cable every 10 s in the background. True once it is */
@@ -1255,22 +1472,37 @@ namespace ImacDisplay
             return false;
         }
 
-        /* Lid open: extended desktop; lid closed: only the Mac display. Both with the mode for the Mac (ChooseMode). */
-        static DisplayInfo Configure(Options o, bool lidOpen)
+        /*
+         Lid open: extended desktop, or with panelOff ("Laptop-Display ausschalten" in the window, unless Windows locks itself
+         soon) only the Mac display (Displays.PanelOff); lid closed: only the Mac display. All with the mode for the Mac (ChooseMode).
+         */
+        static DisplayInfo Configure(Options o, bool lidOpen, bool panelOff)
         {
             lock (cleanupLock) displayExtended = true;
             Func<DisplayInfo, Size> choose = delegate (DisplayInfo external) { return ChooseMode(o, external); };
             try
             {
                 if (!lidOpen) return Displays.ExternalOnly(choose, o.Refresh, o.Scale);
+                bool off = panelOff;
                 DisplayInfo current = Displays.External();
                 DisplayInfo panel = Displays.Internal();
+                if (off && current != null && panel == null)
+                {
+                    /* off already, e.g. LaptopScreen just restarted or the connection went over to the cable */
+                    panelSwitchedOff = true;
+                    return Displays.PanelOff(choose, o.Refresh, o.Scale);
+                }
                 /* the main display sits at (0,0) */
                 DisplayInfo primary = o.InternalPrimary ? panel : current;
-                if (current != null && panel != null && choose(current) == new Size(current.Width, current.Height)
-                    && current.ScalePercent == o.Scale && primary.X == 0 && primary.Y == 0)
-                    return current;  // still set up from before, e.g. LaptopScreen just restarted
-                return Displays.Extend(choose, o.Refresh, o.Scale, !o.InternalPrimary);
+                bool ready = current != null && panel != null && choose(current) == new Size(current.Width, current.Height)
+                    && current.ScalePercent == o.Scale && primary.X == 0 && primary.Y == 0;  // e.g. LaptopScreen just restarted
+                if (!ready) current = Displays.Extend(choose, o.Refresh, o.Scale, !o.InternalPrimary);
+                panelSwitchedOff = false;
+                if (!off || current == null) return current;
+                /* from the extended desktop as Windows remembers it, with the panel as the main display: the way back to the sign-in */
+                current = Displays.PanelOff(choose, o.Refresh, o.Scale);
+                panelSwitchedOff = Displays.Internal() == null;
+                return current;
             }
             catch (InvalidOperationException ex)
             {
@@ -1310,7 +1542,8 @@ namespace ImacDisplay
         {
             if (o.SizeGiven || !macScreen.HasValue) return false;
             DisplayInfo panel = Displays.Internal();
-            if (lidOpen != (panel != null)) return false;
+            bool panelExpected = lidOpen && !panelSwitchedOff;
+            if (panelExpected != (panel != null)) return false;
             return panel == null || panel.X != external.X || panel.Y != external.Y;
         }
 
@@ -1550,7 +1783,11 @@ namespace ImacDisplay
             lock (cleanupLock)
             {
                 if (!displayExtended) return;
-                try { Displays.InternalOnly(); }
+                try
+                {
+                    Displays.InternalOnly();
+                    panelSwitchedOff = false;
+                }
                 catch (InvalidOperationException ex) { failure = ex.Message; }
                 displayExtended = false;
             }

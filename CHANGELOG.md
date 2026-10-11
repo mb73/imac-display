@@ -2,6 +2,24 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.3] – 2026-10-11
+
+### Hinzugefügt
+
+- **Nur der Mac als Bildschirm, auch bei offenem Deckel.** Im Fenster von iMac-Display schaltet „Laptop-Display ausschalten“ unter der Anordnung das Display des Laptops ab: Der Mac ist dann der einzige Bildschirm, wie bei zugeklapptem Deckel, und Kamera, Tastatur und Touchpad des Laptops bleiben nutzbar. Der Haken bleibt gemerkt und gilt bei jeder Verbindung, auch nach dem Zu- und Aufklappen. Schläft der Mac, geht das Laptop-Display wieder an, bis er aufwacht.
+- **Die Anmeldung erscheint trotzdem auf dem Laptop.** Windows zeigt sie nur auf dem Hauptbildschirm. Deshalb schaltet iMac-Display das Laptop-Display ein, sobald Windows gesperrt ist, egal wie: Solange Windows noch den Sperrbildschirm zeigt, lässt es das Umschalten zu. Schon vorher geht es an, wenn du Windows auf dem Mac mit <kbd>ctrl</kbd> + <kbd>L</kbd> sperrst und eine Minute bevor sich Windows wegen fehlender Eingaben selbst sperrt (etwa durch einen Bildschirmschoner mit Anmeldung, wie ihn Firmen oft vorgeben). Nach dem Entsperren bzw. bei der nächsten Eingabe geht es von selbst wieder aus. Nur wenn der Sperrbildschirm schon weggeklickt war, bevor das Display an war, hilft kurzes Zu- und Aufklappen.
+- **<kbd>ctrl</kbd> + <kbd>L</kbd> auf dem Mac sperrt Windows,** wie <kbd>win</kbd> + <kbd>L</kbd> am Laptop.
+
+### Geändert
+
+- **Kein „Laptop verbunden – das Bild kommt gleich …“ mehr beim Auf- und Zuklappen.** Ändert Windows seine Bildschirme, setzt das Bild ein paar Sekunden aus. LaptopScreen lässt dann das letzte Bild stehen, statt die Meldung zu zeigen, bis zu zehn Sekunden lang. Weil in dieser Zeit auch der Mauszeiger stillsteht, erscheint in der Mitte das Symbol der Verbindung (LAN-Kabel oder WLAN), bis das Bild wieder läuft. Dafür braucht der Mac LaptopScreen 1.10.3; er aktualisiert sich wie gewohnt selbst.
+- **Gesperrter Laptop:** LaptopScreen nennt als ersten Ausweg jetzt das Zu- und Aufklappen, erst danach den Dummy-Stecker.
+
+### Behoben
+
+- **Gesperrt ist gesperrt.** Unter Windows 11 zeigt Windows nach dem Sperren eine Weile den Sperrbildschirm, bis du ihn wegklickst; iMac-Display hielt Windows in dieser Zeit für entsperrt und übertrug das Bild weiter. Jetzt fragt es den Sperrzustand direkt bei Windows ab.
+- Der Hinweis im Kasten „Anordnung“ vor der Verbindung sagt jetzt richtig, dass du den Laptop an den Mac-Bildschirm ziehst, nicht umgekehrt.
+
 ## [1.9.3] – 2026-10-10
 
 ### Behoben

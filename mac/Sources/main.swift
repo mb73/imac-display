@@ -30,6 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let symbolMaximum: TimeInterval = 10
     /* when a running video stopped: a mere restart (lid, display change) keeps the last picture for a moment */
     private var videoStoppedAt: Date?
+    /* the agent announced a change of Windows' displays: the last picture stays until the video is back, but not for ever */
+    private var holdUntil: Date?
+    private static let holdMaximum: TimeInterval = 10
+    /* the picture stands still this long: the symbol of the connection says why the pointer does not move */
+    private static let frozenDelay: TimeInterval = 0.3
     private let dockTile = DockTileView()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -161,6 +166,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .waiting:
             if videoRunning {
                 videoStoppedAt = Date()
+                DispatchQueue.main.asyncAfter(deadline: .now() + AppDelegate.frozenDelay) { [weak self] in self?.refresh() }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.refresh() }
             }
             videoRunning = false
@@ -175,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             agentConnected = true
             laptopLocked = false
             dummyMissing = false
+            holdUntil = nil
             transport = nil
             sessions += 1
             /* an agent before 1.9.0 never says how it came: then the Mac's own view counts */
@@ -191,6 +198,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             agentConnected = false
             laptopLocked = false
             dummyMissing = false
+            holdUntil = nil
             transport = nil
             clipboard.isEnabled = false
             if !updater.isRunning { updateStatus = nil }
@@ -207,6 +215,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         case .switchingToCable:
             showSymbol(.cable)
+        case .switchingDisplay:
+            holdUntil = Date().addingTimeInterval(AppDelegate.holdMaximum)
+            DispatchQueue.main.asyncAfter(deadline: .now() + AppDelegate.holdMaximum) { [weak self] in self?.refresh() }
         case .agentVersion(let version):
             offerUpdate(version)
         case .clipboardEnabled(let enabled):
@@ -266,8 +277,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refresh() {
+        let holding = holdUntil.map { Date() < $0 } ?? false
         let restarting = agentConnected && !videoRunning
-            && (videoStoppedAt.map { Date().timeIntervalSince($0) < 1.5 } ?? false)
+            && (holding || (videoStoppedAt.map { Date().timeIntervalSince($0) < 1.5 } ?? false))
         let showing = agentConnected && (videoRunning || restarting) && !laptopLocked && !dummyMissing
         let controlling = showing && !updateOfferVisible
         input.isEnabled = controlling
@@ -292,7 +304,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             symbol = nil
             symbolSince = nil
         }
-        container.symbol.hide()
+        /* the last picture stands while the video restarts, and the pointer with it: the symbol of the connection says the laptop is still there */
+        let frozen = showing && !videoRunning
+            && (videoStoppedAt.map { Date().timeIntervalSince($0) >= AppDelegate.frozenDelay } ?? false)
+        if frozen, let way = transport ?? lastTransport {
+            container.symbol.show(way)
+        } else {
+            container.symbol.hide()
+        }
         if showing {
             container.overlay.isHidden = true
             if controlling { container.scheduleCursorHide() }
@@ -313,7 +332,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 + "Bitte in den HDMI-Anschluss des Laptops stecken – das Bild kommt dann von selbst."
         } else if laptopLocked {
             container.overlay.text = "Der Laptop ist gesperrt.\n\nBitte direkt am Laptop entsperren.\n\n"
-                + "Bleibt sein Bildschirm beim Aufklappen schwarz, den HDMI-Dummy-Stecker kurz ziehen: "
+                + "Ist sein Bildschirm schwarz, klapp ihn kurz zu und wieder auf. Bleibt er schwarz, den HDMI-Dummy-Stecker kurz ziehen: "
                 + "Dann zeigt Windows die Anmeldung auf dem Laptop. Danach wieder einstecken."
         } else {
             container.overlay.text = "Laptop verbunden – das Bild kommt gleich …"

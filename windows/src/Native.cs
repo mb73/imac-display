@@ -217,6 +217,35 @@ namespace ImacDisplay
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool GetUserObjectInformation(IntPtr obj, int index, StringBuilder info, int length, out int needed);
 
+        /* ---- idle time and locking: with the panel switched off, it goes on before Windows locks itself ---- */
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
+
+        [DllImport("user32.dll")]
+        public static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool LockWorkStation();
+
+        /* the session's own lock flag: WTSSessionInfoEx of the current session on this machine (server handle zero) */
+        public const int WTS_CURRENT_SESSION = -1, WTSSessionInfoEx = 25;
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSQuerySessionInformation(IntPtr server, int sessionId, int infoClass, out IntPtr buffer, out int bytes);
+
+        [DllImport("wtsapi32.dll")]
+        public static extern void WTSFreeMemory(IntPtr memory);
+
+        public const uint SPI_GETSCREENSAVETIMEOUT = 14, SPI_GETSCREENSAVEACTIVE = 16, SPI_GETSCREENSAVESECURE = 0x76;
+
+        [DllImport("user32.dll")]
+        public static extern bool SystemParametersInfo(uint action, uint param, ref int value, uint winIni);
+
+        /* level 16, SystemExecutionState: what all programs together request, ES_SYSTEM_REQUIRED 0x1, ES_DISPLAY_REQUIRED 0x2 */
+        [DllImport("powrprof.dll")]
+        public static extern uint CallNtPowerInformation(int level, IntPtr input, uint inputLength, out uint output, uint outputLength);
+
         /* ---- lid switch notifications ---- */
 
         public const int WM_POWERBROADCAST = 0x0218, PBT_POWERSETTINGCHANGE = 0x8013;
