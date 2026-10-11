@@ -2,6 +2,18 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.4] – 2026-10-11
+
+### Geändert
+
+- **Kein „Laptop verbunden – das Bild kommt gleich …“ mehr beim Ändern der Anordnung.** Auch wenn du im Fenster von iMac-Display nur die Anordnung änderst, baut Windows seinen Desktop neu auf, und das Bild setzt kurz aus. LaptopScreen lässt jetzt wie beim Auf- und Zuklappen das letzte Bild stehen, mit dem Symbol der Verbindung in der Mitte, bis das Bild wieder läuft. Außerdem startet iMac-Display die Übertragung danach ohne die bisherige Pause von einer halben Sekunde neu.
+
+### Behoben
+
+- **Streifen über der Taskleiste, auch hinter einem maximierten Fenster.** Zeichnet Windows die Taskleiste auf dem Mac-Bildschirm nach einer Änderung der Anzeige nur im unteren Teil, repariert iMac-Display das seit 1.9.3. Lag dort aber ein maximiertes Fenster wie VS Code, übersah es den Fehler, weil der unsichtbare Rand des Fensters ein Stück in die Taskleiste ragt. Jetzt findet es ihn auch dann, und zwar etwa eine Sekunde nach der Änderung statt erst nach bis zu fünf. Und ändert sich die Anzeige erneut, während es noch repariert, fängt es von vorn an, statt nach zwei Versuchen aufzugeben.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.3] – 2026-10-11
 
 ### Hinzugefügt

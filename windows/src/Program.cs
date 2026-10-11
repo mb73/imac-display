@@ -1024,7 +1024,7 @@ namespace ImacDisplay
                         }
                         continue;
                     }
-                    if (place.HasValue && lidOpen) PlaceMacDisplay(place.Value);
+                    if (place.HasValue && lidOpen) PlaceMacDisplay(control, place.Value);
                     if ((now - lastTrayCheck).TotalSeconds >= 5)
                     {
                         lastTrayCheck = now;
@@ -1087,7 +1087,14 @@ namespace ImacDisplay
                     string layout = Displays.Describe();
                     bool screenChanged = !Nullable.Equals(macScreen, chosenFor);
                     if (!lidChanged && !switched && !screenChanged && layout == lastLayout) continue;
-                    if (layout != lastLayout) Log("Anzeige: " + layout);
+                    if (layout != lastLayout)
+                    {
+                        Log("Anzeige: " + layout);
+                        /* Explorer lays its taskbars out anew: the next look at them comes a second from now, not within five, */
+                        /* and a repair starts over with the first notification, since the change may have undone the last one */
+                        lastTrayCheck = now.AddSeconds(-4);
+                        trayRepair = 0;
+                    }
                     lastLayout = layout;
 
                     DisplayInfo current = Displays.External();
@@ -1186,11 +1193,18 @@ namespace ImacDisplay
             }
         }
 
-        /* The window's arrangement; the layout check that follows sees the change like any other and passes it on */
-        static void PlaceMacDisplay(Point offset)
+        /*
+         The window's arrangement; the layout check that follows sees the change like any other and passes it on. Windows
+         rebuilds its desktop even for a mere move, which breaks off the capture: LaptopScreen 1.10.3 and newer keep the
+         last picture meanwhile, and ffmpeg starts again without the usual pause. A scaling change leaves the capture alone.
+         */
+        static void PlaceMacDisplay(ControlClient control, Point offset)
         {
             DisplayInfo panel = Displays.Internal(), external = Displays.External();
             if (panel == null || external == null) return;
+            if (external.X - panel.X == offset.X && external.Y - panel.Y == offset.Y) return;
+            control.Send("SWITCH display");
+            video.RestartPromptly();
             try
             {
                 Displays.Place(panel, external, offset);

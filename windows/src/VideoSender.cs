@@ -20,6 +20,8 @@ namespace ImacDisplay
         Process current;
         volatile bool running;
         volatile bool paused;
+        /* until when an end of ffmpeg is expected (RestartPromptly); guarded by gate */
+        DateTime promptUntil;
 
         public event Action<string> Log;
 
@@ -44,6 +46,15 @@ namespace ImacDisplay
         {
             arguments = newArguments;
             KillCurrent();
+        }
+
+        /*
+         The agent is about to change Windows' displays itself, which breaks off the capture (DXGI_ERROR_ACCESS_LOST):
+         if ffmpeg ends within the next seconds, it starts again once without the usual pause
+         */
+        public void RestartPromptly()
+        {
+            lock (gate) promptUntil = DateTime.UtcNow.AddSeconds(3);
         }
 
         public void Pause(bool pause)
@@ -73,10 +84,16 @@ namespace ImacDisplay
                 string lastError = RunOnce();
                 if (!running) break;
                 if (paused) continue;
+                bool prompt;
+                lock (gate)
+                {
+                    prompt = DateTime.UtcNow < promptUntil;
+                    promptUntil = DateTime.MinValue;
+                }
                 bool quick = (DateTime.UtcNow - started).TotalSeconds < 5;
-                quickFailures = quick ? quickFailures + 1 : 0;
-                Emit("Video-Übertragung neu gestartet" + (lastError != null ? " (" + lastError + ")" : ""));
-                Thread.Sleep(Math.Min(5000, 500 * Math.Max(1, quickFailures)));
+                quickFailures = quick && !prompt ? quickFailures + 1 : 0;
+                Emit("Video-Übertragung " + (prompt ? "sofort " : "") + "neu gestartet" + (lastError != null ? " (" + lastError + ")" : ""));
+                if (!prompt) Thread.Sleep(Math.Min(5000, 500 * Math.Max(1, quickFailures)));
             }
         }
 

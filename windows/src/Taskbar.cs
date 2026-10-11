@@ -8,13 +8,19 @@ namespace ImacDisplay
     /*
      Explorer sometimes draws a taskbar too low after a display change: its window keeps the right height, but its
      content fills only the lower part, and the desktop shows above it (seen 2026-10-10 on the Mac display at 200 %,
-     with the panel at 125 %). A hit test finds it whatever the desktop shows, a color, a picture or a slideshow: near
-     the top edge the point belongs to the desktop's window, near the bottom edge to the taskbar. A notification makes Explorer lay its taskbars out again, in milliseconds, without
-     restarting: first the one Windows' settings send after a taskbar option changed, then the one after a display change.
+     with the panel at 125 %: the content is laid out for the panel's DPI, 60 instead of 96 pixels high). A hit test finds
+     it whatever the desktop shows, a color, a picture or a slideshow: in the upper part the point belongs to the desktop's
+     window, near the bottom edge to the taskbar. A notification makes Explorer lay its taskbars out again, in milliseconds,
+     without restarting: first the one Windows' settings send after a taskbar option changed, then the one after a display
+     change.
      */
     internal static class TrayRepair
     {
-        /* Taskbars whose upper part shows the desktop; hidden or covered ones do not count */
+        /*
+         Taskbars whose upper half shows the desktop somewhere; hidden or covered ones do not count. Not a single point
+         near the top edge: a maximized window's invisible resize border reaches into the taskbar (13 pixels at 200 %),
+         and there the hit test finds that window instead of the desktop (seen 2026-10-11 with VS Code)
+         */
         public static List<IntPtr> Broken()
         {
             var broken = new List<IntPtr>();
@@ -24,8 +30,15 @@ namespace ImacDisplay
                 if (!Native.GetWindowRect(tray, out r) || r.Bottom - r.Top < 20) continue;
                 int x = r.Left + Math.Min(300, (r.Right - r.Left) / 4);
                 if (RootAt(x, r.Bottom - 6) != tray) continue;
-                string top = ClassOf(RootAt(x, r.Top + 6));
-                if (top == "Progman" || top == "WorkerW") broken.Add(tray);
+                for (int y = r.Top + 2; y < r.Top + (r.Bottom - r.Top) / 2; y += 4)
+                {
+                    string at = ClassOf(RootAt(x, y));
+                    if (at == "Progman" || at == "WorkerW")
+                    {
+                        broken.Add(tray);
+                        break;
+                    }
+                }
             }
             return broken;
         }
