@@ -109,6 +109,7 @@ Tests gibt es nicht; geprüft wird über Build, `--test`, das Log und die Latenz
 - `-bufsize` begrenzt die Größe jedes einzelnen Bilds (QSV: `BufferSizeInKB` × `BRCParamMultiplier`). Mit 2M waren das 334 KB; 4K-Schlüsselbilder (0,7–0,9 MB) wurden abgeschnitten, und der untere Bildrand zeigte Müll, bis sich dort etwas änderte (behoben in 1.1.0, jetzt 16M). Prüfen lässt sich das am Laptop allein: kurz mit denselben Argumenten in eine `.flv` aufzeichnen und `ffmpeg -v error -i aufnahme.flv -f null -` laufen lassen. Meldet der Software-Decoder „error while decoding MB …“, ist der Stream schon beim Encoder kaputt.
 - FLV statt MPEG-TS: Der TS-Demuxer gibt ein Bild erst beim nächsten PES-Kopf frei.
 - mpv als Empfänger staut beim Start ~1 s und baut den Stau bei gleicher Bild- und Bildwiederholrate nie ab; deshalb die eigene App.
+- `gfxcapture` (Windows.Graphics.Capture, in ffmpeg 9.0.2 enthalten) statt `ddagrab`, geprüft am 2026-10-11, weil `ddagrab` bei jeder Anzeigeänderung endet und ffmpeg 1,1–1,3 s bis zum ersten Bild braucht: Es läuft in derselben QSV-Kette, liefert Bilder nur bei Änderungen und hat einen gelben Rahmen, der standardmäßig aus ist. Es kostet aber 50–70 ms mehr bis zum Bild: im Median 113–127 ms gegen 59–64 ms, nur Aufnahme, gemessen mit einem Quadrat, das schwarz-weiß wechselt. Außerdem startet es langsamer, die Verbindung steht erst nach 1,6 s statt 0,6 s. Deshalb nicht genutzt. Ob es eine Änderung der Anordnung übersteht, blieb ungetestet.
 
 ## Update-Mechanismus
 
