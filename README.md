@@ -25,12 +25,12 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
 | Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. [von FUERAN](https://www.amazon.de/dp/B0FMG2CPL6/?th=1), ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
-| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [von deleyCON](https://www.amazon.de/dp/B07WMPM1KW/?th=1), ca. 6 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
+| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [von deleyCON](https://www.amazon.de/dp/B07WMPM1KW/?th=1) (geignete Länge auswählen!), ca. 6 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
 
 ## Vorgehensweise
 
 1. HDMI-Dummy-Stecker und LAN-Kabel besorgen (siehe oben).
-2. HDMI-Dummy-Stecker in den Laptop stecken. Enden des LAN-Kabels in Laptop und Mac stecken. Die Reihenfolge ist egal.
+2. HDMI-Dummy-Stecker in den Laptop (oder dessen Dockingstation) stecken. Mac und Laptop (oder dessen Dockingstation) mit dem LAN-Kabel verbinden. Den Laptop ggf. mit dessen Dockingstation verbinden. Die Reihenfolge ist egal.
 3. Diese Software auf dem Laptop und auf dem Mac einrichten und starten. Die Reihenfolge ist egal.
 
 ## Einrichtung auf dem Mac (einmalig)
