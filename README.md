@@ -29,9 +29,9 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 
 ## Vorgehensweise
 
-1. HDMI-Dummy-Stecker und LAN-Kabel besorgen (siehe oben).
-2. HDMI-Dummy-Stecker in den Laptop (oder dessen Dockingstation) stecken. Mac und Laptop (oder dessen Dockingstation) mit dem LAN-Kabel verbinden. Den Laptop ggf. mit dessen Dockingstation verbinden. Die Reihenfolge ist egal.
-3. Diese Software auf dem Laptop und auf dem Mac einrichten und starten. Die Reihenfolge ist egal.
+1. **Besorgen:** HDMI-Dummy-Stecker und LAN-Kabel (siehe oben)
+2. **Verbinden:** Mac und Laptop (oder dessen Dockingstation) via LAN-Kabel. HDMI-Dummy-Stecker in den Laptop (oder dessen Dockingstation). Laptop ggf. mit dessen Dockingstation verbinden. Reihenfolge egal.
+3. **Einrichten:** Diese Software auf dem Laptop und auf dem Mac einrichten und starten. Reihenfolge egal.
 
 ## Einrichtung auf dem Mac (einmalig)
 
