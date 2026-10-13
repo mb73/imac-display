@@ -110,6 +110,11 @@ Tests gibt es nicht; geprüft wird über Build, `--test`, das Log und die Latenz
 - FLV statt MPEG-TS: Der TS-Demuxer gibt ein Bild erst beim nächsten PES-Kopf frei.
 - mpv als Empfänger staut beim Start ~1 s und baut den Stau bei gleicher Bild- und Bildwiederholrate nie ab; deshalb die eigene App.
 - `gfxcapture` (Windows.Graphics.Capture, in ffmpeg 9.0.2 enthalten) statt `ddagrab`, geprüft am 2026-10-11, weil `ddagrab` bei jeder Anzeigeänderung endet und ffmpeg 1,1–1,3 s bis zum ersten Bild braucht: Es läuft in derselben QSV-Kette, liefert Bilder nur bei Änderungen und hat einen gelben Rahmen, der standardmäßig aus ist. Es kostet aber 50–70 ms mehr bis zum Bild: im Median 113–127 ms gegen 59–64 ms, nur Aufnahme, gemessen mit einem Quadrat, das schwarz-weiß wechselt. Außerdem startet es langsamer, die Verbindung steht erst nach 1,6 s statt 0,6 s. Deshalb nicht genutzt. Ob es eine Änderung der Anordnung übersteht, blieb ungetestet.
+- **Nicht noch einmal versuchen: Bilder nur bei Änderungen senden.** Am 2026-10-14 ausprobiert und auf ausdrücklichen Wunsch des Benutzers wieder ausgebaut, denn Tippen fühlt sich damit sehr viel träger an. Das „geht gar nicht“, auch wenn es Strom spart.
+  - **Was getestet wurde:** `ddagrab` mit `dup_frames=0`, dazu `-fps_mode passthrough -enc_time_base:v filter`. Das brauchte es, weil die Standard-Zeitbasis 1/fps nah beieinanderliegende Bilder auf denselben Zeitstempel legt. Erst lief es mit einem erzwungenen IDR-Bild nach 2 s Pause, dann ohne, zuletzt mit einem Schalter im Fenster zum direkten Vergleich. Bei jeder Variante war es deutlich träger.
+  - **Was es gebracht hätte:** Im Leerlauf rund 1 W weniger Paketleistung. Encode sank von ~50 % auf ~2 %, ffmpeg von 11 % auf 1,8 % eines Kerns.
+  - **Ursache:** Am Decoder auf dem Mac liegt es nicht, der SPS meldet `pic_order_cnt_type=2` und `max_num_reorder_frames=0`. Vermutlich taktet die GPU zwischen den vereinzelten Bildern herunter und muss für jeden Tastendruck erst aufwachen. Die durchgehenden 60 fps halten sie wach und bleiben deshalb, trotz des Stroms im Leerlauf.
+  - **Gilt auch für andere Ideen**, die im Leerlauf weniger Bilder schicken, etwa `gfxcapture`, das ebenfalls nur bei Änderungen liefert, oder eine gesenkte Bildrate. Sie dürften am selben Effekt scheitern.
 
 ## Update-Mechanismus
 
