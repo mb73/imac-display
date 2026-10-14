@@ -117,6 +117,35 @@ namespace ImacDisplay
             return false;
         }
 
+        /*
+         The device container of the active external display (the HDMI dummy), or null. Windows derives it from the EDID, and
+         the display's sound output belongs to the same container (seen 2026-10-14: 722732be-… for the dummy and its output).
+         */
+        public static Guid? ExternalContainer()
+        {
+            uint numPaths, numModes;
+            if (Native.GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, out numPaths, out numModes) != 0) return null;
+            var paths = new Native.PATH_INFO[numPaths];
+            var modes = new Native.MODE_INFO[numModes];
+            if (Native.QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, ref numPaths, paths, ref numModes, modes, IntPtr.Zero) != 0) return null;
+            for (int i = 0; i < numPaths; i++)
+            {
+                if (paths[i].targetInfo.outputTechnology == OUTPUT_TECHNOLOGY_INTERNAL) continue;
+                var name = new Native.TARGET_NAME();
+                name.header.type = 2;  // DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME
+                name.header.size = (uint)Marshal.SizeOf(typeof(Native.TARGET_NAME));
+                name.header.adapterId = paths[i].targetInfo.adapterId;
+                name.header.id = paths[i].targetInfo.id;
+                if (Native.DisplayConfigGetDeviceInfo(ref name) != 0) return null;
+                var key = new Native.DEVPROPKEY { fmtid = new Guid("8c7ed206-3f8a-4827-b3ab-ae9e1faefc6c"), pid = 2 };  // DEVPKEY_Device_ContainerId
+                var container = new byte[16];
+                uint type, size = (uint)container.Length;
+                if (Native.CM_Get_Device_Interface_Property(name.monitorDevicePath, ref key, out type, container, ref size, 0) != 0 || size != 16) return null;
+                return new Guid(container);
+            }
+            return null;
+        }
+
         public static void InternalOnly()
         {
             SetTopology(SDC_TOPOLOGY_INTERNAL);

@@ -58,6 +58,16 @@ namespace ImacDisplay
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string viewGdiDeviceName;
         }
 
+        /* the monitor's device interface path leads to its device container, which the display's sound output shares */
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct TARGET_NAME
+        {
+            public DEVICE_INFO_HEADER header;
+            public uint flags; public int outputTechnology; public ushort edidManufactureId, edidProductCodeId; public uint connectorInstance;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)] public string monitorFriendlyDeviceName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string monitorDevicePath;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct DPI_GET { public DEVICE_INFO_HEADER header; public int minScaleRel; public int curScaleRel; public int maxScaleRel; }
 
@@ -91,6 +101,9 @@ namespace ImacDisplay
         public static extern int DisplayConfigGetDeviceInfo(ref SOURCE_NAME request);
 
         [DllImport("user32.dll")]
+        public static extern int DisplayConfigGetDeviceInfo(ref TARGET_NAME request);
+
+        [DllImport("user32.dll")]
         public static extern int DisplayConfigGetDeviceInfo(ref DPI_GET request);
 
         [DllImport("user32.dll")]
@@ -104,6 +117,15 @@ namespace ImacDisplay
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int ChangeDisplaySettingsEx(string deviceName, IntPtr devMode, IntPtr hwnd, uint flags, IntPtr lParam);
+
+        /* ---- device properties: the dummy's device container, to tell its sound output ---- */
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct DEVPROPKEY { public Guid fmtid; public uint pid; }
+
+        /* CR_SUCCESS is 0 */
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode, EntryPoint = "CM_Get_Device_Interface_PropertyW")]
+        public static extern int CM_Get_Device_Interface_Property(string deviceInterface, ref DEVPROPKEY key, out uint type, [Out] byte[] buffer, ref uint size, uint flags);
 
         /* ---- synthetic input ---- */
 

@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.5] – 2026-10-14
+
+### Behoben
+
+- **Der Laptop hat wieder Ton.** Sobald iMac-Display den HDMI-Dummy-Stecker einschaltet, legt Windows den Ton gern auf ihn. Der Stecker spielt aber nichts ab, und so blieben die Lautsprecher des Laptops stumm, solange der Mac-Bildschirm an war. Jetzt stellt iMac-Display den Ton innerhalb einer Sekunde dorthin zurück, wo er vorher war, etwa auf die Lautsprecher oder auf Kopfhörer. Den Ton eines echten Monitors mit Lautsprechern lässt es in Ruhe. Die „Diagnose“ im Log zeigt jetzt auch, wohin Windows den Ton gerade schickt.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.4] – 2026-10-11
 
 ### Geändert

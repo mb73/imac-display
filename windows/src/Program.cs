@@ -660,6 +660,12 @@ namespace ImacDisplay
             get { return !stopping && !paused; }
         }
 
+        /* The agent switched the Mac display (the HDMI dummy) on and has not switched it off yet, e.g. also while the Mac sleeps */
+        static bool DummyInUse
+        {
+            get { lock (cleanupLock) return displayExtended; }
+        }
+
         static void RunAgent(Options options, bool displayHandedOver)
         {
             try { Agent(options, displayHandedOver); }
@@ -679,6 +685,8 @@ namespace ImacDisplay
             RotateLog();
             Log("iMac-Display " + Updater.Version + " läuft.");
             lid = LidWatcher.Start();
+            /* the dummy plays no sound: while the agent uses it, Windows must not send the sound there */
+            SoundOutput.Watch(() => DummyInUse);
             string ffmpeg = null;
             string code = o.Code ?? (o.Repair ? null : PairingStore.Load());
             if (o.Code != null) PairingStore.Save(o.Code);
@@ -1658,6 +1666,7 @@ namespace ImacDisplay
                     line("    Modi bei " + o.Refresh + " Hz: " + string.Join(", ", Displays.Modes(display.GdiName, o.Refresh).Select(s => s.Width + "x" + s.Height)));
             }
             line("HDMI-Dummy-Stecker: " + (Displays.ExternalConnected() ? "angeschlossen" : "nicht gefunden"));
+            line("Ton: " + SoundOutput.Describe());
             line("Windows gesperrt: " + (Session.IsLocked() ? "ja" : "nein"));
             LidWatcher watcher = lid ?? LidWatcher.Start();
             bool? open = watcher == null ? null : watcher.IsOpen;

@@ -162,7 +162,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 - **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Ist das Laptop-Display ausgeschaltet, schaltet iMac-Display es bei einer Sperre von selbst ein; bleibt es doch schwarz, hilft kurzes Zu- und Aufklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
 - **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel oder PIN), erledigst du direkt am Laptop.
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
-- **Ton** spielt weiterhin (nur) der Laptop.
+- **Ton** spielt weiterhin (nur) der Laptop. Legt Windows ihn auf den Dummy-Stecker, der nichts abspielt, stellt iMac-Display ihn gleich zurück.
 - **Die Zwischenablage** teilt nur Text. Keine Bilder oder Dateien.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
 - **MacBooks** haben Bildschirme im Format 16:10, die der Dummy-Stecker nicht pixelgenau kann (etwa 2880 × 1800). Sie bekommen 2560 × 1600, leicht hochskaliert und ohne schwarze Balken. Für ein Kabel brauchen sie einen USB-C-Ethernet-Adapter.
@@ -181,7 +181,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 | Aktualisierung auf dem Mac schlägt fehl | Die Meldung nennt den Grund. Fehlen die Command Line Tools: im Terminal `xcode-select --install`. LaptopScreen läuft so lange in der alten Version weiter. |
 | Text kommt in der Zwischenablage nicht an | Erst kopieren, dann wechseln: Der Text wandert beim Wechsel zu LaptopScreen bzw. weg davon mit. Ist im Fenster der Haken bei „Zwischenablage mit dem Mac teilen“ gesetzt? |
 | Nach einem Absturz ist ein unsichtbarer Bildschirm aktiv | <kbd>win</kbd> + <kbd>P</kbd> → „Nur PC-Bildschirm“ oder `imac-display.exe --restore`. |
-| Genauer nachsehen | Im Fenster auf „Log“ klicken: Dort steht, was das Programm tut, und „Diagnose“ prüft Bildschirme, Dummy-Stecker, Deckel, ffmpeg und Intel Quick Sync und sucht den Mac. Die Logdatei liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
+| Genauer nachsehen | Im Fenster auf „Log“ klicken: Dort steht, was das Programm tut, und „Diagnose“ prüft Bildschirme, Dummy-Stecker, Ton-Ausgang, Deckel, ffmpeg und Intel Quick Sync und sucht den Mac. Die Logdatei liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
 
 Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zurück; danach fragt der Laptop erneut nach dem Code.
 
