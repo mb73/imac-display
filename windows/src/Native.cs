@@ -303,6 +303,36 @@ namespace ImacDisplay
         [DllImport("kernel32.dll")]
         public static extern bool CloseHandle(IntPtr handle);
 
+        /* ---- scheduling priorities (Priority.cs; all allowed for a standard user, measured 2026-10-14) ---- */
+
+        public const int THREAD_PRIORITY_NORMAL = 0, THREAD_PRIORITY_TIME_CRITICAL = 15;
+
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetCurrentThread();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SetThreadPriority(IntPtr thread, int priority);
+
+        public const int ProcessPowerThrottling = 4;
+        public const uint PROCESS_POWER_THROTTLING_EXECUTION_SPEED = 1, PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION = 4;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PROCESS_POWER_THROTTLING_STATE
+        {
+            public uint Version;
+            public uint ControlMask;
+            public uint StateMask;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool SetProcessInformation(IntPtr process, int informationClass, ref PROCESS_POWER_THROTTLING_STATE information, uint size);
+
+        public const int D3DKMT_SCHEDULINGPRIORITYCLASS_HIGH = 4;
+
+        /* NTSTATUS, 0 on success */
+        [DllImport("gdi32.dll")]
+        public static extern int D3DKMTSetProcessSchedulingPriorityClass(IntPtr process, int priority);
+
         /* ---- power plans: what closing the lid does (the plans' security descriptor lets users read and write them) ---- */
 
         [DllImport("powrprof.dll")]

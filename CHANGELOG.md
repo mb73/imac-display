@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.6] – 2026-10-14
+
+### Behoben
+
+- **Der Mauszeiger ruckelt weniger, wenn der Laptop viel zu tun hat.** Bisher liefen die Bildübertragung und die Eingaben vom Mac mit normaler Priorität und mussten sich bei Volllast hinter anderen Programmen anstellen. Jetzt hat die Bildübertragung Vorrang bei Prozessor und Grafik, und Maus und Tastatur vom Mac setzt iMac-Display vor gewöhnlichen Programmen um. Außerdem behandelt Windows iMac-Display nicht mehr wie ein Hintergrundprogramm, das es auf den Stromspar-Kernen langsam laufen lassen darf, nur weil sein Fenster minimiert ist. Adminrechte braucht das alles nicht. Ganz ausschließen lässt sich das Ruckeln nicht: Rechnet der Prozessor mit voller Kraft, bleibt für die Grafik im selben Chip weniger Strom übrig.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.5] – 2026-10-14
 
 ### Behoben

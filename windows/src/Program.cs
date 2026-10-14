@@ -500,6 +500,8 @@ namespace ImacDisplay
             }
             Application.ThreadException += OnWindowError;
             AppDomain.CurrentDomain.UnhandledException += OnCrash;
+            /* the window is mostly minimized: Windows would otherwise throttle the agent like a background program */
+            Priority.HighQos(Process.GetCurrentProcess().Handle);
             window = new MainWindow(options, restarted == "display");
             Application.Run(window);
             ReleaseInstance();
@@ -848,6 +850,8 @@ namespace ImacDisplay
 
         static void RunSession(ControlClient control, string mac, string ffmpeg, Options o)
         {
+            /* the Mac's input must not wait behind a busy laptop: this thread reads and injects it */
+            Priority.TimeCritical(true);
             var injector = new Injector();
             var clipboard = new ClipboardSync();
             var awake = new StayAwake(Log);
@@ -1153,6 +1157,7 @@ namespace ImacDisplay
             catch (InvalidOperationException ex) { Log("Fehler: " + ex.Message); }
             finally
             {
+                Priority.TimeCritical(false);
                 inSession = false;
                 awake.Dispose();
                 injector.ReleaseAll();

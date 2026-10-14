@@ -22,6 +22,8 @@ namespace ImacDisplay
         volatile bool paused;
         /* until when an end of ffmpeg is expected (RestartPromptly); guarded by gate */
         DateTime promptUntil;
+        /* the priority result goes to the log once per program run */
+        static volatile bool priorityReported;
 
         public event Action<string> Log;
 
@@ -119,6 +121,13 @@ namespace ImacDisplay
                 }
                 Native.AssignProcessToJobObject(job, process.Handle);
                 process.BeginErrorReadLine();
+                string notRaised = Priority.RaiseEncoder(process);
+                if (!priorityReported && !process.HasExited)
+                {
+                    priorityReported = true;
+                    Emit(notRaised == null ? "ffmpeg läuft mit hoher Priorität für Prozessor und Grafik."
+                        : "ffmpeg ließ sich nicht ganz hoch priorisieren (" + notRaised + ").");
+                }
                 process.WaitForExit();
                 lock (gate) current = null;
             }
