@@ -35,7 +35,11 @@ main() {
         echo " fertig."
     fi
 
-    sh build.sh
+    if ! sh build.sh; then
+        echo
+        echo "Die Einrichtung ist abgebrochen, LaptopScreen ist nicht installiert."
+        exit 1
+    fi
 
     if [ -w /Applications ]; then
         target=/Applications
