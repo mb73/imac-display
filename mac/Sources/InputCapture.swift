@@ -12,7 +12,10 @@ import AppKit
    cursor over and answers "POINTER away": the Mac pointer then rests in the middle of the screen,
    detached from the mouse, and only movements and clicks without position go over, until the agent
    reports "POINTER home x y" and the Mac pointer continues from there.
- Protocol lines: M x y | N dx dy | B button down x y mods | W dy dx mods | K vk down mods ext |
+ - Outside full screen the window's title bar belongs to the Mac: clicks there move, zoom or close the window.
+   Outside the picture the Mac pointer is the Mac's, but at an edge of the screen it can still go over to
+   another display of the laptop ("X").
+ Protocol lines: M x y | N dx dy | X x y dx dy | B button down x y mods | W dy dx mods | K vk down mods ext |
                  C codepoint down mods | T utf16hex | S mods | R
  */
 final class InputCapture {
@@ -42,6 +45,8 @@ final class InputCapture {
     private var distrustDelta = false
     private var nudgeRemainderX = 0.0
     private var nudgeRemainderY = 0.0
+    /* buttons pressed over the laptop's picture: they stay with the laptop until released, wherever that happens */
+    private var laptopButtons = Set<Int>()
 
     func install() {
         let mask: NSEvent.EventTypeMask = [
@@ -71,10 +76,14 @@ final class InputCapture {
         let moved = location != lastPolled
         lastPolled = location
         guard moved, isEnabled, !away, let view = view, let window = view.window, window.isVisible,
-              window.isOnActiveSpace, window.attachedSheet == nil, window.frame.contains(location),
-              NSApp.keyWindow == nil || NSApp.keyWindow === window,
-              ProcessInfo.processInfo.systemUptime - lastEventAt > 0.1 else { return }
+              window.isOnActiveSpace, window.attachedSheet == nil,
+              NSApp.keyWindow == nil || NSApp.keyWindow === window else { return }
         let point = view.convert(window.convertPoint(fromScreen: location), from: nil)
+        guard InputCapture.isOver(point, view.bounds) else {
+            if NSApp.isActive { reachedEdge(location, in: view) }
+            return
+        }
+        guard ProcessInfo.processInfo.systemUptime - lastEventAt > 0.1 else { return }
         let rect = videoRect(in: view.bounds)
         let nx = max(0, min(1, (point.x - rect.minX) / rect.width))
         let ny = max(0, min(1, (rect.maxY - point.y) / rect.height))
@@ -89,6 +98,34 @@ final class InputCapture {
         }
     }
 
+    /*
+     In a window, the Mac pointer outside the picture goes over to another display of the laptop as in full screen:
+     at an edge of the Mac's screen where no other Mac screen continues. "X" names the matching point on the edge of
+     the picture and the direction beyond it; the agent moves the cursor over only where Windows has a display there
+     and answers "POINTER away", elsewhere its cursor stays put (the menu bar, the Dock). Polled, not taken from
+     events: over the desktop or another app, mouse events may not reach LaptopScreen at all. Not while a button is
+     held: that drags a window of the Mac, and a drag on the laptop crosses with its own events, as in full screen.
+     */
+    private func reachedEdge(_ location: NSPoint, in view: NSView) {
+        guard NSEvent.pressedMouseButtons == 0, let window = view.window, let screen = window.screen?.frame,
+              InputCapture.isOver(location, screen) else { return }
+        let picture = window.convertToScreen(view.convert(videoRect(in: view.bounds), to: nil))
+        guard picture.width > 0, picture.height > 0 else { return }
+        let x = Int(max(0, min(1, (location.x - picture.minX) / picture.width)) * 65535)
+        let y = Int(max(0, min(1, (picture.maxY - location.y) / picture.height)) * 65535)
+        if location.x <= screen.minX + 1 && !InputCapture.macScreen(at: NSPoint(x: screen.minX - 2, y: location.y)) {
+            send?("X 0 \(y) -1 0")
+        } else if location.x >= screen.maxX - 1 && !InputCapture.macScreen(at: NSPoint(x: screen.maxX + 2, y: location.y)) {
+            send?("X 65535 \(y) 1 0")
+        }
+        /* y in the protocol grows downwards: the bottom of the screen is the bottom of the picture */
+        if location.y <= screen.minY + 1 && !InputCapture.macScreen(at: NSPoint(x: location.x, y: screen.minY - 2)) {
+            send?("X \(x) 65535 0 1")
+        } else if location.y >= screen.maxY - 1 && !InputCapture.macScreen(at: NSPoint(x: location.x, y: screen.maxY + 2)) {
+            send?("X \(x) 0 0 -1")
+        }
+    }
+
     func releaseAll() {
         if away {
             /* the Mac pointer stays where it rests, attached to the mouse again */
@@ -97,6 +134,7 @@ final class InputCapture {
         }
         pressedSpecial.removeAll()
         pressedChar.removeAll()
+        laptopButtons.removeAll()
         lastMods = -1
         rightClickViaControl = false
         send?("R")
@@ -142,9 +180,42 @@ final class InputCapture {
             scroll(event)
             return nil
         default:
+            guard forLaptop(event, in: view) else { return event }
             mouse(event, in: view)
             return nil
         }
+    }
+
+    /*
+     Whether a mouse event goes to the laptop. Outside full screen the window has a title bar above the picture: a
+     click there would reach the top edge of the laptop's screen, where a maximized window has its close button, so
+     it stays with the Mac and moves, zooms or closes the window. Movements outside the picture stay with the Mac too,
+     and the laptop's cursor waits where the Mac pointer left. A button pressed over the picture stays with the laptop
+     until it is released, wherever that happens. In full screen the view covers the whole screen.
+     */
+    private func forLaptop(_ event: NSEvent, in view: NSView) -> Bool {
+        let inside = InputCapture.isOver(view.convert(event.locationInWindow, from: nil), view.bounds)
+        switch event.type {
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            guard inside || !laptopButtons.isEmpty else { return false }
+            laptopButtons.insert(event.buttonNumber)
+            return true
+        case .leftMouseUp, .rightMouseUp, .otherMouseUp:
+            /* only the laptop's buttons are tracked: the release of a click on the title bar may never come here */
+            return laptopButtons.remove(event.buttonNumber) != nil
+        case .leftMouseDragged, .rightMouseDragged, .otherMouseDragged:
+            return !laptopButtons.isEmpty
+        default:
+            return inside
+        }
+    }
+
+    /*
+     Whether a point lies over a view or a screen, edges included: mouse positions count y from 1, so in full screen
+     the top row of the screen lies on the upper edge of the view
+     */
+    private static func isOver(_ point: NSPoint, _ rect: NSRect) -> Bool {
+        return point.x >= rect.minX && point.x <= rect.maxX && point.y >= rect.minY && point.y <= rect.maxY
     }
 
     // MARK: - Keyboard

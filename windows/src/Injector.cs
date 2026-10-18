@@ -11,6 +11,7 @@ namespace ImacDisplay
      running elevated and the secure desktop are out of reach).
        M x y                   absolute move, 0..65535 across the external display
        N dx dy                 relative move in the same units; may leave the external display
+       X x y dx dy             onto the display beyond that point of the external display's edge, if there is one
        B button down x y mods  1 left, 2 right, 3 middle, 4/5 back/forward; x y = -1 -1: where the cursor is
        W dy dx mods            wheel in Windows units (120 per notch)
        K vk down mods ext      virtual key
@@ -24,7 +25,8 @@ namespace ImacDisplay
      display next to the external one (the laptop's own panel, lid open), the cursor goes over as with
      a real mouse, and Handle answers "POINTER away": the Mac parks its pointer and sends only "N" and
      clicks without position. Back on the external display, Handle answers "POINTER home x y", and the
-     Mac continues with its own pointer from there.
+     Mac continues with its own pointer from there. In a window, LaptopScreen sends "X" instead when its
+     pointer reaches an edge of the Mac's screen outside the picture.
      */
     internal sealed class Injector
     {
@@ -65,6 +67,7 @@ namespace ImacDisplay
             {
                 case "M": return Move(Int(p, 1), Int(p, 2));
                 case "N": return Nudge(Int(p, 1), Int(p, 2));
+                case "X": return Cross(Int(p, 1), Int(p, 2), Int(p, 3), Int(p, 4));
                 case "B": return Button(Int(p, 1), Int(p, 2) == 1, Int(p, 3), Int(p, 4), Int(p, 5));
                 case "W": Wheel(Int(p, 1), Int(p, 2), Int(p, 3)); break;
                 case "K": Key((ushort)Int(p, 1), Int(p, 2) == 1, Int(p, 3), Int(p, 4) == 1); break;
@@ -132,6 +135,26 @@ namespace ImacDisplay
             macAway = away;
             awaySince = DateTime.UtcNow;
             return away ? "POINTER away" : Home();
+        }
+
+        /*
+         LaptopScreen runs in a window, and outside its picture the Mac pointer reached an edge of the Mac's screen:
+         (x, y) is the matching point on the edge of the external display, (dx, dy) the direction beyond it. Where
+         another display continues there, the cursor goes over; elsewhere it stays where it is, instead of jumping
+         to the edge whenever the Mac pointer visits the menu bar or the Dock.
+         */
+        string Cross(int x, int y, int dx, int dy)
+        {
+            if (macAway) return null;
+            int bx = Pixel(areaX + x / 65535.0 * (areaWidth - 1)) + Math.Sign(dx);
+            int by = Pixel(areaY + y / 65535.0 * (areaHeight - 1)) + Math.Sign(dy);
+            bool beyond = bx < areaX || bx >= areaX + areaWidth || by < areaY || by >= areaY + areaHeight;
+            Native.RECT display;
+            if (!beyond || !DisplayAt(bx, by, false, out display)) return null;
+            MoveTo(bx, by);
+            macAway = true;
+            awaySince = DateTime.UtcNow;
+            return "POINTER away";
         }
 
         /* Absolute move to a point of the virtual desktop, in physical pixels */

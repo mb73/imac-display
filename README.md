@@ -100,7 +100,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>ctrl</kbd> + <kbd>cmd</kbd> + <kbd>F</kbd> | Vollbild ein/aus |
 | <kbd>cmd</kbd> + <kbd>Q</kbd> | LaptopScreen beenden |
 
-Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
+Ist der Deckel offen, kommst du mit der Maus vom Mac auch auf das Laptop-Display: Schieb sie über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt (siehe [Anordnung](#anordnung)). Der Zeiger läuft dann auf dem Laptop weiter, und über denselben Rand kommt er zurück. Das geht auch, wenn LaptopScreen nur in einem Fenster läuft, solange es vorne ist. Die Tastatur schreibt immer in das aktive Fenster, auch wenn es auf dem Laptop-Display liegt.
 
 ### Skalierung
 

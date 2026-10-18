@@ -1,7 +1,7 @@
 import AppKit
 import Network
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow!
     private let container = ContainerView()
     private let control = ControlServer(port: Config.controlPort, videoPort: Config.videoPort)
@@ -36,20 +36,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /* the picture stands still this long: the symbol of the connection says why the pointer does not move */
     private static let frozenDelay: TimeInterval = 0.3
     private let dockTile = DockTileView()
+    /* the laptop's picture in pixels, zero until it comes: outside full screen the window takes its shape */
+    private var videoSize = CGSize.zero
+    /* while macOS enters or leaves full screen, the window's frame is its business */
+    private var fullScreenChanging = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenu()
         dockTile.frame = NSRect(origin: .zero, size: NSApp.dockTile.size)
         NSApp.dockTile.contentView = dockTile
         NSApp.dockTile.display()
-        let frame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1600, height: 900)
+        let screen = NSScreen.main
+        let frame = screen?.frame ?? NSRect(x: 0, y: 0, width: 1600, height: 900)
         window = NSWindow(contentRect: frame, styleMask: [.titled, .closable, .miniaturizable, .resizable],
                           backing: .buffered, defer: false)
         window.title = "Laptop"
+        window.delegate = self
         window.collectionBehavior = [.fullScreenPrimary]
         window.backgroundColor = .black
         window.acceptsMouseMovedEvents = true
         window.contentView = container
+        /* the frame to return to from full screen: the screen's shape, which the laptop chooses its resolution by */
+        window.setFrame(windowFrame(shaped: frame.size, within: screen?.visibleFrame ?? frame), display: false)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         perform(#selector(enterFullScreen), with: nil, afterDelay: 0.2)
@@ -58,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let control = self.control
         receiver.isAllowed = { endpoint in control.isAgent(endpoint) }
         receiver.onState = { [weak self] state in self?.videoChanged(state) }
-        receiver.onVideoSize = { [weak self] size in self?.input.videoSize = size }
+        receiver.onVideoSize = { [weak self] size in self?.videoSizeChanged(size) }
         self.receiver = receiver
 
         control.onEvent = { [weak self] event in self?.controlChanged(event) }
@@ -103,6 +111,86 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func enterFullScreen() {
         if !window.styleMask.contains(.fullScreen) { window.toggleFullScreen(nil) }
+    }
+
+    private func videoSizeChanged(_ size: CGSize) {
+        input.videoSize = size
+        guard size != videoSize else { return }
+        videoSize = size
+        fitWindow()
+    }
+
+    /*
+     Outside full screen the window takes the shape of the laptop's picture: it shrinks to the picture, which stays
+     where it is, so no black bars remain above and below or beside it. The aspect ratio keeps that shape while the
+     user resizes the window.
+     */
+    private func fitWindow() {
+        guard videoSize.width > 0, videoSize.height > 0, !fullScreenChanging,
+              !window.styleMask.contains(.fullScreen) else { return }
+        window.contentAspectRatio = videoSize
+        guard !window.inLiveResize else { return }
+        let content = window.contentRect(forFrameRect: window.frame)
+        let scale = min(content.width / videoSize.width, content.height / videoSize.height)
+        let width = (videoSize.width * scale).rounded()
+        let height = (videoSize.height * scale).rounded()
+        guard abs(content.width - width) >= 1 || abs(content.height - height) >= 1 else { return }
+        let picture = NSRect(x: (content.midX - width / 2).rounded(), y: (content.midY - height / 2).rounded(),
+                             width: width, height: height)
+        window.setFrame(window.frameRect(forContentRect: picture), display: true)
+    }
+
+    /* The largest window within an area whose content has the given shape, in the middle of the area */
+    private func windowFrame(shaped shape: CGSize, within area: NSRect) -> NSRect {
+        let titleBar = window.frame.height - window.contentRect(forFrameRect: window.frame).height
+        let scale = min(area.width / shape.width, (area.height - titleBar) / shape.height)
+        let width = (shape.width * scale).rounded(.down)
+        let height = (shape.height * scale).rounded(.down) + titleBar
+        return NSRect(x: (area.midX - width / 2).rounded(), y: (area.midY - height / 2).rounded(),
+                      width: width, height: height)
+    }
+
+    func windowWillEnterFullScreen(_ notification: Notification) {
+        fullScreenChanging = true
+        /* cancels the aspect ratio: in full screen the window fills the screen, whatever the picture's shape */
+        window.resizeIncrements = NSSize(width: 1, height: 1)
+    }
+
+    func windowDidEnterFullScreen(_ notification: Notification) {
+        fullScreenChanging = false
+    }
+
+    func windowWillExitFullScreen(_ notification: Notification) {
+        fullScreenChanging = true
+    }
+
+    func windowDidExitFullScreen(_ notification: Notification) {
+        fullScreenChanging = false
+        fitWindow()
+    }
+
+    func windowDidFailToEnterFullScreen(_ sender: NSWindow) {
+        fullScreenChanging = false
+        fitWindow()
+    }
+
+    func windowDidFailToExitFullScreen(_ sender: NSWindow) {
+        fullScreenChanging = false
+    }
+
+    /* Whatever else gave the window another shape (tiling, another screen), it hugs the picture again afterwards */
+    func windowDidResize(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in self?.fitWindow() }
+    }
+
+    func windowDidEndLiveResize(_ notification: Notification) {
+        fitWindow()
+    }
+
+    /* Zoom (option-click on the green button) makes the window as big as the picture's shape allows */
+    func windowWillUseStandardFrame(_ sender: NSWindow, defaultFrame area: NSRect) -> NSRect {
+        guard videoSize.width > 0, videoSize.height > 0 else { return area }
+        return windowFrame(shaped: videoSize, within: area)
     }
 
     @objc private func appResignedActive() {

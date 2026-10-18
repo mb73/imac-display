@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.8] – 2026-10-18
+
+### Behoben
+
+- **Keine schwarzen Balken mehr im Fenster.** Schaltest du LaptopScreen auf dem Mac mit <kbd>ctrl</kbd> + <kbd>cmd</kbd> + <kbd>F</kbd> vom Vollbild ins Fenster, passte es das Bild des Laptops zwar ins Fenster ein, das Fenster selbst behielt aber seine Form. Über und unter dem Bild oder links und rechts davon blieben schwarze Balken, die der Mauszeiger nicht erreichte. Jetzt hat das Fenster immer die Form des Bilds, auch wenn du es größer oder kleiner ziehst oder an den Bildschirmrand legst. Im Vollbild ändert sich nichts.
+- **Die Titelleiste des Fensters gehört dem Mac.** Ein Klick darauf landete bisher am oberen Rand des Laptop-Bildschirms, wo ein maximiertes Windows-Fenster seinen Schließen-Knopf hat. Jetzt verschiebst du das Fenster dort wie gewohnt, und auch die drei Knöpfe oben links wirken, solange das Bild läuft. Verlässt der Mauszeiger das Bild, bleibt der von Windows stehen, statt am Rand mitzulaufen.
+- **Auch im Fenster kommst du mit der Maus aufs Laptop-Display.** Wie im Vollbild schiebst du sie dazu über den Rand des Mac-Bildschirms, an dem in Windows das Laptop-Display liegt, egal wo das Fenster gerade steht. An den übrigen Rändern, etwa bei Menüleiste und Dock, bleibt der Mauszeiger von Windows, wo er ist.
+
+Beide Seiten brauchen dafür 1.10.8; der Mac aktualisiert sich wie gewohnt selbst.
+
 ## [1.10.6] – 2026-10-14
 
 ### Behoben
