@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.9] – 2026-10-19
+
+### Hinzugefügt
+
+- **„E-Mail an den Entwickler“ im Log-Fenster.** Ein Klick öffnet in deinem E-Mail-Programm eine neue E-Mail an den Entwickler, die neuesten Zeilen aus dem Log stehen schon drin. Du ersetzt nur noch „[bitte ausfüllen]“ durch das, was passiert ist, und schickst sie ab. Wie viele Zeilen hineinpassen, hängt vom E-Mail-Programm ab, denn ein solcher Link darf nicht beliebig lang sein: Beim neuen Outlook sind es rund 200, bei anderen Programmen etwa ein Dutzend.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.8] – 2026-10-18
 
 ### Behoben

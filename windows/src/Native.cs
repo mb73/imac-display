@@ -456,5 +456,12 @@ namespace ImacDisplay
         /* changes with every clipboard change; cheap enough to poll */
         [DllImport("user32.dll")]
         public static extern uint GetClipboardSequenceNumber();
+
+        /* ---- the program Windows opens links with ---- */
+
+        public const int ASSOCF_IS_PROTOCOL = 0x1000, ASSOCSTR_FRIENDLYAPPNAME = 4, ASSOCSTR_APPID = 21;
+
+        [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+        public static extern int AssocQueryString(int flags, int what, string association, string extra, StringBuilder output, ref int size);
     }
 }

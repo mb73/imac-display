@@ -9,14 +9,17 @@ using System.Windows.Forms;
 
 namespace ImacDisplay
 {
-    /* The log of this run, live. "Diagnose" adds the read-only checks of --test, "Logdatei öffnen" shows earlier runs too. */
+    /*
+     The log of this run, live. "Diagnose" adds the read-only checks of --test, "Logdatei öffnen" shows earlier runs too,
+     "E-Mail an den Entwickler" starts a mail with the newest lines in the mail program.
+     */
     internal sealed class LogWindow : ThemedForm
     {
         const int MaxLength = 400000;
 
         readonly Options options;
         readonly TextBox text = new TextBox();
-        readonly Button diagnose = new Button(), file = new Button(), close = new Button();
+        readonly Button diagnose = new Button(), file = new Button(), mail = new Button(), close = new Button();
         readonly Action<string> listener;
 
         public LogWindow(Options options)
@@ -26,7 +29,7 @@ namespace ImacDisplay
             StartPosition = FormStartPosition.CenterScreen;
             ShowInTaskbar = false;
             ClientSize = new Size(760, 440);
-            MinimumSize = new Size(440, 260);
+            MinimumSize = new Size(540, 260);  // all four buttons
 
             text.Multiline = true;
             text.ReadOnly = true;
@@ -44,14 +47,18 @@ namespace ImacDisplay
             diagnose.Click += delegate { RunDiagnose(); };
             file.Text = "Logdatei öffnen";
             file.Click += delegate { OpenLogFile(); };
+            mail.Text = "E-Mail an den Entwickler …";
+            mail.Click += delegate { MailDeveloper(); };
             close.Text = "Schließen";
             close.Click += delegate { Close(); };
             CancelButton = close;
-            FlowLayoutPanel bar = ButtonBar(close, file, diagnose);
+            FlowLayoutPanel bar = ButtonBar(close, mail, file, diagnose);
 
             var root = new TableLayoutPanel();
             root.Dock = DockStyle.Fill;
             root.ColumnCount = 1;
+            /* without it the column follows what its content would like, and the buttons on the right ended up beyond the edge */
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             root.RowCount = 2;
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -140,6 +147,22 @@ namespace ImacDisplay
                 try { Process.Start("notepad.exe", "\"" + path + "\""); }
                 catch (Win32Exception ex) { MessageDialog.Show(this, ex.Message + "\r\n\r\n" + path, MessageKind.Warning); }
             }
+        }
+
+        void MailDeveloper()
+        {
+            int lines;
+            string link = DeveloperMail.Link(text.Lines, out lines);
+            try { Process.Start(link); }
+            catch (Win32Exception ex)
+            {
+                MessageDialog.Show(this, "Windows konnte kein E-Mail-Programm öffnen: " + ex.Message + "\r\n\r\nSchreib bitte direkt an "
+                    + DeveloperMail.Address + " und häng die Logdatei an:\r\n" + Program.LogFile, MessageKind.Warning);
+                return;
+            }
+            string program = DeveloperMail.MailProgram;
+            Program.Log("Öffne " + (program != null ? "in " + program + " " : "") + "eine E-Mail an den Entwickler mit den letzten "
+                + lines + " Zeilen des Logs (Link mit " + link.Length + " Zeichen).");
         }
     }
 

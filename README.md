@@ -183,6 +183,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 | Text kommt in der Zwischenablage nicht an | Erst kopieren, dann wechseln: Der Text wandert beim Wechsel zu LaptopScreen bzw. weg davon mit. Ist im Fenster der Haken bei „Zwischenablage mit dem Mac teilen“ gesetzt? |
 | Nach einem Absturz ist ein unsichtbarer Bildschirm aktiv | <kbd>win</kbd> + <kbd>P</kbd> → „Nur PC-Bildschirm“ oder `imac-display.exe --restore`. |
 | Genauer nachsehen | Im Fenster auf „Log“ klicken: Dort steht, was das Programm tut, und „Diagnose“ prüft Bildschirme, Dummy-Stecker, Ton-Ausgang, Deckel, ffmpeg und Intel Quick Sync und sucht den Mac. Die Logdatei liegt unter `%LOCALAPPDATA%\imac-display\imac-display.log`. |
+| Nichts davon hilft | Im Log-Fenster auf „E-Mail an den Entwickler …“ klicken: Dein E-Mail-Programm öffnet eine E-Mail mit den neuesten Zeilen des Logs. Schreib dazu, was passiert ist, und schick sie ab. |
 
 Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zurück; danach fragt der Laptop erneut nach dem Code.
 
