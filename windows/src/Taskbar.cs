@@ -60,6 +60,44 @@ namespace ImacDisplay
             foreach (IntPtr tray in Taskbars()) Native.PostMessage(tray, Native.WM_DISPLAYCHANGE, new IntPtr(32), size);
         }
 
+        /* each taskbar's DPI when last noted */
+        static Dictionary<IntPtr, uint> noted = new Dictionary<IntPtr, uint>();
+
+        /* Notes each taskbar's DPI, e.g. before a display change, for DpiChanged */
+        public static void NoteDpi()
+        {
+            noted = new Dictionary<IntPtr, uint>();
+            try
+            {
+                foreach (IntPtr tray in Taskbars()) noted[tray] = Native.GetDpiForWindow(tray);
+            }
+            catch (EntryPointNotFoundException) { }  // before Windows 10 1607
+        }
+
+        /*
+         True if a taskbar changed its DPI since it was last noted, and notes it anew. Explorer keeps the icons of such a taskbar
+         at their size and stretches them: when the panel at 125 % went off, the main taskbar moved to the Mac display at 200 %
+         with blurry icons, while a button added there afterwards came out sharp (seen 2026-10-27). None of the nudges above
+         changed them, ReloadIcons did.
+         */
+        public static bool DpiChanged()
+        {
+            Dictionary<IntPtr, uint> before = noted;
+            NoteDpi();
+            foreach (KeyValuePair<IntPtr, uint> tray in noted)
+            {
+                uint dpi;
+                if (before.TryGetValue(tray.Key, out dpi) && dpi != tray.Value) return true;
+            }
+            return false;
+        }
+
+        /* What tells the shell that all images of its image list changed: Explorer loads the taskbar icons anew, at the right size */
+        public static void ReloadIcons()
+        {
+            Native.SHChangeNotify(Native.SHCNE_UPDATEIMAGE, Native.SHCNF_DWORD, new IntPtr(-1), new IntPtr(-1));
+        }
+
         static List<IntPtr> Taskbars()
         {
             var found = new List<IntPtr>();

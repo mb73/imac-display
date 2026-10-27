@@ -887,6 +887,8 @@ namespace ImacDisplay
                 o.Scale = scale;  // chosen in the window just as the last session ended
                 int lockTimeout = Session.LockTimeout();
                 if (macOnly) NoteLockTimeout(lockTimeout);
+                /* the taskbars before the switch: the first look at them after it sees whether their icons need reloading */
+                TrayRepair.NoteDpi();
                 DisplayInfo external = Configure(o, lidOpen, macOnly && !LockSoon(lockTimeout));
                 if (external == null)
                 {
@@ -924,8 +926,9 @@ namespace ImacDisplay
 
                 string lastLayout = Displays.Describe();
                 Log("Anzeige: " + lastLayout);
+                /* keepPlaces: until then the program's windows go back onto the Mac display, after a change (MainWindow.KeepOnMacDisplay) */
                 DateTime lastHeard = DateTime.UtcNow, lastCheck = DateTime.UtcNow, lastReconfigure = DateTime.UtcNow, lastClipboard = DateTime.UtcNow,
-                    lastTrayCheck = DateTime.UtcNow, panelRetry = DateTime.MinValue;
+                    lastTrayCheck = DateTime.UtcNow, panelRetry = DateTime.MinValue, keepPlaces = DateTime.MinValue;
                 bool crossed = false, spaceSeen = false;
                 while (Active)
                 {
@@ -1098,7 +1101,14 @@ namespace ImacDisplay
 
                     string layout = Displays.Describe();
                     bool screenChanged = !Nullable.Equals(macScreen, chosenFor);
-                    if (!lidChanged && !switched && !screenChanged && layout == lastLayout) continue;
+                    if (!lidChanged && !switched && !screenChanged && layout == lastLayout)
+                    {
+                        /* the windows on the Mac display stay there: noted while nothing changes, put back for a few seconds after */
+                        /* a change, in case Windows moves them once more */
+                        if (now < keepPlaces) window.KeepOnMacDisplay(external);
+                        else window.NoteMacDisplay(external);
+                        continue;
+                    }
                     if (layout != lastLayout)
                     {
                         Log("Anzeige: " + layout);
@@ -1143,6 +1153,8 @@ namespace ImacDisplay
                     injector.SetArea(external);
                     window.ShowScale(external);
                     window.ShowArrangement(Displays.Internal(), external);
+                    window.KeepOnMacDisplay(external);
+                    keepPlaces = DateTime.UtcNow.AddSeconds(3);
                     int index = Displays.DxgiOutputIndex(external.GdiName);
                     if (index >= 0 && index != output)
                     {
@@ -1175,10 +1187,16 @@ namespace ImacDisplay
 
         /*
          A taskbar drawn only in its lower part (TrayRepair): one nudge per check, five seconds apart, and the log says
-         which one helped; after both it waits until the taskbar is whole again by other means
+         which one helped; after both it waits until the taskbar is whole again by other means. A taskbar with another
+         DPI than at the last check gets its icons anew, which Explorer would leave blurry.
          */
         static void RepairTaskbars()
         {
+            if (TrayRepair.DpiChanged())
+            {
+                Log("Eine Taskleiste ist auf einen Bildschirm mit anderer Skalierung gewechselt. Ich lasse Explorer ihre Symbole neu laden, sonst bleiben sie unscharf.");
+                TrayRepair.ReloadIcons();
+            }
             bool broken = TrayRepair.Broken().Count > 0;
             if (!broken)
             {

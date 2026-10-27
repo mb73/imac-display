@@ -172,7 +172,7 @@ namespace ImacDisplay
      Base for the program's windows, built like designer code: controls in 96-DPI units, scaled by
      WinForms (per-monitor v2, switched on in imac-display.exe.config) to the system DPI and again
      whenever a window moves to a monitor with another DPI. A window that opens on a monitor whose DPI
-     differs from the system DPI (fixed at sign-in) gets no such message and would keep the system
+     differs from the system DPI (the main display's when the program started) gets no such message and would keep the system
      DPI's size, so OnLoad replays it. Fonts other than the window's own are derived from it in
      UpdateFonts, which runs after every change, so they scale along.
      */
@@ -181,6 +181,12 @@ namespace ImacDisplay
         static Icon appIcon;
         /* minimized since the last WM_SIZE: the next move is the restore (see WndProc) */
         bool minimized;
+        /* the window's own MinimumSize in 96-DPI units, for OnDpiChanged */
+        Size minimum96;
+        /* how deep in OnLayout: a DPI change in there loses its layout (OnDpiChanged) */
+        int layingOut;
+        /* the window's place on the Mac display, from its top left corner (NotePlaces), and where a restore takes it (KeepPlaces) */
+        Point? onMac, returnTo;
 
         protected ThemedForm()
         {
@@ -206,6 +212,7 @@ namespace ImacDisplay
         /* End of the constructor: from 96 DPI to the system DPI, like InitializeComponent does it */
         protected void EndLayout()
         {
+            minimum96 = MinimumSize;
             GrowAndShrink(this);
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -267,6 +274,84 @@ namespace ImacDisplay
             return true;
         }
 
+        /*
+         WinForms 4.8 sets MinimumSize to the size Windows suggests whenever the DPI drops, and keeps it. After a display change
+         Windows may suggest the old size: when the panel came back on, the main window moved there from the Mac display at 200 %
+         and kept its size, 1.6 times too large around content scaled to 125 % (seen 2026-10-27). So the window's own minimum
+         instead, at the new DPI; the layout then fits an AutoSize window to its content again.
+         That layout gets lost when the change arrives in the middle of another one, e.g. while the window resizes itself for the
+         agent during a display switch: when the outer layout ends, WinForms drops those asked for meanwhile, and the window keeps
+         the suggested size, too large or too small (1.10.10 on the user's laptop, reproduced in a test harness). Hence once more
+         from the message loop, where no layout runs. The log tells each change, for windows that still end up wrong.
+         */
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            if (e.DeviceDpiNew == e.DeviceDpiOld) return;
+            bool nested = layingOut > 0;
+            MinimumSize = new Size(minimum96.Width * e.DeviceDpiNew / 96, minimum96.Height * e.DeviceDpiNew / 96);
+            PerformLayout();
+            Size suggested = e.SuggestedRectangle.Size;
+            int before = e.DeviceDpiOld * 100 / 96, after = e.DeviceDpiNew * 100 / 96;
+            Post(delegate
+            {
+                PerformLayout();
+                Program.Log(string.Format("Fenster „{0}“ jetzt mit {1} % statt {2} % skaliert{3}: Windows schlug {4} × {5} vor, es ist {6} × {7} groß.",
+                    Text, after, before, nested ? ", mitten in einem Layout" : "", suggested.Width, suggested.Height, Width, Height));
+            });
+        }
+
+        protected override void OnLayout(LayoutEventArgs levent)
+        {
+            layingOut++;
+            try { base.OnLayout(levent); }
+            finally { layingOut--; }
+        }
+
+        /* The program's windows on the Mac display (mac, in screen pixels), and where on it; while the displays stay as they are */
+        public static void NotePlaces(Rectangle mac)
+        {
+            foreach (Form form in Application.OpenForms)
+            {
+                var window = form as ThemedForm;
+                if (window == null) continue;
+                Rectangle bounds = window.NormalBounds();
+                bool there = window.Visible && window.WindowState != FormWindowState.Maximized && mac.Contains(Center(bounds));
+                window.onMac = there ? new Point(bounds.X - mac.X, bounds.Y - mac.Y) : (Point?)null;
+            }
+        }
+
+        /*
+         After a display change, the program's windows that lay on the Mac display go back to their place there: when the panel
+         came back on, Windows left the main window at its coordinates, which then lay on the panel (2026-10-27), and the user
+         wants it where they used it. A minimized one comes back there when restored.
+         */
+        public static void KeepPlaces(Rectangle mac)
+        {
+            foreach (Form form in Application.OpenForms)
+            {
+                var window = form as ThemedForm;
+                Point? offset = window != null ? window.onMac : null;
+                if (!offset.HasValue || !window.Visible || window.WindowState == FormWindowState.Maximized) continue;
+                if (mac.Contains(Center(window.NormalBounds()))) continue;
+                var place = new Point(mac.X + offset.Value.X, mac.Y + offset.Value.Y);
+                /* minimized, this sets only where WinForms restores it; Windows' own restore follows returnTo (KeepReachable) */
+                if (window.WindowState == FormWindowState.Minimized) window.returnTo = place;
+                window.Location = place;
+            }
+        }
+
+        /* Where the window lies when shown normally: a minimized one tells where WinForms will restore it */
+        Rectangle NormalBounds()
+        {
+            return WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
+        }
+
+        static Point Center(Rectangle bounds)
+        {
+            return new Point(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
+        }
+
         protected override void WndProc(ref Message m)
         {
             base.WndProc(ref m);
@@ -282,28 +367,40 @@ namespace ImacDisplay
 
         void KeepOnScreen()
         {
+            Point? place = returnTo;
+            returnTo = null;
             if (WindowState != FormWindowState.Normal) return;
             Rectangle bounds = Bounds;
-            if (Reachable(new Native.RECT { Left = bounds.Left, Top = bounds.Top, Right = bounds.Right, Bottom = bounds.Bottom })) return;
-            Location = Middle(bounds.Width, bounds.Height);
+            if (place.HasValue && Reachable(Rect(place.Value, bounds.Width, bounds.Height)))
+            {
+                if (place.Value != bounds.Location) Location = place.Value;
+            }
+            else if (!Reachable(Rect(bounds.Location, bounds.Width, bounds.Height))) Location = Middle(bounds.Width, bounds.Height);
         }
 
         /*
          The restore of a minimized window: Windows moves windows along when a screen moves or goes, but not the place
          a minimized one returns to. After the lid opened, the main window came back where the Mac display had been,
-         beside every screen. Such a return goes to the middle of the screen with the mouse pointer instead.
+         beside every screen. Such a return goes to the middle of the screen with the mouse pointer instead, and one
+         kept on the Mac display (KeepPlaces) to its place there.
          */
-        static void KeepReachable(IntPtr windowPos)
+        void KeepReachable(IntPtr windowPos)
         {
             var pos = (Native.WINDOWPOS)Marshal.PtrToStructure(windowPos, typeof(Native.WINDOWPOS));
             /* -32000 is where Windows parks minimized windows */
             if ((pos.flags & (Native.SWP_NOMOVE | Native.SWP_NOSIZE)) != 0 || pos.x <= -30000 || pos.y <= -30000) return;
-            var target = new Native.RECT { Left = pos.x, Top = pos.y, Right = pos.x + pos.cx, Bottom = pos.y + pos.cy };
-            if (Reachable(target)) return;
-            Point middle = Middle(pos.cx, pos.cy);
-            pos.x = middle.X;
-            pos.y = middle.Y;
+            Point place;
+            if (returnTo.HasValue && Reachable(Rect(returnTo.Value, pos.cx, pos.cy))) place = returnTo.Value;
+            else if (Reachable(Rect(new Point(pos.x, pos.y), pos.cx, pos.cy))) return;
+            else place = Middle(pos.cx, pos.cy);
+            pos.x = place.X;
+            pos.y = place.Y;
             Marshal.StructureToPtr(pos, windowPos, false);
+        }
+
+        static Native.RECT Rect(Point corner, int width, int height)
+        {
+            return new Native.RECT { Left = corner.X, Top = corner.Y, Right = corner.X + width, Bottom = corner.Y + height };
         }
 
         /* Top left corner for a window in the middle of the screen with the mouse pointer */

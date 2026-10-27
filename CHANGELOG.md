@@ -2,6 +2,19 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.10] – 2026-10-27
+
+### Geändert
+
+- **Das Fenster bleibt auf dem Mac-Bildschirm.** Ging das Laptop-Display wieder an, etwa weil du „Laptop-Display ausschalten“ abgehakt oder den Deckel aufgeklappt hast, landete das Fenster von iMac-Display auf dem Laptop-Display, obwohl du es gerade noch auf dem Mac bedient hattest. Jetzt legt iMac-Display es zurück an seinen Platz auf dem Mac-Bildschirm. Ein minimiertes Fenster kommt dort wieder hoch, wenn du es zurückholst.
+
+### Behoben
+
+- **Das Fenster bleibt so groß, wie es sein soll.** Hast du „Laptop-Display ausschalten“ wieder abgehakt, landete das Fenster von iMac-Display auf dem Laptop-Display und war dort riesig: Sein Inhalt hatte die richtige Größe, rundherum blieb viel leerer Platz. Zogst du es umgekehrt vom Laptop-Display auf den Mac-Bildschirm, konnte es viel zu klein werden. Beim Wechsel auf einen Bildschirm mit anderer Skalierung schlägt Windows oft die alte Größe vor. Danach passt sich das Fenster seinem Inhalt an, doch dieser Schritt ging verloren, wenn der Wechsel kam, während das Fenster sich gerade neu aufbaute. Jetzt holt es ihn in jedem Fall nach, und das Log nennt jeden solchen Wechsel samt der Größe, die das Fenster danach hat.
+- **Scharfe Symbole in der Taskleiste auf dem Mac-Bildschirm.** Schaltetest du das Laptop-Display aus, wurden die Programmsymbole in der Taskleiste auf dem Mac sofort unscharf. Die Taskleiste zieht dabei vom Laptop-Display auf den Mac-Bildschirm mit seiner höheren Skalierung, und Windows streckt ihre Symbole, statt sie in der passenden Größe neu zu laden. Jetzt lässt iMac-Display sie neu laden, sobald eine Taskleiste auf einem Bildschirm mit anderer Skalierung steht.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.9] – 2026-10-19
 
 ### Hinzugefügt

@@ -544,6 +544,30 @@ namespace ImacDisplay
                 new Point(external.X - panel.X, external.Y - panel.Y));
         }
 
+        /*
+         The program's windows stay on the Mac display when the displays change: the session notes where they lie while
+         nothing changes and puts them back after a change (ThemedForm.NotePlaces, KeepPlaces)
+         */
+        public void NoteMacDisplay(DisplayInfo mac)
+        {
+            if (IsHandleCreated && InvokeRequired)
+            {
+                Post(delegate { NoteMacDisplay(mac); });
+                return;
+            }
+            NotePlaces(new Rectangle(mac.X, mac.Y, mac.Width, mac.Height));
+        }
+
+        public void KeepOnMacDisplay(DisplayInfo mac)
+        {
+            if (IsHandleCreated && InvokeRequired)
+            {
+                Post(delegate { KeepOnMacDisplay(mac); });
+                return;
+            }
+            KeepPlaces(new Rectangle(mac.X, mac.Y, mac.Width, mac.Height));
+        }
+
         /* A tip under the status, or none (text null); not after "Nicht mehr zeigen" for this key */
         public void ShowTip(string key, string text)
         {

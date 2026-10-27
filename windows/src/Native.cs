@@ -429,6 +429,12 @@ namespace ImacDisplay
         [DllImport("user32.dll")]
         public static extern bool PostMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 
+        public const int SHCNE_UPDATEIMAGE = 0x00008000;
+        public const uint SHCNF_DWORD = 0x0003;
+
+        [DllImport("shell32.dll")]
+        public static extern void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
+
         /* 20 = DWMWA_USE_IMMERSIVE_DARK_MODE (19 before Windows 10 20H1) */
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
