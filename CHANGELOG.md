@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.0] – 2026-10-28
+
+### Hinzugefügt
+
+- **Programme können das Laptop-Display anfordern.** Manche Abfragen nehmen keine Eingaben vom Mac an, etwa der Dialog „Windows-Sicherheit“, in dem du einen Sicherheitsschlüssel wählst und seine PIN eingibst. Bei ausgeschaltetem Laptop-Display erschien so ein Dialog auf dem Mac, ließ sich dort aber nicht bedienen. Ein Programm, das eine solche Abfrage startet, kann jetzt das Laptop-Display anfordern: iMac-Display schaltet es ein, auch wenn „Laptop-Display ausschalten“ angehakt ist, und wieder aus, sobald das Programm fertig ist. Den Dialog bedienst du dann am Laptop. Wie ein Programm das anstellt, steht in der README unter „Für Entwickler“; die „Diagnose“ im Log zeigt, ob gerade eines das Laptop-Display angefordert hat.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.10.12] – 2026-10-28
 
 ### Behoben

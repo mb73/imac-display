@@ -160,7 +160,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 ## Grenzen
 
 - **Sperrbildschirm:** Ist Windows gesperrt, musst du direkt am Laptop entsperren. Den Sperrbildschirm lässt Windows aus Sicherheitsgründen von keinem Programm fernsteuern. LaptopScreen zeigt dann „Der Laptop ist gesperrt“. Bei zugeklapptem Deckel heißt das: aufklappen, entsperren, wieder zuklappen. Ist das Laptop-Display ausgeschaltet, schaltet iMac-Display es bei einer Sperre von selbst ein; bleibt es doch schwarz, hilft kurzes Zu- und Aufklappen. Windows zeigt die Anmeldung nur auf dem Hauptbildschirm, deshalb bleibt das bei offenem Deckel das Laptop-Display. Bleibt es beim Aufklappen trotzdem schwarz (etwa mit `--mac-primary`), den HDMI-Dummy-Stecker kurz ziehen (siehe unten): Im gesperrten Zustand lässt Windows kein Programm die Anzeige umschalten. Solange du über den Mac auf dem Laptop arbeitest, zählt das als Eingabe – die automatische Sperre nach einer Weile ohne Eingabe greift dann nicht.
-- **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel oder PIN), erledigst du direkt am Laptop.
+- **Sicherheitsabfragen,** etwa beim Verbinden des VPN (Sicherheitsschlüssel oder PIN), erledigst du direkt am Laptop. Maus und Tastatur des Macs erreichen sie nicht, denn Windows schirmt solche Dialoge gegen Programme ohne Adminrechte ab. Ist das Laptop-Display ausgeschaltet, kann das Programm, das fragt, es dafür einschalten lassen (siehe [Für Entwickler](#für-entwickler)).
 - **Programme mit Adminrechten** und Dialoge der Benutzerkontensteuerung nehmen keine Eingaben vom Mac an.
 - **Ton** spielt weiterhin (nur) der Laptop. Legt Windows ihn auf den Dummy-Stecker, der nichts abspielt, stellt iMac-Display ihn gleich zurück.
 - **Die Zwischenablage** teilt nur Text. Keine Bilder oder Dateien.
@@ -201,6 +201,7 @@ Auf dem Mac setzt das Menü „Neuen Kopplungscode erzeugen“ die Kopplung zur�
 - `windows\build.cmd` baut `imac-display.exe` mit dem C#-Compiler, der in jedem Windows steckt (.NET Framework 4.x).
 - `imac-display.exe --test | Out-String` gibt die Diagnose als Text aus; ohne Umleitung erscheint sie in einem Fenster.
 - `mac/build.sh` baut `LaptopScreen.app` mit den Command Line Tools, `mac/install.sh` installiert es; per `curl … | sh` gestartet, lädt das Skript vorher den Stand von `main` von GitHub.
+- **Laptop-Display anfordern:** Ein Programm, das eine Abfrage zeigt, die keine Eingaben vom Mac annimmt (etwa „Windows-Sicherheit“ für einen Sicherheitsschlüssel), hält solange das benannte Ereignis `Local\imac-display.panel-wanted` offen, in C# etwa `new EventWaitHandle(false, EventResetMode.ManualReset, @"Local\imac-display.panel-wanted")`. Solange es besteht, lässt `imac-display.exe` das Laptop-Display bei offenem Deckel an, auch mit „Laptop-Display ausschalten“; ein ausgeschaltetes geht innerhalb weniger Sekunden an, als Hauptbildschirm. Sein Fenster legt das Programm selbst dorthin. Schließt es das Handle oder endet es, geht das Laptop-Display wieder aus.
 - Aufbau, Protokoll, Update-Mechanismus, Messwerkzeuge und Fallstricke stehen in [CLAUDE.md](CLAUDE.md), Änderungen in [CHANGELOG.md](CHANGELOG.md).
 
 ## Lizenz

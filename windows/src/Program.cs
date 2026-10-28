@@ -319,6 +319,25 @@ namespace ImacDisplay
             uint state;
             return Native.CallNtPowerInformation(16, IntPtr.Zero, 0, out state, 4) == 0 && (state & 0x2) != 0;
         }
+
+        /*
+         Another program needs the laptop panel while it keeps this event open, e.g. for a prompt that takes no input from
+         the Mac: the Windows security dialog for a security key runs above a normal user's integrity level, and the input
+         the agent injects does not reach it. Windows deletes the event with its last handle, also when that program ends.
+         */
+        public const string PanelWantedEvent = @"Local\imac-display.panel-wanted";
+
+        public static bool PanelWanted()
+        {
+            EventWaitHandle wanted;
+            try
+            {
+                if (!EventWaitHandle.TryOpenExisting(PanelWantedEvent, out wanted)) return false;
+            }
+            catch (UnauthorizedAccessException) { return true; }  // it exists, only not for us
+            wanted.Dispose();
+            return true;
+        }
     }
 
     /*
@@ -889,7 +908,7 @@ namespace ImacDisplay
                 if (macOnly) NoteLockTimeout(lockTimeout);
                 /* the taskbars before the switch: the first look at them after it sees whether their icons need reloading */
                 TrayRepair.NoteDpi();
-                DisplayInfo external = Configure(o, lidOpen, macOnly && !LockSoon(lockTimeout));
+                DisplayInfo external = Configure(o, lidOpen, PanelOffWanted(lockTimeout));
                 if (external == null)
                 {
                     Log("Kein externer Bildschirm gefunden. Steckt der HDMI-Dummy-Stecker?");
@@ -1071,7 +1090,7 @@ namespace ImacDisplay
                         control.Send("SWITCH display");
                         ShowSession(mac, lidOpen, false);
                         Thread.Sleep(1500);  // let Windows finish its own reconfiguration first
-                        DisplayInfo reconfigured = Configure(o, lidOpen, macOnly && !LockSoon(lockTimeout));
+                        DisplayInfo reconfigured = Configure(o, lidOpen, PanelOffWanted(lockTimeout));
                         if (reconfigured != null) external = reconfigured;
                         lastReconfigure = DateTime.UtcNow;
                     }
@@ -1080,14 +1099,17 @@ namespace ImacDisplay
                      The window's "Laptop-Display ausschalten", and the panel off again after Windows brought it back by itself, e.g.
                      when the lid closed and opened while Windows was locked: that is the way to the sign-in. Shortly before Windows
                      locks itself for lack of input, the panel goes on, so the sign-in appears there; the next input switches it off.
+                     Another program may ask for the panel, too (Session.PanelWanted); it goes off again once that program lets go.
                      */
                     bool switched = false;
-                    bool soon = macOnly && (LockSoon(lockTimeout) || now < lockPendingUntil), wantOff = macOnly && !soon;
+                    bool soon = macOnly && (LockSoon(lockTimeout) || now < lockPendingUntil);
+                    bool requested = macOnly && !soon && Session.PanelWanted(), wantOff = macOnly && !soon && !requested;
                     if (lidOpen && !lidChanged && now >= panelRetry && (wantOff ? Displays.Internal() != null : panelSwitchedOff))
                     {
                         switched = true;
                         Log(wantOff ? "Laptop-Display aus: Der Mac ist jetzt der einzige Bildschirm."
                             : soon ? "Windows sperrt sich gleich, weil es so lange keine Eingabe gab: Laptop-Display an, damit die Anmeldung dort erscheint."
+                            : requested ? "Ein Programm braucht das Laptop-Display, etwa für eine Sicherheitsabfrage: Laptop-Display an, bis es fertig ist."
                             : "Laptop-Display wieder an.");
                         control.Send("SWITCH display");
                         ShowSession(mac, lidOpen, false);
@@ -1290,6 +1312,12 @@ namespace ImacDisplay
         static bool LockSoon(int lockTimeout)
         {
             return lockTimeout > 0 && Session.IdleSeconds() >= Math.Max(lockTimeout / 2, lockTimeout - 60) && !Session.DisplayHeld();
+        }
+
+        /* "Laptop-Display ausschalten", unless Windows locks itself soon or another program needs the panel */
+        static bool PanelOffWanted(int lockTimeout)
+        {
+            return macOnly && !LockSoon(lockTimeout) && !Session.PanelWanted();
         }
 
         static bool lockTimeoutNoted;
@@ -1694,6 +1722,7 @@ namespace ImacDisplay
             LidWatcher watcher = lid ?? LidWatcher.Start();
             bool? open = watcher == null ? null : watcher.IsOpen;
             line("Deckel: " + (open == null ? "unbekannt" : open.Value ? "offen" : "zu"));
+            line("Laptop-Display von einem Programm angefordert: " + (Session.PanelWanted() ? "ja" : "nein"));
             string ffmpeg = FindFfmpeg();
             line("ffmpeg: " + (ffmpeg ?? "(nicht gefunden)"));
             if (ffmpeg != null)
