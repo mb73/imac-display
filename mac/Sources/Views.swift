@@ -56,6 +56,18 @@ extension NSCursor {
     static let invisible = NSCursor(image: NSImage(size: NSSize(width: 1, height: 1)), hotSpot: .zero)
 }
 
+extension NSWindow {
+    /*
+     Whether a click at this point of the screen would land in this window rather than in one on top of it: a
+     notification, the menu bar or the Dock in full screen, a window of another app. The hit test of the window
+     server sees the windows of all apps and skips transparent spots. No window at all counts as this one.
+     */
+    func isFrontmost(at location: NSPoint) -> Bool {
+        let number = NSWindow.windowNumber(at: location, belowWindowWithWindowNumber: 0)
+        return number == 0 || number == self.windowNumber
+    }
+}
+
 /*
  A big symbol for a moment when the laptop's connection changes, in a box like the volume symbol of macOS:
  an Ethernet socket when it comes over the cable, the Wi-Fi fan when over Wi-Fi
@@ -192,10 +204,12 @@ final class ContainerView: NSView {
     /*
      Hides the Mac pointer over the picture right away. The cursor rect alone acts only when the pointer enters it:
      after a notification, the login window or a sheet the Mac pointer stayed visible next to the Windows one, and
-     moving it could leave a trail of pointers over the video, until the desktop was switched.
+     moving it could leave a trail of pointers over the video, until the desktop was switched. Over a notification
+     on top of the picture the pointer stays visible, as clicks go there (InputCapture.pictureCovered).
      */
     func hidePointer() {
-        if controlling && pointerInside { NSCursor.invisible.set() }
+        guard controlling, pointerInside, let window = window, window.isFrontmost(at: NSEvent.mouseLocation) else { return }
+        NSCursor.invisible.set()
     }
 
     private var pointerInside: Bool {

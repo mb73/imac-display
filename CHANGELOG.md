@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.10.12] – 2026-10-28
+
+### Behoben
+
+- **Über Mitteilungen erscheint der Mauszeiger des Mac.** Mitteilungen von macOS oben rechts liegen auch über dem Bild des Laptops und lassen sich dort anklicken. Der Mauszeiger des Mac blieb über ihnen aber unsichtbar, zu sehen war nur der von Windows dahinter. Jetzt zeigt LaptopScreen dort den Mauszeiger des Mac. Der von Windows läuft darunter mit, so springt er nicht, wenn du die Mitteilung wieder verlässt. Dasselbe gilt für alles andere, was über dem Bild liegt, etwa Menüleiste und Dock im Vollbild.
+
+Nur LaptopScreen auf dem Mac ändert sich; es aktualisiert sich wie gewohnt selbst, sobald iMac-Display 1.10.12 auf dem Laptop läuft.
+
 ## [1.10.10] – 2026-10-27
 
 ### Geändert

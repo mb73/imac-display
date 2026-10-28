@@ -15,6 +15,8 @@ import AppKit
  - Outside full screen the window's title bar belongs to the Mac: clicks there move, zoom or close the window.
    Outside the picture the Mac pointer is the Mac's, but at an edge of the screen it can still go over to
    another display of the laptop ("X").
+ - Over whatever lies on top of the picture (a notification, in full screen also the menu bar and the Dock)
+   the Mac pointer shows and clicks stay with the Mac, while the laptop's cursor follows underneath.
  Protocol lines: M x y | N dx dy | X x y dx dy | B button down x y mods | W dy dx mods | K vk down mods ext |
                  C codepoint down mods | T utf16hex | S mods | R
  */
@@ -69,7 +71,8 @@ final class InputCapture {
      wakes up and is unlocked, or when a notification shows up at the top right. The pointer then froze until
      a click. Now the polled position goes to the laptop instead, and LaptopScreen takes the focus back from
      the login window or the notifications, though not from apps the user chose (Spotlight, Mission Control)
-     nor from its own About panel, whose links could not be clicked otherwise.
+     nor from its own About panel, whose links could not be clicked otherwise. Over a notification itself the
+     focus stays where it is (pictureCovered).
      */
     private func poll() {
         let location = NSEvent.mouseLocation
@@ -83,28 +86,50 @@ final class InputCapture {
             if NSApp.isActive { reachedEdge(location, in: view) }
             return
         }
+        let covered = !window.isFrontmost(at: location)
+        if covered {
+            /* another app is in front: under its windows the laptop's cursor waits */
+            guard NSApp.isActive else { return }
+            pictureCovered(at: location, in: view)
+        }
         guard ProcessInfo.processInfo.systemUptime - lastEventAt > 0.1 else { return }
         let rect = videoRect(in: view.bounds)
         let nx = max(0, min(1, (point.x - rect.minX) / rect.width))
         let ny = max(0, min(1, (rect.maxY - point.y) / rect.height))
         send?("M \(Int(nx * 65535)) \(Int(ny * 65535))")
+        if covered { return }  // the focus stays, and so does the Mac pointer
         if !NSApp.isActive {
             let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
             if front == "com.apple.loginwindow" || front == "com.apple.notificationcenterui" {
                 NSApp.activate(ignoringOtherApps: true)
             }
-        } else if !window.isKeyWindow {
-            window.makeKey()
+        } else {
+            /* as with each mouse event: back from a notification, the Mac pointer must not stay next to the laptop's */
+            NSCursor.invisible.set()
+            if !window.isKeyWindow { window.makeKey() }
         }
     }
 
     /*
-     In a window, the Mac pointer outside the picture goes over to another display of the laptop as in full screen:
-     at an edge of the Mac's screen where no other Mac screen continues. "X" names the matching point on the edge of
-     the picture and the direction beyond it; the agent moves the cursor over only where Windows has a display there
-     and answers "POINTER away", elsewhere its cursor stays put (the menu bar, the Dock). Polled, not taken from
-     events: over the desktop or another app, mouse events may not reach LaptopScreen at all. Not while a button is
-     held: that drags a window of the Mac, and a drag on the laptop crosses with its own events, as in full screen.
+     Something lies on top of the picture at this point: a notification, the menu bar or the Dock in full screen, a
+     window of another app. Clicks reach that window, so the Mac pointer shows there: macOS kept the invisible one
+     LaptopScreen had set over the picture. The laptop's cursor follows underneath as over the picture, so it does not
+     jump when the Mac pointer comes back. At an edge of the screen "X" goes out as outside the picture: over the Dock
+     or the menu bar, pushing against the edge may not come as events.
+     */
+    private func pictureCovered(at location: NSPoint, in view: NSView) {
+        NSCursor.arrow.set()
+        reachedEdge(location, in: view)
+    }
+
+    /*
+     Where the pointer is the Mac's (outside the picture in a window, or over something on top of it), it still goes
+     over to another display of the laptop as in full screen: at an edge of the Mac's screen where no other Mac screen
+     continues. "X" names the matching point on the edge of the picture and the direction beyond it; the agent moves
+     the cursor over only where Windows has a display there and answers "POINTER away", elsewhere its cursor stays put
+     (the menu bar, the Dock). Mostly polled: over the desktop or another app, mouse events may not reach LaptopScreen
+     at all. Not while a button is held: that drags a window of the Mac, and a drag on the laptop crosses with its own
+     events, as in full screen.
      */
     private func reachedEdge(_ location: NSPoint, in view: NSView) {
         guard NSEvent.pressedMouseButtons == 0, let window = view.window, let screen = window.screen?.frame,
@@ -281,8 +306,6 @@ final class InputCapture {
 
     private func mouse(_ event: NSEvent, in view: NSView) {
         lastEventAt = ProcessInfo.processInfo.systemUptime
-        /* the cursor rect alone does not hide the Mac pointer again once something else showed it (ContainerView.hidePointer) */
-        NSCursor.invisible.set()
         let rect = videoRect(in: view.bounds)
         let mods = InputCapture.mods(event.modifierFlags)
         /*
@@ -291,6 +314,14 @@ final class InputCapture {
          */
         let stale = event.timestamp <= warpedAt
         let settled = event.timestamp > warpedAt + 0.02
+        if event.type == .mouseMoved, !away, settled, let window = view.window,
+           !window.isFrontmost(at: window.convertPoint(toScreen: event.locationInWindow)) {
+            /* over a notification, say (pictureCovered); whether such movements come here at all is not documented */
+            NSCursor.arrow.set()
+        } else {
+            /* the cursor rect alone does not hide the Mac pointer again once something else showed it (ContainerView.hidePointer) */
+            NSCursor.invisible.set()
+        }
         /* "-1 -1": wherever the laptop's cursor is */
         var x = -1
         var y = -1
