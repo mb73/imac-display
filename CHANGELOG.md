@@ -2,6 +2,24 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.1] – 2026-10-30
+
+### Hinzugefügt
+
+- **`exe-missing.cmd` baut das Programm nach, wenn ein Virenscanner es entfernt hat.** Microsoft Defender hält `imac-display.exe` mitunter fälschlich für Schadsoftware und entfernt die Datei beim Entpacken. Ein Doppelklick auf `exe-missing.cmd` baut sie dann aus dem Quelltext im selben Ordner neu und startet sie; ist sie doch da, startet es sie einfach. Auf einem Firmenrechner kläre das vorher mit deiner IT.
+- **Ein wartendes Update meldet sich in der Taskleiste.** Das Fenster mit dem Angebot liegt meist minimiert in der Taskleiste, und so blieb eine neue Version leicht unbemerkt. Jetzt blinkt der Knopf von iMac-Display in der Taskleiste kurz und bleibt hervorgehoben, bis du das Fenster öffnest. Steht das Update einen Tag später noch aus und war das Fenster so lange nicht vorne, meldet sich der Knopf erneut. Die Markierung am Knopf zeigt weiter die Verbindung zum Mac.
+- Entwickler-Werkzeug `windows\dev\updater-test.ps1` prüft den Updater in Testinstallationen, auch gegen einen nachgestellten Virenscanner.
+
+### Behoben
+
+- **Ein abgebrochenes Update lässt das Programm nicht verschwinden.** Ersetzt iMac-Display beim Aktualisieren seine eigene Datei und ein Virenscanner greift sich dabei die frische, blieb bisher womöglich gar keine `imac-display.exe` übrig. Jetzt stellt es in diesem Fall die laufende Version wieder her, sodass es einsatzbereit bleibt, und die Meldung nennt den Virenscanner als mögliche Ursache. Fehlt die neue Datei erst beim Neustart, sagt die Meldung, dass `exe-missing.cmd` sie neu baut.
+- **Ein Update, das mittendrin abbricht, wird erneut angeboten.** Bisher konnte iMac-Display danach schon die neue Versionsnummer tragen, ohne vollständig aktualisiert zu sein, und bot das Update nicht mehr an. Lässt sich nach dem Update nur eine veraltete Datei nicht löschen, gilt es nicht mehr als fehlgeschlagen; sie steht dann im Log.
+- **Hält ein Virenscanner die heruntergeladene Zip-Datei an, nennt die Meldung seinen Grund**, statt die Datei für keine Zip-Datei von imac-display zu halten.
+- **Eine verschwundene Zip-Datei blockiert das Update nicht mehr.** War die angebotene Zip-Datei inzwischen weg, etwa aus „Downloads“ gelöscht oder beim Aufräumen des Temp-Ordners entfernt, scheiterte bisher jeder Klick auf „Aktualisieren …“, bis iMac-Display neu startete. Jetzt lädt es die Version dann neu von GitHub. Eine ältere Zip-Datei, die du auf `update.cmd` ziehst, steht nach „Später“ nicht mehr als neue Version im Fenster.
+- **Keine Datei mehr, die wie das Programm aussieht.** Neben dem Programm lag die Datei `imac-display.exe.config`. Blendet der Explorer bekannte Dateiendungen aus, wie er es von Haus aus tut, hieß sie dort „imac-display.exe“, und ein Doppelklick öffnete einen Editor statt des Programms. Jetzt legt iMac-Display diese Einstellungen selbst unter `%LOCALAPPDATA%\imac-display` an und entfernt die alte Datei beim ersten Start.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.11.0] – 2026-10-28
 
 ### Hinzugefügt

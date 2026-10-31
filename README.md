@@ -25,12 +25,12 @@ Erprobt mit einem Dell Pro 16 (Windows 11, ohne Adminrechte) und einem iMac Reti
 | Laptop | Windows 10 oder 11 mit Intel-Grafik (Quick Sync), z. B. Dell Pro 16. Adminrechte sind nicht nötig, selbst heruntergeladene Programme müssen aber starten dürfen (manche Firmen sperren das). |
 | Stecker | HDMI-Dummy-Stecker (auch „Display Emulator“ genannt) mit 4K bei 60 Hz, z. B. [von FUERAN](https://www.amazon.de/dp/B0FMG2CPL6/?th=1), ca. 6 €. |
 | Mac | macOS 11 oder neuer. Die kostenlosen Command Line Tools von Apple, mit denen LaptopScreen gebaut wird, installiert die Einrichtung bei Bedarf selbst. |
-| Verbindung | Am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [von deleyCON](https://www.amazon.de/dp/B07WMPM1KW/?th=1) (geignete Länge auswählen!), ca. 6 €. Sonst geht es (ggf. etwas zäh) über das gemeinsame WLAN. |
+| Verbindung | Den LAN-Anschluss haben ältere iMacs (bis 2020) hinten am Gehäuse, neuere iMacs (ab 2021) entweder am Netzteil oder gar nicht. Hat der Mac einen LAN-Anschluss? Dann am besten ein LAN-Kabel direkt zwischen Laptop und Mac (ohne jede Einrichtung), z. B. [von deleyCON](https://www.amazon.de/dp/B07WMPM1KW/?th=1) (geeignete Länge auswählen!), ca. 6 €. Hat der Mac keinen LAN-Anschluss? Dann hilft wahrscheinlich ein Kabel mit USB-C auf der einen und LAN-Stecker auf der anderen Seite, z. B. [von goobay](https://www.amazon.de/dp/B0CV15QBXW). Alternativ geht es auch ohne Kabel (ggf. etwas zäh) über das gemeinsame WLAN.
 
 ## Vorgehensweise
 
 1. **Besorgen:** HDMI-Dummy-Stecker und LAN-Kabel (siehe oben)
-2. **Verbinden:** Mac und Laptop (oder dessen Dockingstation) via LAN-Kabel. HDMI-Dummy-Stecker in den Laptop (oder dessen Dockingstation). Laptop ggf. mit dessen Dockingstation verbinden. Reihenfolge egal.
+2. **Verbinden:** Mac und Laptop (oder dessen Dockingstation) via LAN-Kabel (siehe oben). HDMI-Dummy-Stecker in den Laptop (oder dessen Dockingstation). Laptop ggf. mit dessen Dockingstation verbinden. Reihenfolge egal.
 3. **Einrichten:** Diese Software auf dem Laptop und auf dem Mac einrichten und starten. Reihenfolge egal.
 
 ## Einrichtung auf dem Mac (einmalig)
@@ -60,12 +60,13 @@ Es gibt zwei Methoden, die sich aber nur in den ersten drei Schritten unterschei
 
 ## Einrichtung auf dem Laptop (einmalig)
 
-1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip.
-2. **Vor dem Entpacken freigeben:** Rechtsklick auf die Zip-Datei → Eigenschaften → unten „Zulassen“ anhaken → OK. Sonst behandelt Windows die enthaltenen Programme als „aus dem Internet“ und blockiert sie.
-3. **Entpacken,** z. B. nach `C:\Users\<dein Name>\imac-display`. Das Programm nicht direkt aus der Zip-Datei heraus starten.
-4. **Den Dummy-Stecker** in den HDMI-Anschluss des Laptops stecken.
-5. **`imac-display.exe` doppelklicken.** Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
-6. Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
+1. **Dieses Projekt herunterladen** mit Klick auf https://github.com/mb73/imac-display/archive/refs/heads/main.zip. Meldet der Browser „Virus erkannt“, siehe [Wenn etwas nicht klappt](#wenn-etwas-nicht-klappt).
+2. **Den Ordner „Downloads“ öffnen:** den Explorer starten (<kbd>win</kbd> + <kbd>E</kbd>) und links „Downloads“ wählen. Dort liegt die Zip-Datei „imac-display-main“.
+3. **Vor dem Entpacken freigeben:** Rechtsklick auf die Zip-Datei → Eigenschaften → unten „Zulassen“ anhaken → OK. Sonst behandelt Windows die enthaltenen Programme als „aus dem Internet“ und blockiert sie. Gibt es den Haken nicht, ist hier nichts zu tun.
+4. **Entpacken:** Rechtsklick auf die Zip-Datei → „Alle extrahieren …“, als Ziel z. B. `C:\Users\<dein Name>\imac-display` eintragen → „Extrahieren“. Der Explorer zeigt danach diesen Ordner, das Programm liegt darin im Ordner „imac-display-main“. Nicht direkt aus der Zip-Datei heraus starten.
+5. **Den Dummy-Stecker** in den HDMI-Anschluss des Laptops stecken.
+6. **„imac-display“ doppelklicken,** das Programm mit dem iMac-Symbol (mit eingeblendeten Dateiendungen heißt es `imac-display.exe`). Fehlt es, hat meist ein Virenscanner es fälschlich entfernt, siehe [Wenn etwas nicht klappt](#wenn-etwas-nicht-klappt). Beim ersten Start lädt es das freie Programm ffmpeg (ca. 110 MB, einmalig), prüft die Intel-Grafik, legt im Startmenü „iMac-Display“ an und fragt nach dem Kopplungscode vom Mac.
+7. Im Startmenü per Rechtsklick auf „iMac-Display“ → „An Taskleiste anheften“.
 
 <img width="322" height="172" alt="anheften3" src="https://github.com/user-attachments/assets/406ea4a6-1096-49ff-bf6b-bbcd0a38a448" />
 
@@ -153,7 +154,7 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 
 ## Aktualisierung
 
-**Laptop:** Automatisch. iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
+**Laptop:** Automatisch. iMac-Display fragt beim Start und danach alle sechs Stunden bei GitHub nach, ob es eine neue Version gibt. Dann steht im Fenster „iMac-Display x.y.z ist da“, und „Aktualisieren …“ lädt sie, zeigt, was neu ist, installiert sie und startet neu. Ist das Fenster gerade nicht vorne, blinkt sein Knopf in der Taskleiste kurz und bleibt hervorgehoben, bis du es öffnest; steht das Update einen Tag später noch aus, noch einmal. Läuft gerade die Verbindung zum Mac, bleibt der Mac-Bildschirm dabei erhalten. Klappt der Download nicht (etwa wegen eines Firmen-Proxys), lädt der Browser die Zip-Datei; sobald sie im Ordner „Downloads“ liegt, geht es im Fenster weiter. `update.cmd` sucht sofort nach einer neuen Version, und eine Zip-Datei, die du darauf ziehst, wird direkt installiert. Kopplungscode, Einstellungen und ffmpeg bleiben erhalten.
 
 **Mac:** Automatisch. Bringt der Laptop eine neuere Version mit, fragt LaptopScreen beim Verbinden, ob es sich aktualisieren soll. Es baut die neue Version dann selbst (etwa eine Minute) und startet neu. Gut möglich, dass macOS danach noch einmal nach eingehenden Verbindungen und dem lokalen Netzwerk fragt: wieder beides erlauben.
 
@@ -165,12 +166,13 @@ Kopierter Text wandert mit, und zwar in die Richtung, in die du wechselst:
 - **Ton** spielt weiterhin (nur) der Laptop. Legt Windows ihn auf den Dummy-Stecker, der nichts abspielt, stellt iMac-Display ihn gleich zurück.
 - **Die Zwischenablage** teilt nur Text. Keine Bilder oder Dateien.
 - **Höchstens 4K:** Für 5K bräuchte es HEVC, und das haben Dell und HP bei manchen Modellen aus Lizenzgründen abgeschaltet. 4K wird auf einem 5K-iMac sauber hochskaliert.
-- **MacBooks** haben Bildschirme im Format 16:10, die der Dummy-Stecker nicht pixelgenau kann (etwa 2880 × 1800). Sie bekommen 2560 × 1600, leicht hochskaliert und ohne schwarze Balken. Für ein Kabel brauchen sie einen USB-C-Ethernet-Adapter.
+- **MacBooks** haben Bildschirme im Format 16:10, die der Dummy-Stecker nicht pixelgenau kann (etwa 2880 × 1800). Sie bekommen 2560 × 1600, leicht hochskaliert und ohne schwarze Balken. Für ein Kabel brauchen sie einen USB-C-Ethernet-Adapter oder gleich ein Kabel von USB-C auf LAN.
 
 ## Wenn etwas nicht klappt
 
 | Problem | Lösung |
 |---|---|
+| Der Browser meldet beim Herunterladen „Virus erkannt“, oder nach dem Entpacken fehlt `imac-display.exe` | Ein Fehlalarm des Virenscanners, meist Microsoft Defender: Das Programm ist nicht signiert und tut in mancher Hinsicht, was auch Schadprogramme tun (Bildschirm übertragen, Tastatur und Maus steuern). Fehlt nur die exe, baut `exe-missing.cmd` sie per Doppelklick aus dem Quelltext neu und startet sie; auf einem Firmenrechner kläre das vorher mit deiner IT. Blockiert schon der Browser den Download, bleibt nur abzuwarten, bis Microsoft den Fehlalarm behoben hat, oder deine IT gibt das Programm frei. |
 | `imac-display.exe` findet den Mac nicht | Läuft LaptopScreen? Auf dem Mac unter Systemeinstellungen → Datenschutz & Sicherheit → Lokales Netzwerk LaptopScreen erlauben, und in der Firewall eingehende Verbindungen für LaptopScreen zulassen. Notfalls die Adresse direkt angeben: `imac-display.exe --host <IP>` – die IP-Adressen stehen im Wartebildschirm von LaptopScreen. |
 | „Kopplungscode abgelehnt“ | Den Code so eingeben, wie er auf dem Mac steht; Groß- und Kleinschreibung sowie Bindestriche sind egal. |
 | LaptopScreen meldet „kein HDMI-Dummy-Stecker“ | Den Stecker in den HDMI-Anschluss des Laptops stecken. Das Bild kommt dann von selbst. |

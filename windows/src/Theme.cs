@@ -170,7 +170,7 @@ namespace ImacDisplay
 
     /*
      Base for the program's windows, built like designer code: controls in 96-DPI units, scaled by
-     WinForms (per-monitor v2, switched on in imac-display.exe.config) to the system DPI and again
+     WinForms (per-monitor v2, switched on in the config of Program.UseOwnConfig) to the system DPI and again
      whenever a window moves to a monitor with another DPI. A window that opens on a monitor whose DPI
      differs from the system DPI (the main display's when the program started) gets no such message and would keep the system
      DPI's size, so OnLoad replays it. Fonts other than the window's own are derived from it in

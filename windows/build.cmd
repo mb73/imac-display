@@ -21,8 +21,8 @@ set /p VERSION=<"%~dp0..\VERSION"
 rem A running exe cannot be overwritten, but it can be renamed; the running instance keeps working.
 if exist "%EXE%.old" del /q "%EXE%.old" 2>nul
 if exist "%EXE%" move /y "%EXE%" "%EXE%.old" >nul
-rem A window program (winexe); the manifest declares Windows 10, imac-display.exe.config next to the exe
-rem switches on per-monitor DPI, and the icon goes in twice: for Explorer and for the windows.
+rem A window program (winexe); the manifest declares Windows 10 (per-monitor DPI in WinForms comes from the
+rem config that Program.UseOwnConfig writes), and the icon goes in twice: for Explorer and for the windows.
 "%CSC%" /nologo /codepage:65001 /optimize+ /platform:x64 /target:winexe /win32icon:"%~dp0imac-display.ico" ^
     /win32manifest:"%~dp0imac-display.manifest" /resource:"%~dp0imac-display.ico",imac-display.ico ^
     /r:System.IO.Compression.dll /r:System.IO.Compression.FileSystem.dll ^

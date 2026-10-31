@@ -141,20 +141,28 @@ namespace ImacDisplay
             return offer;
         }
 
-        /* Fetches the current release into %TEMP%; null and the reason on failure */
-        public static string DownloadRelease(Action<long, long> progress, out string error)
+        /* Fetches the current release into %TEMP%: its path and the version inside, or null and the reason */
+        public static string DownloadRelease(Action<long, long> progress, out string version, out string error)
         {
+            version = null;
             error = null;
             string path = Path.Combine(Path.GetTempPath(), "imac-display-update.zip");
             try
             {
                 Web.File(DownloadUrl, path, progress, null);
-                if (ZipVersion(path) != null) return path;
-                error = "Die heruntergeladene Datei ist keine Zip-Datei von imac-display.";
+                /* opened here rather than by ZipVersion: a virus scanner that refuses the file says so in its error */
+                using (ZipArchive zip = ZipFile.OpenRead(path))
+                {
+                    string root;
+                    version = ZipVersion(zip, out root);
+                }
             }
             catch (WebException ex) { error = ex.Message; }
             catch (IOException ex) { error = ex.Message; }
+            catch (InvalidDataException) { }  // no zip at all: the message below
             catch (UnauthorizedAccessException ex) { error = ex.Message; }
+            if (version != null) return path;
+            if (error == null) error = "Die heruntergeladene Datei ist keine Zip-Datei von imac-display.";
             DeleteQuietly(path);
             return null;
         }
@@ -257,6 +265,7 @@ namespace ImacDisplay
         {
             string target = Program.BaseDirectory;
             string staging = Path.Combine(target, ".update");
+            bool exeRestored = false;
             try
             {
                 string newVersion;
@@ -280,21 +289,50 @@ namespace ImacDisplay
                         files.Add(relative);
                     }
                 }
-                foreach (string relative in files) Replace(Path.Combine(staging, relative), Path.Combine(target, relative));
+                /* the exe first: if a scanner grabs it, nothing else changed yet and the running version comes back from its .old */
+                /* VERSION last: whatever breaks off before it, the next start still has the old number and offers the update again */
+                files.Sort((a, b) => InstallOrder(a).CompareTo(InstallOrder(b)));
+                string exe = Path.Combine(target, "imac-display.exe");
+                string exeAside = null;
+                try
+                {
+                    foreach (string relative in files)
+                    {
+                        string destination = Path.Combine(target, relative);
+                        /* noted before the new exe moves in: that move is what a scanner holding or removing it makes fail */
+                        if (string.Equals(destination, exe, StringComparison.OrdinalIgnoreCase) && File.Exists(exe)) exeAside = MoveAside(exe);
+                        Replace(Path.Combine(staging, relative), destination);
+                    }
+                }
+                catch
+                {
+                    exeRestored = RestoreExe(exe, exeAside);
+                    throw;
+                }
+                /* the update is in place: what cannot be tidied up from here on is logged, it does not make the update fail */
                 RemoveStale(target, files);
-                Directory.Delete(staging, true);
+                try { Directory.Delete(staging, true); }
+                catch (IOException ex) { Program.Log("Der Ordner .update ließ sich nicht löschen: " + ex.Message); }
+                catch (UnauthorizedAccessException ex) { Program.Log("Der Ordner .update ließ sich nicht löschen: " + ex.Message); }
                 Program.Log("iMac-Display ist jetzt auf Version " + newVersion + ". LaptopScreen auf dem Mac fragt beim nächsten Verbinden, ob es nachziehen soll.");
                 return null;
             }
-            catch (IOException ex) { return Failed(ex); }
-            catch (InvalidDataException ex) { return Failed(ex); }
-            catch (UnauthorizedAccessException ex) { return Failed(ex); }
+            catch (IOException ex) { return Failed(ex, exeRestored); }
+            catch (InvalidDataException ex) { return Failed(ex, exeRestored); }
+            catch (UnauthorizedAccessException ex) { return Failed(ex, exeRestored); }
         }
 
-        static string Failed(Exception ex)
+        /* The advice after a failed update, and after one whose restart found no exe */
+        public const string MissingExe = "imac-display.exe fehlt jetzt, vermutlich hat ein Virenscanner sie entfernt. Ein Doppelklick auf exe-missing.cmd im Programmordner baut sie neu.";
+
+        static string Failed(Exception ex, bool exeRestored)
         {
             Program.Log("Die Aktualisierung ist fehlgeschlagen: " + ex.Message);
-            return ex.Message + "\r\n\r\nNotfalls die Zip-Datei von Hand entpacken und den Inhalt über den Programmordner kopieren (tools\\ bleibt).";
+            string hint;
+            if (exeRestored) hint = "Die neue imac-display.exe ließ sich nicht an ihren Platz bringen, vielleicht wegen eines Virenscanners. Die bisherige Version läuft weiter.";
+            else if (File.Exists(Path.Combine(Program.BaseDirectory, "imac-display.exe"))) hint = "Notfalls die Zip-Datei von Hand entpacken und den Inhalt über den Programmordner kopieren (tools\\ bleibt).";
+            else hint = MissingExe;
+            return ex.Message + "\r\n\r\n" + hint;
         }
 
         /* No absolute paths or "..", and never ffmpeg (tools\), git data or our own staging folder */
@@ -305,6 +343,13 @@ namespace ImacDisplay
             if (parts.Any(part => part.Length == 0 || part == "." || part == "..")) return false;
             string first = parts[0].ToLowerInvariant();
             return first != "tools" && first != ".git" && first != ".update";
+        }
+
+        /* 0 for imac-display.exe, 2 for VERSION, 1 for the rest: the order List.Sort installs them in */
+        static int InstallOrder(string relative)
+        {
+            if (string.Equals(relative, "imac-display.exe", StringComparison.OrdinalIgnoreCase)) return 0;
+            return string.Equals(relative, "VERSION", StringComparison.OrdinalIgnoreCase) ? 2 : 1;
         }
 
         static void Replace(string source, string destination)
@@ -322,16 +367,37 @@ namespace ImacDisplay
             File.Move(source, destination);
         }
 
-        /* A running exe cannot be overwritten or deleted, but renamed; the running instance keeps working */
-        static void MoveAside(string exe)
+        /* A running exe cannot be overwritten or deleted, but renamed; the running instance keeps working. Returns the new path. */
+        static string MoveAside(string exe)
         {
             string old = exe + ".old";
             try { if (File.Exists(old)) File.Delete(old); }
             catch (IOException) { old = exe + "." + DateTime.Now.Ticks.ToString(CultureInfo.InvariantCulture) + ".old"; }
             catch (UnauthorizedAccessException) { old = exe + "." + DateTime.Now.Ticks.ToString(CultureInfo.InvariantCulture) + ".old"; }
             File.Move(exe, old);
+            return old;
         }
 
+        /*
+         After a failed update that left no exe behind (a virus scanner grabbing the fresh one is the likely
+         cause), moves the running version back from its .old. That .old is this very process's image, so it is
+         the exact version that was just working; nothing is built or fetched. Does nothing if the exe is there
+         after all or its .old is gone too. True if it moved the exe back.
+        */
+        static bool RestoreExe(string exe, string aside)
+        {
+            try
+            {
+                if (aside == null || File.Exists(exe) || !File.Exists(aside)) return false;
+                File.Move(aside, exe);
+                Program.Log("Die Aktualisierung wurde abgebrochen; die laufende Version bleibt erhalten.");
+                return true;
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+
+        /* Deletes what the mirrored folders hold beyond the release; a file that will not go is logged and stays */
         static void RemoveStale(string target, List<string> files)
         {
             var wanted = new HashSet<string>(files, StringComparer.OrdinalIgnoreCase);
@@ -343,7 +409,14 @@ namespace ImacDisplay
                 foreach (string file in Directory.GetFiles(full, "*", SearchOption.AllDirectories))
                 {
                     string relative = file.Substring(target.Length).TrimStart('\\');
-                    if (!wanted.Contains(relative)) File.Delete(file);
+                    if (wanted.Contains(relative)) continue;
+                    try
+                    {
+                        File.SetAttributes(file, FileAttributes.Normal);
+                        File.Delete(file);
+                    }
+                    catch (IOException ex) { Program.Log("Die veraltete Datei " + relative + " ließ sich nicht löschen: " + ex.Message); }
+                    catch (UnauthorizedAccessException ex) { Program.Log("Die veraltete Datei " + relative + " ließ sich nicht löschen: " + ex.Message); }
                 }
             }
         }

@@ -360,7 +360,7 @@ namespace ImacDisplay
         [DllImport("kernel32.dll")]
         public static extern IntPtr LocalFree(IntPtr memory);
 
-        /* ---- windows: another instance, DPI, dark title bars, themed scroll bars, the close button ---- */
+        /* ---- windows: another instance, DPI, dark title bars, themed scroll bars, the close button, the highlighted taskbar button ---- */
 
         public const int SW_RESTORE = 9;
         public const int WM_SETTINGCHANGE = 0x001A, WM_SYSCOLORCHANGE = 0x0015, WM_DPICHANGED = 0x02E0;
@@ -373,6 +373,14 @@ namespace ImacDisplay
 
         [StructLayout(LayoutKind.Sequential)]
         public struct WINDOWPOS { public IntPtr hwnd, hwndInsertAfter; public int x, y, cx, cy; public uint flags; }
+
+        public const uint FLASHW_TRAY = 0x2, SPI_GETFOREGROUNDFLASHCOUNT = 0x2004;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct FLASHWINFO { public uint cbSize; public IntPtr hwnd; public uint dwFlags; public uint uCount; public uint dwTimeout; }
+
+        [DllImport("user32.dll")]
+        public static extern bool FlashWindowEx(ref FLASHWINFO info);
 
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hwnd);

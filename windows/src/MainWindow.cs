@@ -79,6 +79,8 @@ namespace ImacDisplay
         /* the Downloads folder every few seconds, GitHub at the start and then every few hours */
         const int CheckInterval = 5000;
         static readonly TimeSpan OnlineInterval = TimeSpan.FromHours(6);
+        /* a waiting update lights up the taskbar button again after this long out of sight */
+        static readonly TimeSpan RemindInterval = TimeSpan.FromDays(1);
 
         readonly Options options;
         readonly bool displayHandedOver;
@@ -115,6 +117,8 @@ namespace ImacDisplay
         bool checking, updating, browserFallback, updateRequested, restarting;
         volatile bool closing;
         DateTime nextOnlineCheck = DateTime.MinValue;
+        /* when the offer was last in sight or the taskbar button last lit up for it (Remind) */
+        DateTime remindedAt = DateTime.MinValue;
 
         public MainWindow(Options options, bool displayHandedOver)
         {
@@ -410,6 +414,7 @@ namespace ImacDisplay
             base.OnActivated(e);
             if (lidPlugged.Parent != null && !lidPlugged.DroppedDown) ShowLidAction(lidPlugged, false);
             if (lidBattery.Parent != null && !lidBattery.DroppedDown) ShowLidAction(lidBattery, true);
+            Remind();
         }
 
         protected override void OnShown(EventArgs e)
@@ -417,7 +422,11 @@ namespace ImacDisplay
             base.OnShown(e);
             Program.StartAgent(options, displayHandedOver);
             timer.Interval = CheckInterval;
-            timer.Tick += delegate { CheckForUpdates(false); };
+            timer.Tick += delegate
+            {
+                CheckForUpdates(false);
+                Remind();
+            };
             timer.Start();
             if (options.UpdateZip != null) OfferZip(options.UpdateZip);
             else
@@ -749,6 +758,7 @@ namespace ImacDisplay
                 if (order < 0 || (order == 0 && (offer.Zip != null || found.Zip == null))) return;
             }
             offer = found;
+            remindedAt = DateTime.MinValue;  // news, also the zip the browser fetched: worth lighting up at once
             ShowOffer();
         }
 
@@ -759,6 +769,35 @@ namespace ImacDisplay
             else ShowBanner("iMac-Display " + offer.Version + " ist da.", "Aktualisieren …", ThinBar.None);
             updateProgress = ThinBar.None;
             UpdateTaskbar();
+            Remind();
+        }
+
+        /*
+         A waiting update lights up the taskbar button, since the window that offers it is mostly minimized; the badge
+         stays the connection's. The button blinks as often as when Windows keeps a window from the front (7 unless
+         changed) and stays highlighted until the window comes to the front; blinking on until then (FLASHW_TIMERNOFG)
+         went on for minutes, too much for the user. Again at most a day after the offer was last in sight.
+         */
+        void Remind()
+        {
+            if (offer == null || updating || closing || !IsHandleCreated) return;
+            if (ActiveForm != null)
+            {
+                /* the program is in front: this window, one of its dialogs or the log */
+                remindedAt = DateTime.UtcNow;
+                return;
+            }
+            if (DateTime.UtcNow - remindedAt < RemindInterval) return;
+            remindedAt = DateTime.UtcNow;
+            int count = 0;
+            if (!Native.SystemParametersInfo(Native.SPI_GETFOREGROUNDFLASHCOUNT, 0, ref count, 0) || count <= 0) count = 7;
+            var flash = new Native.FLASHWINFO();
+            flash.cbSize = (uint)Marshal.SizeOf(typeof(Native.FLASHWINFO));
+            flash.hwnd = Handle;
+            flash.dwFlags = Native.FLASHW_TRAY;
+            flash.uCount = (uint)count;
+            Native.FlashWindowEx(ref flash);
+            Program.Log("Der Taskleisten-Knopf erinnert an iMac-Display " + offer.Version + ".");
         }
 
         void ShowBanner(string text, string button, int value)
@@ -793,6 +832,8 @@ namespace ImacDisplay
                 WaitForBrowser();
                 return;
             }
+            /* deleted from Downloads meanwhile or cleaned out of %TEMP%: fetch it again instead of failing on every click */
+            if (offer.Zip != null && !File.Exists(offer.Zip)) offer = new UpdateOffer(offer.Version, null);
             if (offer.Zip != null)
             {
                 ConfirmAndInstall(offer.Zip, offer.Version, false);
@@ -804,12 +845,12 @@ namespace ImacDisplay
             ShowBanner("Lade iMac-Display " + wanted + " herunter …", null, ThinBar.Unknown);
             ThreadPool.QueueUserWorkItem(delegate
             {
-                string error;
+                string downloaded, error;
                 string zip = Updater.DownloadRelease(delegate (long done, long total)
                 {
                     int percent = total > 0 ? (int)(done * 100 / total) : ThinBar.Unknown;
                     Post(delegate { if (updating) ShowBanner("Lade iMac-Display " + wanted + " herunter …", null, percent); });
-                }, out error);
+                }, out downloaded, out error);
                 Post(delegate
                 {
                     updating = false;
@@ -820,7 +861,6 @@ namespace ImacDisplay
                         browserFallback = true;
                         return;
                     }
-                    string downloaded = Updater.ZipVersion(zip);
                     offer = new UpdateOffer(downloaded, zip);
                     ConfirmAndInstall(zip, downloaded, true);
                 });
@@ -848,7 +888,8 @@ namespace ImacDisplay
                 MessageDialog.Show(this, Path.GetFileName(zip) + " ist keine Zip-Datei von imac-display.", MessageKind.Warning);
                 return;
             }
-            offer = new UpdateOffer(zipVersion, zip);
+            /* offered from then on only if it is newer; an older zip or the same version is installed this once or not at all */
+            if (Updater.Compare(zipVersion, Updater.Version) > 0) offer = new UpdateOffer(zipVersion, zip);
             ConfirmAndInstall(zip, zipVersion, false);
         }
 
@@ -865,6 +906,12 @@ namespace ImacDisplay
             if (!TextDialog.Confirm(this, "iMac-Display " + newVersion + " installieren?", intro,
                 changes.Length > 0 ? changes : "(Die Zip-Datei sagt nicht, was sich geändert hat.)", "Installieren", "Später"))
             {
+                /* our own download is not kept for later: the next click fetches the release that is current then */
+                if (temporary)
+                {
+                    Updater.DeleteQuietly(zip);
+                    offer = new UpdateOffer(newVersion, null);
+                }
                 ShowOffer();
                 return;
             }
@@ -897,7 +944,9 @@ namespace ImacDisplay
             closing = true;
             timer.Stop();
             if (!Program.RestartAfterUpdate(options))
-                MessageDialog.Show(this, "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal.",
+                MessageDialog.Show(this, File.Exists(Path.Combine(Program.BaseDirectory, "imac-display.exe"))
+                    ? "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal."
+                    : "Die neue Version ist installiert, aber " + Updater.MissingExe,
                     MessageKind.Warning);
             Close();
         }

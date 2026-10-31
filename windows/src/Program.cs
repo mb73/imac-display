@@ -459,13 +459,45 @@ namespace ImacDisplay
         static Size mode;
         static Size? announcedMode;
 
+        /* What WinForms reads from the app's config file: per-monitor v2, for sharp windows on monitors with different scaling */
+        const string ConfigXml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n"
+            + "<configuration>\r\n"
+            + "  <System.Windows.Forms.ApplicationConfigurationSection>\r\n"
+            + "    <add key=\"DpiAwareness\" value=\"PerMonitorV2\"/>\r\n"
+            + "  </System.Windows.Forms.ApplicationConfigurationSection>\r\n"
+            + "</configuration>\r\n";
+
+        /*
+         The config file lives next to the log, not next to the exe: as imac-display.exe.config, Explorer showed
+         it as "imac-display.exe" while it hides known extensions, and a double-click opened an editor instead
+         of the program. Must run before anything reads the configuration.
+        */
+        internal static void UseOwnConfig()
+        {
+            try
+            {
+                string path = Path.Combine(Path.GetDirectoryName(LogPath), "imac-display.config");
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                if (!File.Exists(path) || File.ReadAllText(path) != ConfigXml) File.WriteAllText(path, ConfigXml);
+                AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", path);
+                /* the one versions before 1.11.1 shipped next to the exe */
+                string legacy = ExePath + ".config";
+                if (!File.Exists(legacy)) return;
+                File.Delete(legacy);
+                Log(Path.GetFileName(legacy) + " entfernt, die Einstellungen für Windows Forms liegen jetzt in " + path + ".");
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
         [STAThread]
         static int Main(string[] args)
         {
+            UseOwnConfig();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
-            /* per-monitor v2, physical pixels everywhere; WinForms has done it already if imac-display.exe.config is there */
+            /* per-monitor v2, physical pixels everywhere; WinForms does it as well, from the config set up above */
             try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); }
             catch (EntryPointNotFoundException) { Native.SetProcessDPIAware(); }
 
