@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.3] – 2026-11-13
+
+### Behoben
+
+- **Ein Neustart nach dem Bauen lässt die Fenster, wo sie sind.** Baust du `imac-display.exe` mit `windows\build.cmd` neu, musstest du bisher die laufende Version beenden und die neue starten. Dabei schaltete das Beenden den Mac-Bildschirm ab und der Start wieder ein. Windows schob alle Fenster aufs Laptop-Display und wieder zurück, und nicht jedes Programm verkraftete das: Remotedesktop im Vollbild kam als winziges, leeres Fenster zurück, das sich über die Taskleiste nicht mehr hervorholen ließ. Jetzt startest du die neue Fassung, während die alte noch läuft: mit „Neu starten“ im Fenster, das dort erscheint, sobald eine neu gebaute `imac-display.exe` bereitliegt, mit gedrückter Umschalttaste aufs Taskleisten-Symbol klicken oder über das Startmenü. Die laufende Version startet sich dann selbst neu wie nach einem Update, und an den Bildschirmen ändert sich nichts. Beendest du sie stattdessen, bleibt der Mac-Bildschirm bis zu 20 Sekunden für den Neustart an, und ein ausgeschaltetes Laptop-Display geht solange an, damit du die neue Fassung dort starten kannst. Startet keine, wandern die Fenster danach wie gewohnt aufs Laptop-Display.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.11.2] – 2026-11-13
 
 ### Behoben

@@ -414,10 +414,12 @@ namespace ImacDisplay
     {
         public static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string ExePath = Assembly.GetExecutingAssembly().Location;
+        /* the exe as this process found it at its start: windows\build.cmd puts a new build in its place (NewBuild) */
+        static readonly string exeStamp = FileStamp(ExePath);
         public const string GuideUrl = "https://github.com/mb73/imac-display/blob/main/README.md";
         public const string LicenseUrl = "https://github.com/mb73/imac-display/blob/main/LICENSE";
 
-        /* keepDisplay: an update hands the Mac display over to the new version instead of switching it off */
+        /* keepDisplay: an update, or quitting after a new build (Quit), hands the Mac display over to the next instance instead of switching it off */
         static volatile bool stopping, paused, keepDisplay, shareClipboard, inSession, macAsleep, cableChecking;
         /* the window's "Laptop-Display ausschalten", and whether the agent switched the panel off with the lid open (Displays.PanelOff) */
         static volatile bool macOnly, panelSwitchedOff;
@@ -435,6 +437,9 @@ namespace ImacDisplay
         /* a session in this run went over the cable: on Wi-Fi the window says the cable is coming */
         static bool cableSeen;
         static Mutex instance;
+        /* Quit keeps the Mac display for the next instance; that one sets this event to take it over */
+        const string HandOverEvent = @"Local\imac-display.handover";
+        static EventWaitHandle successor;
         static Thread agent;
         static MainWindow window;
         static readonly object cleanupLock = new object();
@@ -541,21 +546,35 @@ namespace ImacDisplay
             }
             string restarted = Environment.GetEnvironmentVariable(Updater.RestartedVariable);
             Environment.SetEnvironmentVariable(Updater.RestartedVariable, null);  // neither for ffmpeg nor for a later restart
-            if (!AcquireInstance(restarted != null))
+            /* the previous instance may still be finishing while it keeps the Mac display for this one (Quit) */
+            EventWaitHandle offer = DisplayOffer();
+            if (!AcquireInstance(restarted != null || offer != null))
             {
-                bool shown = ActivateOtherInstance();
+                if (offer != null) offer.Dispose();
                 if (options.UpdateZip != null)
+                {
+                    ActivateOtherInstance();
                     Report("iMac-Display läuft schon. Beende es und zieh die Zip-Datei dann noch einmal auf imac-display.exe.", MessageKind.Information);
-                else if (!shown) Report("iMac-Display läuft schon.", MessageKind.Information);
+                }
+                /* the running instance restarts into a new build or comes to the front; versions before 1.11.3 do not answer */
+                else if (!NotifyOtherInstance() && !ActivateOtherInstance()) Report("iMac-Display läuft schon.", MessageKind.Information);
                 return 1;
+            }
+            bool handedOver = restarted == "display";
+            if (offer != null)
+            {
+                /* the quitting instance leaves the Mac display as it is and ends (AwaitSuccessor) */
+                using (offer) offer.Set();
+                handedOver = true;
             }
             Application.ThreadException += OnWindowError;
             AppDomain.CurrentDomain.UnhandledException += OnCrash;
             /* the window is mostly minimized: Windows would otherwise throttle the agent like a background program */
             Priority.HighQos(Process.GetCurrentProcess().Handle);
-            window = new MainWindow(options, restarted == "display");
+            window = new MainWindow(options, handedOver);
             Application.Run(window);
             ReleaseInstance();
+            AwaitSuccessor();
             return 0;
         }
 
@@ -651,13 +670,91 @@ namespace ImacDisplay
             }
         }
 
+        /*
+         The window closes; byUser: Alt+F4, "Trennen und beenden" or taskkill, not Windows shutting down. Once
+         windows\build.cmd has put a new exe in place of this one, the user most likely quits to start it. Switching the
+         Mac display off and on again would then move every window to the panel and back, and not every program survives
+         that: on 2026-11-13 Remote Desktop in full screen came back as a window without client area (26 x 71 pixels at
+         200 %), which the taskbar could not bring back, and GitKraken's restore size had grown 1.6 times (200 % / 125 %).
+         So the display stays, as after an update, and AwaitSuccessor switches it off unless the next instance takes it
+         over within 20 s. Without the picture on the Mac the user can only start it on the laptop: a switched-off panel
+         comes back meanwhile (PanelBack: the windows stay on the Mac display, and Remote Desktop in full screen had survived
+         that change the same day while the Mac slept), and the next instance switches it off again. On 2026-11-13 the panel stayed off, nothing showed the desktop, and the restart came too late.
+         A plain quit still switches the Mac display off at once.
+         */
+        public static void Quit(bool byUser)
+        {
+            bool offer = byUser && NewBuild();
+            lock (cleanupLock) offer = offer && displayExtended;
+            if (offer)
+            {
+                try
+                {
+                    successor = new EventWaitHandle(false, EventResetMode.ManualReset, HandOverEvent);
+                    Log("imac-display.exe ist neu gebaut: Der Mac-Bildschirm bleibt bis zu 20 s an, damit ein Neustart ihn übernehmen kann.");
+                }
+                catch (IOException) { offer = false; }
+                catch (UnauthorizedAccessException) { offer = false; }
+                catch (WaitHandleCannotBeOpenedException) { offer = false; }
+            }
+            Shutdown(offer);
+            if (offer) PanelBack("Das Laptop-Display ist wieder an, damit du iMac-Display dort neu starten kannst.");
+        }
+
         /* Ends the agent and stops the video; switches back to the laptop panel unless handOver keeps the display for a restart */
-        public static void Shutdown(bool handOver)
+        static void Shutdown(bool handOver)
         {
             lock (cleanupLock) keepDisplay = handOver && displayExtended;
             stopping = true;
             if (agent != null && !agent.Join(6000)) Log("Das Programm wartet nicht länger auf die Verbindung zum Mac.");
             Cleanup();
+        }
+
+        /* After Quit kept the Mac display: the next instance takes it over (Main), or it goes off after 20 s */
+        static void AwaitSuccessor()
+        {
+            if (successor == null) return;
+            bool taken = successor.WaitOne(20000);
+            successor.Dispose();
+            successor = null;
+            if (taken)
+            {
+                Log("Der Neustart hat den Mac-Bildschirm übernommen.");
+                return;
+            }
+            keepDisplay = false;
+            RevertDisplay("Kein Neustart: nur noch der Laptop-Bildschirm.");
+        }
+
+        /* A quitting instance that keeps the Mac display for the next one (Quit), or null */
+        static EventWaitHandle DisplayOffer()
+        {
+            try
+            {
+                EventWaitHandle offer;
+                return EventWaitHandle.TryOpenExisting(HandOverEvent, out offer) ? offer : null;
+            }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+        }
+
+        /* windows\build.cmd has put a new exe in place of the one this process started from, which runs on as imac-display.exe.old */
+        public static bool NewBuild()
+        {
+            string now = FileStamp(ExePath);
+            return now != null && now != exeStamp;
+        }
+
+        /* Size and time of a file, to notice that it was replaced; null if it is missing */
+        static string FileStamp(string path)
+        {
+            try
+            {
+                var file = new FileInfo(path);
+                return file.Exists ? file.Length + "|" + file.LastWriteTimeUtc.Ticks : null;
+            }
+            catch (IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
         }
 
         /* After an update: the new version starts in place of this one and takes over the Mac display; false if it did not start */
@@ -747,9 +844,10 @@ namespace ImacDisplay
             MacEndpoint preferred = null;
             if (displayHandedOver)
             {
-                /* the previous version left the Mac display on: keep it if the Mac comes back soon */
+                /* the previous run (an update, or a restart after a new build) left the Mac display on: keep it if the Mac comes back soon */
                 lock (cleanupLock) displayExtended = true;
                 keepDisplayUntil = DateTime.UtcNow.AddSeconds(30);
+                Log("Der Mac-Bildschirm ist noch an: Ich übernehme ihn.");
             }
             while (!stopping)
             {
@@ -1385,11 +1483,17 @@ namespace ImacDisplay
             if (!Native.LockWorkStation()) Log("Windows ließ sich nicht sperren: " + new Win32Exception().Message);
         }
 
-        /*
-         The Mac sleeps: with the panel switched off, the laptop would show nothing anywhere until the Mac wakes up.
-         Not once the sign-in has taken over the input (Windows lets no program switch then); the agent tries again a few seconds later.
-         */
         static void PanelBack()
+        {
+            PanelBack("Der Mac schläft: Das Laptop-Display ist wieder an, bis er aufwacht.");
+        }
+
+        /*
+         No picture goes to the Mac, because it sleeps or because Quit waits for a restart: with the panel switched off,
+         the laptop would show nothing anywhere meanwhile. The Mac display stays, and so do the windows on it. Not once the
+         sign-in has taken over the input (Windows lets no program switch then); the agent tries again a few seconds later.
+         */
+        static void PanelBack(string message)
         {
             if (!panelSwitchedOff || !LidIsOpen() || !Session.InputDesktopIsDefault()) return;
             try
@@ -1398,7 +1502,7 @@ namespace ImacDisplay
                 if (Displays.Internal() == null)
                 {
                     Displays.PanelOn();
-                    Log("Der Mac schläft: Das Laptop-Display ist wieder an, bis er aufwacht.");
+                    Log(message);
                 }
                 panelSwitchedOff = false;
             }
@@ -1830,7 +1934,35 @@ namespace ImacDisplay
             instance = null;
         }
 
-        /* Started a second time: bring the running instance's window to the front instead */
+        /* Sent by a second start to the running instance's window, which answers 1 (MainWindow.StartedAgain) */
+        public static readonly int StartedAgainMessage = Native.RegisterWindowMessage("imac-display.started-again");
+
+        /*
+         Started a second time, e.g. by Shift+click on the taskbar button or from the Start menu: tells the running
+         instance, which restarts into a new build or comes to the front. False if none answers.
+         */
+        static bool NotifyOtherInstance()
+        {
+            if (StartedAgainMessage == 0) return false;
+            Process self = Process.GetCurrentProcess();
+            foreach (Process other in Process.GetProcessesByName(self.ProcessName))
+            {
+                using (other)
+                {
+                    if (other.Id == self.Id || other.SessionId != self.SessionId) continue;
+                    IntPtr handle = other.MainWindowHandle;
+                    if (handle == IntPtr.Zero) continue;
+                    /* started by the user, this process may bring a window to the front; the running one may do so in its stead */
+                    Native.AllowSetForegroundWindow(other.Id);
+                    IntPtr answer;
+                    return Native.SendMessageTimeout(handle, StartedAgainMessage, IntPtr.Zero, IntPtr.Zero, Native.SMTO_ABORTIFHUNG, 3000, out answer) != IntPtr.Zero
+                        && answer == new IntPtr(1);
+                }
+            }
+            return false;
+        }
+
+        /* Started a second time: bring the running instance's window to the front instead (versions before 1.11.3 answer no StartedAgainMessage) */
         static bool ActivateOtherInstance()
         {
             Process self = Process.GetCurrentProcess();

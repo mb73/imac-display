@@ -114,7 +114,8 @@ namespace ImacDisplay
         /* a newer version, and the progress of fetching or installing it (shown on the taskbar before the agent's) */
         UpdateOffer offer;
         int updateProgress = ThinBar.None;
-        bool checking, updating, browserFallback, updateRequested, restarting;
+        /* newBuild: the banner offers a new build of imac-display.exe (windows\build.cmd) instead of an update */
+        bool checking, updating, browserFallback, updateRequested, restarting, newBuild;
         volatile bool closing;
         DateTime nextOnlineCheck = DateTime.MinValue;
         /* when the offer was last in sight or the taskbar button last lit up for it (Remind) */
@@ -188,7 +189,11 @@ namespace ImacDisplay
             bannerButton.AutoSize = true;
             bannerButton.Anchor = AnchorStyles.Right;
             bannerButton.Margin = Padding.Empty;
-            bannerButton.Click += delegate { OnUpdateClicked(); };
+            bannerButton.Click += delegate
+            {
+                if (offer == null && newBuild) RestartIntoNewBuild("„Neu starten“ im Fenster");
+                else OnUpdateClicked();
+            };
             bannerProgress.Size = new Size(270, 4);
             bannerProgress.Anchor = AnchorStyles.Left;
             bannerProgress.Margin = new Padding(0, 8, 10, 2);
@@ -414,6 +419,7 @@ namespace ImacDisplay
             base.OnActivated(e);
             if (lidPlugged.Parent != null && !lidPlugged.DroppedDown) ShowLidAction(lidPlugged, false);
             if (lidBattery.Parent != null && !lidBattery.DroppedDown) ShowLidAction(lidBattery, true);
+            CheckForNewBuild();
             Remind();
         }
 
@@ -425,6 +431,7 @@ namespace ImacDisplay
             timer.Tick += delegate
             {
                 CheckForUpdates(false);
+                CheckForNewBuild();
                 Remind();
             };
             timer.Start();
@@ -450,7 +457,7 @@ namespace ImacDisplay
             closing = true;
             timer.Stop();
             Hide();
-            Program.Shutdown(false);
+            Program.Quit(byUser);
         }
 
         protected override void WndProc(ref Message m)
@@ -459,6 +466,13 @@ namespace ImacDisplay
             {
                 /* the X puts the window into the taskbar; the connection stays */
                 WindowState = FormWindowState.Minimized;
+                return;
+            }
+            if (m.Msg == Program.StartedAgainMessage && m.Msg != 0)
+            {
+                /* imac-display.exe started a second time (Program.NotifyOtherInstance): answer at once, act afterwards */
+                m.Result = new IntPtr(1);
+                BeginInvoke((MethodInvoker)StartedAgain);
                 return;
             }
             if (m.Msg == Taskbar.ButtonCreatedMessage && m.Msg != 0)
@@ -765,6 +779,7 @@ namespace ImacDisplay
         void ShowOffer()
         {
             browserFallback = false;
+            newBuild = false;  // the offer takes the banner; CheckForNewBuild shows the build again once it is gone
             if (offer == null) banner.Visible = false;
             else ShowBanner("iMac-Display " + offer.Version + " ist da.", "Aktualisieren …", ThinBar.None);
             updateProgress = ThinBar.None;
@@ -938,17 +953,70 @@ namespace ImacDisplay
 
         void RestartNow()
         {
-            ShowBanner("Starte die neue Version …", null, ThinBar.Unknown);
+            RestartNow("Starte die neue Version …",
+                "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal.",
+                "Die neue Version ist installiert, aber " + Updater.MissingExe);
+        }
+
+        /* The new exe starts in place of this one and takes over the Mac display: after an update, or after a new build (StartedAgain) */
+        void RestartNow(string banner, string notStarted, string missing)
+        {
+            ShowBanner(banner, null, ThinBar.Unknown);
             Update();  // paint this before the wait for the agent
             restarting = true;
             closing = true;
             timer.Stop();
             if (!Program.RestartAfterUpdate(options))
-                MessageDialog.Show(this, File.Exists(Path.Combine(Program.BaseDirectory, "imac-display.exe"))
-                    ? "Die neue Version ist installiert, ließ sich aber nicht starten. Bitte starte iMac-Display noch einmal."
-                    : "Die neue Version ist installiert, aber " + Updater.MissingExe,
+                MessageDialog.Show(this, File.Exists(Path.Combine(Program.BaseDirectory, "imac-display.exe")) ? notStarted : missing,
                     MessageKind.Warning);
             Close();
+        }
+
+        /*
+         imac-display.exe was started again while this one runs, e.g. by Shift+click on the taskbar button. Once
+         windows\build.cmd has put a new exe in place, that one takes over as after an update: nothing switches, and the
+         windows on the Mac display stay as they are. Quitting and starting changed the displays, and Remote Desktop in
+         full screen did not survive that (see Program.Quit). Otherwise the window comes forward, as before.
+         */
+        void StartedAgain()
+        {
+            if (restarting || closing) return;
+            if (updating || !Enabled || !Program.NewBuild())
+            {
+                ComeForward();
+                return;
+            }
+            RestartIntoNewBuild("imac-display.exe wurde noch einmal gestartet");
+        }
+
+        /*
+         The banner offers a new build once windows\build.cmd has put one in place, in a git checkout where no update is
+         ever offered; an offered update keeps the banner. "Neu starten" restarts like a second start (StartedAgain).
+         */
+        void CheckForNewBuild()
+        {
+            if (updating || restarting || closing || offer != null) return;
+            bool present = Program.NewBuild();
+            if (present == newBuild) return;
+            newBuild = present;
+            if (!present)
+            {
+                banner.Visible = false;
+                return;
+            }
+            string built = null;
+            try { built = FileVersionInfo.GetVersionInfo(Program.ExePath).FileVersion; }
+            catch (FileNotFoundException) { }
+            ShowBanner((string.IsNullOrEmpty(built) ? "imac-display.exe" : "iMac-Display " + built) + " ist neu gebaut.", "Neu starten", ThinBar.None);
+        }
+
+        /* The new build starts in place of this one, as after an update: nothing switches, the windows on the Mac display stay */
+        void RestartIntoNewBuild(string why)
+        {
+            Program.Log(why + ": Ich starte die neu gebaute Fassung.");
+            RestartNow("Starte die neu gebaute Fassung …",
+                "Die neu gebaute Fassung ließ sich nicht starten. Bitte starte iMac-Display noch einmal.",
+                "Die neu gebaute Fassung ließ sich nicht starten: " + Updater.MissingExe);
         }
     }
 }
