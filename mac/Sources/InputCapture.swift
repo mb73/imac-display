@@ -2,8 +2,9 @@ import AppKit
 
 /*
  Captures keyboard and mouse while LaptopScreen is the active app and forwards them to the laptop.
- - Text is sent as Unicode, exactly as the Mac keyboard layout produces it (Option characters,
-   dead keys and umlauts just work, independent of the Windows layout).
+ - Text is sent as Unicode, exactly as the Mac keyboard layout produces it (Option characters and
+   umlauts, independent of the Windows layout). Dead keys are composed here (KeyLayout): macOS does
+   that only in its text input system, which the event monitor bypasses.
  - Shortcuts (Cmd or Ctrl held) are sent as Windows keys: Cmd -> Ctrl, Ctrl -> Win, Option -> Alt.
  - Ctrl+click becomes a right click. System shortcuts such as Ctrl+Left/Right (switch desktop)
    or Cmd+Tab never reach the app, so they keep working for macOS.
@@ -36,6 +37,9 @@ final class InputCapture {
     private var pressedSpecial: [UInt16: (vk: Int, mods: Int, extended: Bool)] = [:]
     private var pressedChar: [UInt16: (codepoint: UInt32, mods: Int)] = [:]
     private var lastMods = -1
+    /* a dead key typed last (´ or ` on a German keyboard), pending for the key after it: its state and what it types alone */
+    private var deadKeyState: UInt32 = 0
+    private var deadKeyText = ""
     private var rightClickViaControl = false
     private var scrollRemainderX = 0.0
     private var scrollRemainderY = 0.0
@@ -160,6 +164,7 @@ final class InputCapture {
         pressedSpecial.removeAll()
         pressedChar.removeAll()
         laptopButtons.removeAll()
+        dropDeadKey()
         lastMods = -1
         rightClickViaControl = false
         send?("R")
@@ -263,14 +268,26 @@ final class InputCapture {
 
         let mods = InputCapture.mods(flags)
         if let special = KeyMap.special[event.keyCode] {
+            /* after a dead key, Backspace takes it back as on the Mac: nothing was typed yet */
+            if special.vk == 0x08 && deadKeyState != 0 {
+                dropDeadKey()
+                return nil
+            }
+            typeDeadKey()
             let translated = KeyMap.translate(special, mods: mods)
             pressedSpecial[event.keyCode] = (translated.key.vk, translated.mods, translated.key.extended)
             send?("K \(translated.key.vk) 1 \(translated.mods) \(translated.key.extended ? 1 : 0)")
             return nil
         }
         if mods & (KeyMap.ctrl | KeyMap.win) != 0 {
+            typeDeadKey()
             /* shortcut: send the unmodified character of the key, the agent maps it to a Windows key */
-            let base = event.characters(byApplyingModifiers: []) ?? event.charactersIgnoringModifiers ?? ""
+            var base = event.characters(byApplyingModifiers: []) ?? event.charactersIgnoringModifiers ?? ""
+            if base.isEmpty {
+                /* a dead key, which types nothing by itself: its own character names it */
+                var none: UInt32 = 0
+                base = KeyLayout.text(of: event.keyCode, flags: [], deadKeys: false, state: &none) ?? ""
+            }
             guard let scalar = base.lowercased().unicodeScalars.first, scalar.value >= 0x20 else { return nil }
             var keyMods = mods
             /* Ctrl+Space stays Ctrl+Space, code completion in VS Code on both systems; Win+Space would switch the input language */
@@ -281,10 +298,47 @@ final class InputCapture {
             send?("C \(scalar.value) 1 \(keyMods)")
             return nil
         }
-        if let text = event.characters, !text.isEmpty, text.unicodeScalars.allSatisfy({ InputCapture.isPrintable($0) }) {
-            send?("T " + text.utf16.map { String(format: "%04x", UInt32($0)) }.joined())
-        }
+        var text = event.characters ?? ""
+        /* a dead key types nothing in its own event, and the key after it only its own character */
+        if text.isEmpty || deadKeyState != 0 { text = composed(event) ?? text }
+        typeText(text)
         return nil
+    }
+
+    /*
+     The text of a dead key or of the key after one, composed by the keyboard layout as macOS's text input system would:
+     ´ then E gives é, ´ then Space the ´ alone, ´ then X "´x". A dead key itself gives "" and stays pending.
+     */
+    private func composed(_ event: NSEvent) -> String? {
+        guard let text = KeyLayout.text(of: event.keyCode, flags: event.modifierFlags, repeated: event.isARepeat,
+                                        state: &deadKeyState) else {
+            dropDeadKey()
+            return nil
+        }
+        deadKeyText = ""
+        if deadKeyState != 0 {
+            var none: UInt32 = 0
+            deadKeyText = KeyLayout.text(of: event.keyCode, flags: event.modifierFlags, deadKeys: false, state: &none) ?? ""
+        }
+        return text
+    }
+
+    /* A key that does not type text follows a dead key: the dead key types its own character first */
+    private func typeDeadKey() {
+        guard deadKeyState != 0 else { return }
+        let text = deadKeyText
+        dropDeadKey()
+        typeText(text)
+    }
+
+    private func dropDeadKey() {
+        deadKeyState = 0
+        deadKeyText = ""
+    }
+
+    private func typeText(_ text: String) {
+        guard !text.isEmpty, text.unicodeScalars.allSatisfy({ InputCapture.isPrintable($0) }) else { return }
+        send?("T " + text.utf16.map { String(format: "%04x", UInt32($0)) }.joined())
     }
 
     private func keyUp(_ event: NSEvent) {

@@ -95,7 +95,7 @@ Solange LaptopScreen vorne ist, gehen Mac-Tastatur und -Maus (egal ob Bluetooth 
 | <kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd> | aktives Fenster auf den anderen Bildschirm schieben |
 | <kbd>ctrl</kbd> + Klick | Rechtsklick |
 | <kbd>cmd</kbd> + Scrollen | Zoomen (<kbd>ctrl</kbd> + Mausrad) |
-| Umlaute und Zeichen wie @ € { } [ ] \| ~ | kommen genau so an, wie sie am Mac getippt werden |
+| Umlaute, Akzente und Zeichen wie @ € { } [ ] \| ~ ´ | kommen genau so an, wie sie am Mac getippt werden, auch über Tottasten: <kbd>´</kbd> und dann <kbd>E</kbd> ergibt é |
 | <kbd>ctrl</kbd> +<kbd>←</kbd> / <kbd>→</kbd> oder Wischgeste | **zwischen macOS und Laptop wechseln** |
 | <kbd>cmd</kbd> + <kbd>tab</kbd> | zu einem anderen Mac-Programm wechseln |
 | <kbd>ctrl</kbd> + <kbd>cmd</kbd> + <kbd>F</kbd> | Vollbild ein/aus |

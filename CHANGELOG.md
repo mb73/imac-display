@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.2] – 2026-11-13
+
+### Behoben
+
+- **Zeichen von Tottasten kommen an.** Auf der deutschen Mac-Tastatur sind ´ und ` (rechts neben ß) Tottasten: Sie warten auf die nächste Taste, ´ und dann E ergibt é, ´ und dann die Leertaste das ´ allein. Solche Zeichen kamen bisher nicht in Windows an. Die Tottaste tippte gar nichts, die Taste danach nur ihr eigenes Zeichen. Jetzt setzt LaptopScreen beides zusammen wie macOS selbst. Das gilt für jede Tottaste der Tastaturbelegung, also auch für Akzente wie è, ê oder ñ. Backspace direkt nach einer Tottaste nimmt sie zurück, wie auf dem Mac.
+
+Nur LaptopScreen auf dem Mac ändert sich; es aktualisiert sich wie gewohnt selbst, sobald iMac-Display 1.11.2 auf dem Laptop läuft.
+
 ## [1.11.1] – 2026-10-30
 
 ### Hinzugefügt
