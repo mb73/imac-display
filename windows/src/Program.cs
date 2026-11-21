@@ -841,6 +841,8 @@ namespace ImacDisplay
             string code = o.Code ?? (o.Repair ? null : PairingStore.Load());
             if (o.Code != null) PairingStore.Save(o.Code);
             DateTime? keepDisplayUntil = null;
+            /* when the last search for the Mac began that the laptop did not sleep through (see keepDisplayUntil below) */
+            DateTime searchedFrom = DateTime.MinValue;
             MacEndpoint preferred = null;
             if (displayHandedOver)
             {
@@ -859,7 +861,13 @@ namespace ImacDisplay
                     while (paused && !stopping) Thread.Sleep(100);
                     continue;
                 }
-                if (keepDisplayUntil.HasValue && DateTime.UtcNow > keepDisplayUntil.Value)
+                /*
+                 The Mac display goes off once a search that began after the deadline found nothing, not at the deadline
+                 itself: when the laptop slept, the deadline is long over at waking up, and the Mac is usually right there.
+                 On 2026-11-20 the Mac display went off at 07:58:39 and on again four seconds later, and switching it
+                 off and on throws Remote Desktop out of full screen (RemoteDesktop).
+                 */
+                if (keepDisplayUntil.HasValue && searchedFrom > keepDisplayUntil.Value)
                 {
                     keepDisplayUntil = null;
                     RevertDisplay("Der Mac ist nicht zurückgekommen: nur noch der Laptop-Bildschirm.");
@@ -888,7 +896,13 @@ namespace ImacDisplay
                     endpoints = new List<MacEndpoint> { preferred };
                     preferred = null;
                 }
-                else endpoints = FindMac(o);
+                else
+                {
+                    DateTime searching = DateTime.UtcNow;
+                    endpoints = FindMac(o);
+                    /* a search the laptop slept through says nothing about the Mac: after waking up, it searches again first */
+                    if ((DateTime.UtcNow - searching).TotalSeconds < 20) searchedFrom = searching;
+                }
                 if (!Active) continue;
                 if (endpoints.Count == 0)
                 {
@@ -1048,6 +1062,8 @@ namespace ImacDisplay
                     return;
                 }
                 Log("Mac-Bildschirm: " + external);
+                /* Remote Desktop in full screen there before, e.g. before the Mac display went off and on again */
+                RemoteDesktop.Keep(external);
                 window.ShowScale(external);
                 window.ShowArrangement(Displays.Internal(), external);
                 injector.SetArea(external);
@@ -1165,6 +1181,7 @@ namespace ImacDisplay
                     }
                     if (locked)
                     {
+                        RemoteDesktop.Locked();
                         /* Windows 11 shows its lock screen on "Default" for a while: until someone dismisses it, displays may */
                         /* still be switched, and the panel goes on, so the lock screen and then the sign-in appear there */
                         if (panelSwitchedOff && LidIsOpen() && now >= panelRetry && Session.InputDesktopIsDefault())
@@ -1258,7 +1275,11 @@ namespace ImacDisplay
                         /* the windows on the Mac display stay there: noted while nothing changes, put back for a few seconds after */
                         /* a change, in case Windows moves them once more */
                         if (now < keepPlaces) window.KeepOnMacDisplay(external);
-                        else window.NoteMacDisplay(external);
+                        else
+                        {
+                            window.NoteMacDisplay(external);
+                            RemoteDesktop.Note(external);
+                        }
                         continue;
                     }
                     if (layout != lastLayout)
@@ -1307,6 +1328,7 @@ namespace ImacDisplay
                     window.ShowArrangement(Displays.Internal(), external);
                     window.KeepOnMacDisplay(external);
                     keepPlaces = DateTime.UtcNow.AddSeconds(3);
+                    RemoteDesktop.Keep(external);
                     int index = Displays.DxgiOutputIndex(external.GdiName);
                     if (index >= 0 && index != output)
                     {

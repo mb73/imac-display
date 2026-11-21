@@ -440,6 +440,35 @@ namespace ImacDisplay
         [DllImport("user32.dll")]
         public static extern bool AllowSetForegroundWindow(int processId);
 
+        /* ---- Remote Desktop's window, back into full screen (RemoteDesktop) ---- */
+
+        public const int SC_RESTORE = 0xF120, SC_MINIMIZE = 0xF020, GWL_STYLE = -16, GWL_EXSTYLE = -20;
+        public const uint WS_CAPTION = 0x00C00000, MF_BYCOMMAND = 0x0, MENU_ITEM_MISSING = 0xFFFFFFFF;
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindow(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern bool IsWindowVisible(IntPtr hwnd);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINDOWPLACEMENT { public int length, flags, showCmd; public POINT minPosition, maxPosition; public RECT normalPosition; }
+
+        [DllImport("user32.dll")]
+        public static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT placement);
+
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+        public static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);
+
+        [DllImport("user32.dll")]
+        public static extern bool AdjustWindowRectExForDpi(ref RECT rect, uint style, bool menu, uint exStyle, uint dpi);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetSystemMenu(IntPtr hwnd, bool revert);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetMenuState(IntPtr menu, uint item, uint flags);
+
         [DllImport("user32.dll")]
         public static extern bool PostMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 

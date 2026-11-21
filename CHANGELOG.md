@@ -2,6 +2,15 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.4] – 2026-11-21
+
+### Behoben
+
+- **Remotedesktop bleibt im Vollbild, wenn iMac-Display umschaltet.** Kurz bevor sich Windows wegen fehlender Eingaben sperrt, bei ctrl+L und wenn der Mac schläft, schaltet iMac-Display das Laptop-Display ein, mit „Laptop-Display ausschalten“ danach wieder aus. Remotedesktop im Vollbild auf dem Mac-Bildschirm stellte sich dabei auf das Laptop-Display ein und kam danach als winziges, leeres Fenster zurück, das sich über die Taskleiste nicht mehr hervorholen ließ. Jetzt merkt sich iMac-Display, welche Remotedesktop-Fenster im Vollbild auf dem Mac-Bildschirm liegen, und holt sie nach jeder Umschaltung dort ins Vollbild zurück. Ein minimiertes Remotedesktop bleibt minimiert und kommt beim Wiederherstellen im Vollbild zurück.
+- **Nach dem Aufwachen des Laptops bleibt der Mac-Bildschirm.** War die Verbindung zum Mac abgerissen und schlief der Laptop danach ein, schaltete iMac-Display beim Aufwachen zuerst den Mac-Bildschirm ab und gleich darauf wieder ein, denn seine Wartezeit war im Schlaf abgelaufen. Jetzt sucht es erst nach dem Mac.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.11.3] – 2026-11-13
 
 ### Behoben
