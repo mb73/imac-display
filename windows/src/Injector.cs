@@ -17,10 +17,11 @@ namespace ImacDisplay
        K vk down mods ext      virtual key
        C codepoint down mods   shortcut by character, mapped with the current keyboard layout
        T utf16hex              text, typed as Unicode independent of the layout
-       S mods                  modifier state (Shift/Ctrl follow; Alt/Win are only released)
+       S mods                  modifier state (Ctrl follows, Shift only during a drag; the rest is only released)
        R                       release everything
      Modifier bits: 1 Shift, 2 Ctrl, 4 Alt, 8 Win. Alt and Win are pressed only together with a
-     key or click, so Windows never sees them alone (no menu activation, no Start menu).
+     key or click, so Windows never sees them alone (no menu activation, no Start menu). Shift
+     neither, except during a drag (see Sync).
      The Mac sends "N" when its pointer pushes against an edge of the screen. Where Windows has another
      display next to the external one (the laptop's own panel, lid open), the cursor goes over as with
      a real mouse, and Handle answers "POINTER away": the Mac parks its pointer and sends only "N" and
@@ -268,10 +269,18 @@ namespace ImacDisplay
             if (inputs.Count > 0) Send(inputs.ToArray());
         }
 
+        /*
+         Ctrl follows the Mac directly (holding it over a link in VS Code underlines the link, say). Shift does so only
+         while a mouse button is held, where it changes the drag; otherwise the next key, click or wheel that carries it
+         presses it. A capital letter typed on the Mac thus reaches Windows without any Shift, as Unicode text. Until
+         1.11.5, Shift went down here and up again before the text, and a Shift pressed and released with only Unicode
+         keystrokes in between apparently counts as one of the five presses that bring up the Sticky Keys prompt: on
+         2026-11-24 it came up again and again in a Remote Desktop session. Alt and Win may only be released here.
+         */
         void Sync(int mods)
         {
-            /* Shift and Ctrl follow the Mac directly; Alt and Win may only be released here */
-            ApplyModifiers((mods & (Shift | Ctrl)) | (held & mods & (Alt | Win)));
+            int follow = Ctrl | (pressedButtons.Count > 0 ? Shift : 0);
+            ApplyModifiers((mods & follow) | (held & mods & ~follow));
         }
 
         void ApplyModifiers(int wanted)

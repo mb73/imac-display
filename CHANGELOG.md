@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.6] – 2026-11-24
+
+### Behoben
+
+- **Windows fragt beim Tippen nicht mehr nach der Einrastfunktion.** Großbuchstaben von der Mac-Tastatur kommen als Text in Windows an. iMac-Display drückte dabei trotzdem jedes Mal kurz die Umschalttaste und ließ sie vor dem Buchstaben wieder los. Windows sah also ein Umschalt-Tippen ohne Taste dazwischen. Fünf solche Großbuchstaben hintereinander hielt Windows für fünfmal Umschalt, das Kürzel der Einrastfunktion, und fragte „Möchten Sie die Einrastfunktion aktivieren?“. Gemeldet wurde das aus einer Remotedesktop-Sitzung. Jetzt drückt iMac-Display die Umschalttaste nur noch, wenn eine Taste, ein Klick oder das Scrollen sie braucht, und beim Ziehen mit der Maus. Großbuchstaben kommen ganz ohne Umschalttaste an.
+
+Auf dem Mac ändert sich nichts; LaptopScreen bietet wie bei jeder neuen Version trotzdem die Aktualisierung an.
+
 ## [1.11.5] – 2026-11-24
 
 ### Behoben
