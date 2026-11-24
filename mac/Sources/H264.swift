@@ -106,6 +106,14 @@ enum H264 {
         return buffer
     }
 
+    /* Marks a sample buffer with a decoded picture to be shown as soon as the display layer has it */
+    static func showImmediately(_ buffer: CMSampleBuffer) {
+        guard let attachments = CMSampleBufferGetSampleAttachmentsArray(buffer, createIfNecessary: true),
+              CFArrayGetCount(attachments) > 0 else { return }
+        let dict = unsafeBitCast(CFArrayGetValueAtIndex(attachments, 0), to: CFMutableDictionary.self)
+        setAttachment(dict, kCMSampleAttachmentKey_DisplayImmediately, true)
+    }
+
     private static func setAttachment(_ dict: CFMutableDictionary, _ key: CFString, _ value: Bool) {
         let boolean: CFBoolean = value ? kCFBooleanTrue! : kCFBooleanFalse!
         CFDictionarySetValue(dict,

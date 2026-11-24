@@ -459,6 +459,8 @@ namespace ImacDisplay
         static string macVersion;
         static string reportedMacVersion;
         static bool warnedOldMac;
+        /* LaptopScreen's last reported way of decoding (1.11.5 and newer), logged on a change only */
+        static string reportedDecoder;
         /* the Mac's screen in pixels, as LaptopScreen 1.6.0 and newer report it; the Mac display's mode chosen for it */
         static Size? macScreen;
         static Size mode;
@@ -1611,7 +1613,58 @@ namespace ImacDisplay
                 clipboard.SetFocus(line == "FOCUS 1");
                 return true;
             }
+            if (line.StartsWith("DECODER ", StringComparison.Ordinal))
+            {
+                NoteMacDecoder(line.Substring(8).Trim());
+                return true;
+            }
             return false;
+        }
+
+        /*
+         How LaptopScreen 1.11.5 and newer decodes the picture, for the log: "<way> <hardware 1|0|-> <GPU>"
+         once a way works, "switch <from> <to> <status>" when it gives one up, and "error <status> <count> <way>"
+         for errors since its last report. Ways: display (the GPU driving the Mac's main display, Intel Macs),
+         auto (macOS's choice), software, layer (the display layer decodes by itself, as before 1.11.5).
+         */
+        static void NoteMacDecoder(string report)
+        {
+            bool numbers = report.StartsWith("error ", StringComparison.Ordinal) || report.StartsWith("switch ", StringComparison.Ordinal);
+            string[] p = report.Split(new[] { ' ' }, numbers ? 4 : 3);
+            if (p[0] == "error" && p.Length == 4)
+                Log("LaptopScreen meldet " + p[2] + " Fehler beim Dekodieren " + DecoderWay(p[3]) + ", zuletzt " + p[1] + ".");
+            else if (p[0] == "switch" && p.Length == 4)
+            {
+                /* -12906, kVTCouldNotFindVideoDecoderErr: no decoder that way at all, on the iMac (2020) none for H.264 on its AMD GPU */
+                if (p[3] == "-12906")
+                    Log("Für das Dekodieren " + DecoderWay(p[1]) + " bietet macOS keinen Decoder an (-12906): LaptopScreen dekodiert " + DecoderWay(p[2]) + ".");
+                else
+                    Log("LaptopScreen gibt das Dekodieren " + DecoderWay(p[1]) + " auf (" + p[3] + ") und dekodiert jetzt " + DecoderWay(p[2]) + ".");
+            }
+            else if (p.Length == 3)
+            {
+                /* every new video connection reports its way: the log names it when it changes */
+                if (report == reportedDecoder) return;
+                reportedDecoder = report;
+                var details = new List<string>();
+                if (p[2] != "-") details.Add(p[2]);
+                if (p[0] != "software") details.Add(p[1] == "1" ? "Hardware" : p[1] == "0" ? "Software" : "Art unbekannt");
+                Log("LaptopScreen dekodiert " + DecoderWay(p[0]) + (details.Count > 0 ? " (" + string.Join(", ", details) + ")" : "") + ".");
+            }
+            else
+                Log("LaptopScreen meldet zum Dekodieren: " + report);
+        }
+
+        static string DecoderWay(string way)
+        {
+            switch (way)
+            {
+                case "display": return "über die Grafikkarte des Mac-Bildschirms";
+                case "auto": return "nach Wahl von macOS";
+                case "software": return "in Software";
+                case "layer": return "in der Anzeige von macOS wie vor 1.11.5";
+                default: return "über " + way;
+            }
         }
 
         static void NoteMacVersion(string version)

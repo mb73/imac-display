@@ -67,6 +67,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         receiver.isAllowed = { endpoint in control.isAgent(endpoint) }
         receiver.onState = { [weak self] state in self?.videoChanged(state) }
         receiver.onVideoSize = { [weak self] size in self?.videoSizeChanged(size) }
+        /* the agent logs how LaptopScreen decodes (older agents ignore the line) */
+        receiver.onDecoder = { line in control.send("DECODER " + line) }
         self.receiver = receiver
 
         control.onEvent = { [weak self] event in self?.controlChanged(event) }

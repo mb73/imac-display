@@ -2,9 +2,9 @@ import AVFoundation
 import Network
 
 /*
- Accepts the laptop's FLV/H.264 stream on a TCP port and enqueues every frame
- into the display layer with "display immediately": no clock, no jitter buffer,
- so a backlog can never build up the way it does in a media player.
+ Accepts the laptop's FLV/H.264 stream on a TCP port, decodes every frame (VideoDecoder) and
+ enqueues the picture into the display layer with "display immediately": no clock, no jitter
+ buffer, so a backlog can never build up the way it does in a media player.
  */
 final class VideoReceiver {
     enum State {
@@ -13,9 +13,11 @@ final class VideoReceiver {
         case failed(String)
     }
 
-    /* Both callbacks are always invoked on the main queue */
+    /* These three callbacks are always invoked on the main queue */
     var onState: ((State) -> Void)?
     var onVideoSize: ((CGSize) -> Void)?
+    /* how the frames get decoded, a short ASCII report for the agent's log */
+    var onDecoder: ((String) -> Void)?
     /* Decides on the receiver queue whether a peer may send video (only the paired laptop) */
     var isAllowed: ((NWEndpoint) -> Bool)?
 
@@ -29,10 +31,17 @@ final class VideoReceiver {
     private var nalLengthSize = 4
     private var waitingForKeyframe = true
     private var framesShown = 0
+    /* used on the receiver queue only */
+    private let decoder = VideoDecoder()
+    /* the way the layer's queue was filled last: decoded pictures and compressed frames do not mix */
+    private var shownMode: VideoDecoder.Mode?
 
     init(port: UInt16, displayLayer: AVSampleBufferDisplayLayer) {
         self.port = port
         self.displayLayer = displayLayer
+        decoder.onReport = { [weak self] (line: String) -> Void in
+            DispatchQueue.main.async { self?.onDecoder?(line) }
+        }
     }
 
     func start() {
@@ -105,6 +114,7 @@ final class VideoReceiver {
                 nalLengthSize = result.nalLengthSize
                 waitingForKeyframe = true
                 displayLayer.flush()
+                decoder.prepare(result.format)
                 let dimensions = CMVideoFormatDescriptionGetDimensions(result.format)
                 let size = CGSize(width: CGFloat(dimensions.width), height: CGFloat(dimensions.height))
                 DispatchQueue.main.async { [weak self] in self?.onVideoSize?(size) }
@@ -114,28 +124,51 @@ final class VideoReceiver {
                 let frame = H264.stripParameterSets(payload, nalLengthSize: nalLengthSize)
                 guard !frame.isEmpty,
                       let sample = H264.sampleBuffer(frame, format: format, keyframe: keyframe) else { continue }
-                if enqueue(sample) {
+                if show(sample, keyframe: keyframe) {
                     waitingForKeyframe = false
                     if framesShown == 0 { report(.receiving) }
                     framesShown += 1
+                } else {
+                    waitingForKeyframe = true
                 }
             }
         }
     }
 
     /*
-     Returns false if the layer had failed; then we flush and resume at the next keyframe.
+     Hands a frame to the display layer, decoded here unless the layer decodes by itself (the last way).
+     Returns false if there is nothing to show (a failed layer or decoder); then we resume at the next
+     keyframe. Until 1.11.5 a failed layer left no trace, and frames the layer skipped (see VideoDecoder)
+     left none either.
+     */
+    private func show(_ sample: CMSampleBuffer, keyframe: Bool) -> Bool {
+        if displayLayer.status == .failed {
+            decoder.noteLayerFailure(displayLayer.error)
+            displayLayer.flush()
+            return false
+        }
+        if decoder.mode != .layer {
+            if let picture = decoder.decode(sample, keyframe: keyframe) {
+                enqueue(picture)
+                return true
+            }
+            /* the decoder may just have handed over to the layer: then this keyframe can go there already */
+            if decoder.mode != .layer || !keyframe { return false }
+        }
+        enqueue(sample)
+        return true
+    }
+
+    /*
      Uses the classic layer API (deprecated since macOS 15 but still working) so that the
      app also builds with older Command Line Tools / SDKs.
      */
-    private func enqueue(_ sample: CMSampleBuffer) -> Bool {
-        if displayLayer.status == .failed {
+    private func enqueue(_ sample: CMSampleBuffer) {
+        if shownMode != decoder.mode {
             displayLayer.flush()
-            waitingForKeyframe = true
-            return false
+            shownMode = decoder.mode
         }
         displayLayer.enqueue(sample)
-        return true
     }
 
     private func report(_ state: State) {

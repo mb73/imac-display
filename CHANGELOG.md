@@ -2,6 +2,19 @@
 
 Alle nennenswerten Änderungen dieses Projekts. Datumsformat: JJJJ-MM-TT.
 
+## [1.11.5] – 2026-11-24
+
+### Behoben
+
+- **Das Bild auf dem Mac stockt nicht mehr, wenn macOS Bilder auslassen will.** Bisher ließ LaptopScreen das Bild von der Anzeige von macOS dekodieren, und die darf selbst entscheiden, Bilder auszulassen. Nach einem Absturz des Macs verwarf sie still rund 99 % der Bilder, vermutlich weil der Grafikspeicher fast voll war. Nur alle zweieinhalb Sekunden kam ein neues Bild: Maus und Tasten wirkten stark verzögert, obwohl sie sofort beim Laptop ankamen. Jetzt dekodiert LaptopScreen selbst und reicht der Anzeige fertige Bilder, und auf demselben Mac kam wieder jedes Bild an. Auf Intel-Macs fragt es dafür zuerst nach einem Decoder auf der Grafikkarte des Hauptbildschirms. Der iMac von 2020 hat dort keinen und dekodiert wie bisher auf dem Intel-Chip. Macs mit Apple-Chip haben nur einen Grafikchip und bleiben bei der Wahl von macOS. Scheitert das Dekodieren immer wieder, wechselt LaptopScreen von selbst zum nächsten Weg: zur Wahl von macOS, dann zu Software, zuletzt zum bisherigen Verfahren.
+- **Ein minimiertes Remotedesktop kommt auch lange nach einer Umschaltung heil zurück.** iMac-Display prüfte Remotedesktop beim Wiederherstellen bisher nur, wenn es schon bei der Umschaltung minimiert war. Lag es danach heil im Vollbild und minimiertest du es erst später, kam es beim Wiederherstellen womöglich als schmaler Streifen zurück. Jetzt prüft iMac-Display jedes aus dem Vollbild minimierte Remotedesktop, sobald du es wiederherstellst, und holt es bei Bedarf ins Vollbild zurück. Hatte sich ein minimiertes Remotedesktop bei einer Umschaltung von selbst wiederhergestellt, minimiert iMac-Display es nach der Reparatur wieder, jetzt notfalls ein zweites Mal: Direkt nach dem Wechsel ins Vollbild überging Remotedesktop den ersten Versuch mitunter.
+
+### Hinzugefügt
+
+- **Das Log von iMac-Display zeigt, wie der Mac dekodiert.** LaptopScreen meldet dem Laptop, auf welchem Weg und mit welcher Grafikkarte es das Bild dekodiert, und jeden Fehler dabei. Bisher blieben solche Fehler unsichtbar.
+
+LaptopScreen aktualisiert sich wie gewohnt selbst, sobald iMac-Display 1.11.5 auf dem Laptop läuft.
+
 ## [1.11.4] – 2026-11-21
 
 ### Behoben

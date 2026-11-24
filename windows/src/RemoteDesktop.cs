@@ -64,21 +64,26 @@ namespace ImacDisplay
             }
             lock (sync)
             {
-                /* not while a repair runs: the windows it repairs are not in full screen yet */
-                if (repairing == null)
-                {
-                    shown = full;
-                    minimized = iconic;
-                    notedAt = DateTime.UtcNow;
-                }
-                /* restored by the user since a change: only now Remote Desktop shows whether it broke */
+                /* not while a repair runs: the windows it repairs are not in full screen yet, and one it minimizes again */
+                /* would look restored for a moment */
+                if (repairing != null) return;
+                /*
+                 Restored since the last look, minimized from full screen before: only now Remote Desktop shows whether it
+                 broke, however long ago the last switch was. On 2026-11-23 it was in full screen and worked after two
+                 switches at night, was minimized in the morning, and came back as a strip of 47 x 1258 pixels.
+                 */
+                var before = new List<IntPtr>(waiting);
+                foreach (IntPtr window in minimized) if (!before.Contains(window)) before.Add(window);
                 var restored = new List<IntPtr>();
-                foreach (IntPtr window in waiting.ToArray())
+                foreach (IntPtr window in before)
                 {
                     if (Native.IsWindow(window) && Native.IsIconic(window)) continue;
                     waiting.Remove(window);
                     if (Native.IsWindow(window)) restored.Add(window);
                 }
+                shown = full;
+                minimized = iconic;
+                notedAt = DateTime.UtcNow;
                 if (restored.Count > 0) Schedule(restored, mac);
             }
         }
@@ -242,9 +247,23 @@ namespace ImacDisplay
         /* Minimized again, as the user had it before the switch */
         static void PutAway(IntPtr window)
         {
-            Command(window, Native.SC_MINIMIZE);
-            if (Until(delegate { return Native.IsIconic(window); }, 1500)) Program.Log("Remotedesktop ist wieder minimiert, wie vor der Umschaltung.");
-            else Program.Log("Remotedesktop ließ sich nicht wieder minimieren.");
+            /* right after going into full screen, Remote Desktop let a minimize pass once (2026-11-23): a moment later, twice */
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                Thread.Sleep(1000);
+                if (window == Native.GetForegroundWindow())
+                {
+                    Program.Log("Remotedesktop bleibt offen: Es ist jetzt im Vordergrund.");
+                    return;
+                }
+                Command(window, Native.SC_MINIMIZE);
+                if (Until(delegate { return Native.IsIconic(window); }, 1500))
+                {
+                    Program.Log("Remotedesktop ist wieder minimiert, wie vor der Umschaltung.");
+                    return;
+                }
+            }
+            Program.Log("Remotedesktop ließ sich nicht wieder minimieren.");
         }
 
         static void Failed(IntPtr window)
